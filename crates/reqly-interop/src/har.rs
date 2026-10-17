@@ -287,6 +287,12 @@ fn entry(r: &HttpRequest, folders: &[&FolderData], started: &str) -> Value {
             request["postData"] =
                 json!({ "mimeType": "application/octet-stream", "text": "", "comment": file });
         }
+        BodyKind::Graphql => {
+            request["postData"] = json!({
+                "mimeType": "application/json",
+                "text": crate::graphql_json(&r.body).to_string(),
+            });
+        }
         _ => request["postData"] = json!({ "mimeType": mime, "text": r.body.text }),
     }
     json!({

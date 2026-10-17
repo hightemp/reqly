@@ -357,35 +357,35 @@
 
 ### E5.1 GraphQL
 
-- [ ] **T5.1.1** Тип запроса GraphQL: query, variables, operation name; отправка через HTTP.
-- [ ] **T5.1.2** Introspection и загрузка схемы из файла; кеш схемы.
-- [ ] **T5.1.3** Редактор: подсветка, автодополнение и валидация по схеме (`cm6-graphql`), форматирование.
-- [ ] **T5.1.4** Docs explorer схемы.
-- [ ] **T5.1.5** Подписки через `graphql-ws`.
+- [x] **T5.1.1** Тип запроса GraphQL: query, variables, operation name; отправка через HTTP.
+- [x] **T5.1.2** Introspection и загрузка схемы из файла; кеш схемы.
+- [x] **T5.1.3** Редактор: подсветка, автодополнение и валидация по схеме (`cm6-graphql`), форматирование.
+- [x] **T5.1.4** Docs explorer схемы.
+- [x] **T5.1.5** Подписки через `graphql-ws`.
 
 ### E5.2 WebSocket
 
-- [ ] **T5.2.1** Ядро: connect и disconnect, headers и auth при handshake, отправка text, JSON и binary, события через транспорт (WS-стрим к UI в web-режиме).
+- [x] **T5.2.1** Ядро: connect и disconnect, headers и auth при handshake, отправка text, JSON и binary, события через транспорт (WS-стрим к UI в web-режиме).
   - **Тесты:** WS-эндпоинт в тестовом сервере (echo, close codes, binary).
-- [ ] **T5.2.2** UI: лог сообщений (направление, время, размер, фильтр, просмотр JSON), сохранённые шаблоны сообщений, auto-reconnect.
+- [x] **T5.2.2** UI: лог сообщений (направление, время, размер, фильтр, просмотр JSON), сохранённые шаблоны сообщений, auto-reconnect.
 
 ### E5.3 SSE
 
-- [ ] **T5.3.1** Ядро: подключение, парсинг событий (id, event, data, retry), reconnect с `Last-Event-ID`.
+- [x] **T5.3.1** Ядро: подключение, парсинг событий (id, event, data, retry), reconnect с `Last-Event-ID`.
   - **Тесты:** парсер SSE по спецификации WHATWG.
-- [ ] **T5.3.2** UI: поток событий, фильтр по типу.
+- [x] **T5.3.2** UI: поток событий, фильтр по типу.
 
 ### E5.4 gRPC
 
-- [ ] **T5.4.1** Загрузка `.proto` (файлы, import paths), компиляция в дескрипторы (`protox`), server reflection.
-- [ ] **T5.4.2** Вызовы: unary, server streaming, client streaming, bidi; metadata, TLS, deadline; JSON ↔ protobuf (`prost-reflect`).
+- [x] **T5.4.1** Загрузка `.proto` (файлы, import paths), компиляция в дескрипторы (`protox`), server reflection.
+- [x] **T5.4.2** Вызовы: unary, server streaming, client streaming, bidi; metadata, TLS, deadline; JSON ↔ protobuf (`prost-reflect`).
   - **Тесты:** тестовый gRPC-сервер (`tonic`) со всеми типами вызовов.
-- [ ] **T5.4.3** UI: выбор сервиса и метода, редактор сообщения с автодополнением по схеме, поток сообщений для стримов.
+- [x] **T5.4.3** UI: выбор сервиса и метода, редактор сообщения с автодополнением по схеме, поток сообщений для стримов.
 
 ### E5.5 Общее
 
-- [ ] **T5.5.1** Поддержка новых типов в дереве (бейджи протоколов), вкладках, истории, импорте и экспорте (Insomnia и Postman: WS, GraphQL, gRPC — где есть в формате).
-- [ ] **T5.5.2** Решение по Socket.IO и MQTT (Q4) — ADR.
+- [x] **T5.5.1** Поддержка новых типов в дереве (бейджи протоколов), вкладках, истории, импорте и экспорте (Insomnia и Postman: WS, GraphQL, gRPC — где есть в формате).
+- [x] **T5.5.2** Решение по Socket.IO и MQTT (Q4) — ADR.
 - [ ] **T5.5.3** Релиз `v0.5.0`.
 
 ---

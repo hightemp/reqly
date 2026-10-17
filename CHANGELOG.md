@@ -5,6 +5,31 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- GraphQL requests: query editor with schema-aware completion and
+  validation, variables, operation selection, prettify, schema by
+  introspection or from a file (cached per request) and a docs explorer.
+  Subscriptions run over WebSocket (`graphql-transport-ws` and the legacy
+  `graphql-ws`).
+- WebSocket requests: connect with headers and auth, send text, JSON or
+  binary messages, saved messages, subprotocols and automatic reconnection.
+- Server-sent events: event streams on the HTTP engine, a WHATWG parser and
+  reconnection with `Last-Event-ID`.
+- gRPC requests: `.proto` files (compiled in-process, no `protoc`) or server
+  reflection, unary, server, client and bidirectional streaming, metadata,
+  TLS, deadlines and example messages.
+- A connection log for WebSocket, SSE, subscriptions and gRPC with filters,
+  message details and handshake headers; protocol badges in the tree and
+  tabs. See `docs/protocols.md`.
+- Insomnia WebSocket and gRPC requests import and export; GraphQL bodies from
+  Insomnia, Postman and Bruno import as GraphQL.
+
+### Fixed
+
+- Ctrl+Enter in the WebSocket composer no longer also toggles the
+  connection.
+
 ## [0.4.0] — 2026-10-17
 
 Stage 4: advanced authentication and network settings.

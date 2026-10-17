@@ -21,6 +21,7 @@
   import AuthPanel from '../request/panels/AuthPanel.svelte';
   import DocsPanel from '../request/panels/DocsPanel.svelte';
   import SettingsPanel from '../request/panels/SettingsPanel.svelte';
+  import { messageCompletions } from './messageCompletion';
 
   interface Props {
     services: Services;
@@ -51,6 +52,8 @@
       null,
   );
   const clientStreaming = $derived(method?.clientStreaming ?? false);
+  // Field names from the method's example message.
+  const completion = messageCompletions(() => method?.example ?? null);
   const hasSource = $derived(
     grpc.proto.reflection || grpc.proto.inline.length > 0 || grpc.proto.files.length > 0,
   );
@@ -254,6 +257,7 @@
             label={t('grpc.message')}
             value={grpc.message}
             language="json"
+            completions={[completion]}
             templates
             nodeId={id}
             onchange={(message) => edit((g) => ({ ...g, message }))}

@@ -7,7 +7,12 @@
 </script>
 
 <script lang="ts">
-  import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+  import {
+    autocompletion,
+    closeBrackets,
+    closeBracketsKeymap,
+    type CompletionSource,
+  } from '@codemirror/autocomplete';
   import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
   import { html } from '@codemirror/lang-html';
   import { javascript } from '@codemirror/lang-javascript';
@@ -46,6 +51,8 @@
     nodeId?: string | null;
     /** Extra extensions. */
     extensions?: Extension[];
+    /** Extra completion sources (kept alongside template completions). */
+    completions?: CompletionSource[];
     onchange?: (value: string) => void;
   }
 
@@ -60,6 +67,7 @@
     templates = false,
     nodeId = null,
     extensions = [],
+    completions = [],
     onchange,
   }: Props = $props();
 
@@ -126,9 +134,11 @@
           templateHost
             ? [
                 templateExtension(templateHost),
-                autocompletion({ override: [templateCompletions(templateHost)] }),
+                autocompletion({ override: [templateCompletions(templateHost), ...completions] }),
               ]
-            : autocompletion(),
+            : completions.length
+              ? autocompletion({ override: completions })
+              : autocompletion(),
           highlightActiveLine(),
           highlightSelectionMatches(),
           search({ top: true }),

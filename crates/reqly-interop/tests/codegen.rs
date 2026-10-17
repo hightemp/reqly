@@ -201,3 +201,29 @@ fn write_samples() {
         }
     }
 }
+
+#[test]
+fn graphql_bodies_are_sent_as_json() {
+    use reqly_core::model::{Body, BodyKind, GraphqlBody, HttpRequest};
+    let r = HttpRequest {
+        method: "POST".into(),
+        url: "https://api.test/graphql".into(),
+        body: Body {
+            kind: BodyKind::Graphql,
+            graphql: GraphqlBody {
+                query: "{ me { id } }".into(),
+                variables: "{\"a\":1}".into(),
+                operation_name: String::new(),
+            },
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let prepared = reqly_http::prepare::prepare(&r, &[]).unwrap();
+    let curl = reqly_http::curl::to_curl(&prepared);
+    assert!(
+        curl.contains(r#"{"query":"{ me { id } }","variables":{"a":1}}"#),
+        "{curl}"
+    );
+    assert!(curl.contains("application/json"), "{curl}");
+}
