@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package common;
+
+// Shared types, imported by test.proto (checks import paths).
+message Number {
+  int64 value = 1;
+}
+
+enum Mood {
+  MOOD_UNSPECIFIED = 0;
+  HAPPY = 1;
+  GRUMPY = 2;
+}

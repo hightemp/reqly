@@ -32,6 +32,8 @@ import type { GraphqlRequestInput } from "./GraphqlRequestInput";
 import type { GraphqlSchema } from "./GraphqlSchema";
 import type { GraphqlSchemaOutput } from "./GraphqlSchemaOutput";
 import type { GraphqlSchemaSetInput } from "./GraphqlSchemaSetInput";
+import type { GrpcDescribeInput } from "./GrpcDescribeInput";
+import type { GrpcServiceInfo } from "./GrpcServiceInfo";
 import type { HistoryWorkspaceInput } from "./HistoryWorkspaceInput";
 import type { IdInput } from "./IdInput";
 import type { IdsInput } from "./IdsInput";
@@ -160,12 +162,14 @@ export type Commands = {
   "graphql.schemaGet": { input: GraphqlRequestInput; output: GraphqlSchemaOutput };
   "graphql.schemaSet": { input: GraphqlSchemaSetInput; output: GraphqlSchema };
   "graphql.schemaClear": { input: GraphqlRequestInput; output: Empty };
+  "grpc.describe": { input: GrpcDescribeInput; output: Array<GrpcServiceInfo> };
   "stream.connect": { input: StreamConnectInput; output: StreamInfo };
   "stream.send": { input: StreamSendInput; output: StreamMessage };
   "stream.disconnect": { input: StreamIdInput; output: Empty };
   "stream.list": { input: Empty; output: Array<StreamInfo> };
   "stream.log": { input: StreamIdInput; output: Array<StreamMessage> };
   "stream.clearLog": { input: StreamIdInput; output: Empty };
+  "stream.end": { input: StreamIdInput; output: Empty };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

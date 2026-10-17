@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package reqly.test.v1;
+
+import "common/types.proto";
+import "google/protobuf/timestamp.proto";
+
+// Every kind of call, for the gRPC client tests.
+service TestService {
+  // Echoes the message; `fail_code` > 0 answers with that status instead.
+  rpc Echo(EchoRequest) returns (EchoReply);
+  // Streams 1..=to.
+  rpc Count(CountRequest) returns (stream common.Number);
+  // Adds the numbers.
+  rpc Sum(stream common.Number) returns (Total);
+  // Answers each message.
+  rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+}
+
+message EchoRequest {
+  string message = 1;
+  int32 fail_code = 2;
+  repeated string tags = 3;
+  common.Mood mood = 4;
+  Nested nested = 5;
+  map<string, int32> counts = 6;
+  google.protobuf.Timestamp at = 7;
+  oneof choice {
+    string text = 8;
+    int64 number = 9;
+  }
+
+  message Nested {
+    bool flag = 1;
+  }
+}
+
+message EchoReply {
+  string message = 1;
+  // Request metadata `x-echo`, if sent.
+  string metadata = 2;
+  EchoRequest request = 3;
+}
+
+message CountRequest {
+  int64 to = 1;
+}
+
+message Total {
+  int64 sum = 1;
+  int32 count = 2;
+}
+
+message ChatMessage {
+  string text = 1;
+}

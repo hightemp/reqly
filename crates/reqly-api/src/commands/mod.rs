@@ -1,6 +1,7 @@
 //! Built-in commands and the shared application context.
 
 pub mod graphql;
+pub mod grpc;
 pub mod http;
 pub mod interop;
 pub mod oauth2;
@@ -95,6 +96,7 @@ pub fn registry() -> Registry<AppContext> {
     interop::register(&mut r);
     oauth2::register(&mut r);
     graphql::register(&mut r);
+    grpc::register(&mut r);
     stream::register(&mut r);
     r.register::<SearchNodes>();
     r

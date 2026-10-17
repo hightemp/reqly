@@ -8,6 +8,7 @@
 mod auth;
 mod certs;
 mod graphql;
+pub mod grpc;
 mod oauth;
 mod routes;
 mod streams;

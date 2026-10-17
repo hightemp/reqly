@@ -31,7 +31,8 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<StreamDisconnect>()
         .register::<StreamList>()
         .register::<StreamLog>()
-        .register::<StreamClearLog>();
+        .register::<StreamClearLog>()
+        .register::<StreamEnd>();
 }
 
 /// Messages kept per connection (older ones are dropped).
@@ -46,6 +47,7 @@ pub enum StreamKind {
     WebSocket,
     Sse,
     GraphqlSubscription,
+    Grpc,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -126,6 +128,9 @@ pub struct Connection {
     stop_notify: Notify,
     ws: Mutex<Option<WsSender>>,
     gql: Mutex<Option<graphql_ws::Subscription>>,
+    /// Client side of a gRPC stream: messages to send and their type.
+    grpc_tx: Mutex<Option<tokio::sync::mpsc::UnboundedSender<prost_reflect::DynamicMessage>>>,
+    grpc_input: Mutex<Option<prost_reflect::MessageDescriptor>>,
     events: EventBus,
 }
 
@@ -244,6 +249,9 @@ impl Connection {
         }
         if let Some(sub) = self.gql.lock().ok().and_then(|mut g| g.take()) {
             sub.stop();
+        }
+        if let Ok(mut tx) = self.grpc_tx.lock() {
+            tx.take();
         }
     }
 }
@@ -420,6 +428,7 @@ command!(
             NodeData::Request(r) if r.event_stream => {
                 (StreamKind::Sse, Vec::new(), true, SSE_RETRY_MS)
             }
+            NodeData::Grpc(_) => (StreamKind::Grpc, Vec::new(), false, 0),
             _ => {
                 return Err(CoreError::new(
                     "stream.not_streaming",
@@ -444,6 +453,8 @@ command!(
             stop_notify: Notify::new(),
             ws: Mutex::new(None),
             gql: Mutex::new(None),
+            grpc_tx: Mutex::new(None),
+            grpc_input: Mutex::new(None),
             events: ctx.events.clone(),
         });
         ctx.streams.insert(conn.clone());
@@ -460,6 +471,7 @@ command!(
             }
             StreamKind::Sse => start_sse(ctx, conn.clone(), prepared, workspace_id).await,
             StreamKind::GraphqlSubscription => start_graphql(ctx, conn.clone(), prepared).await,
+            StreamKind::Grpc => start_grpc(ctx, conn.clone(), input.request_id).await,
         };
         if let Err(e) = result {
             conn.info_message("error", e.message.clone());
@@ -847,6 +859,9 @@ command!(
     |ctx, input| {
         let conn = ctx.streams.get(&input.connection_id)?;
         let request_id = conn.info().request_id;
+        if conn.info().kind == StreamKind::Grpc {
+            return send_grpc(ctx, &conn, request_id, &input.body).await;
+        }
         let sender = conn
             .ws
             .lock()
@@ -950,6 +965,190 @@ command!(
         Ok(Empty {})
     }
 );
+
+async fn start_grpc(ctx: &AppContext, conn: Arc<Connection>, request_id: Id) -> CoreResult<()> {
+    use reqly_protocols::grpc;
+    let call = super::grpc::prepare_call(ctx, request_id).await?;
+    let channel = grpc::connect(&call.target, call.channel_options.clone()).await?;
+    let pool = super::grpc::descriptor_pool(ctx, &call, Some(channel.clone())).await?;
+    if call.request.service.is_empty() || call.request.method.is_empty() {
+        return Err(CoreError::new(
+            "grpc.no_method",
+            "choose a service and a method",
+        ));
+    }
+    let method = grpc::find_method(&pool, &call.request.service, &call.request.method)?;
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    let client_streaming = method.is_client_streaming();
+    if let Ok(mut info) = conn.info.lock() {
+        info.url = format!(
+            "{}://{}:{}/{}/{}",
+            if call.target.tls { "grpcs" } else { "grpc" },
+            call.target.host,
+            call.target.port,
+            call.request.service,
+            call.request.method
+        );
+    }
+    if client_streaming {
+        // Messages come from stream.send; stream.end half-closes.
+        if let Ok(mut g) = conn.grpc_tx.lock() {
+            *g = Some(tx);
+        }
+        if let Ok(mut d) = conn.grpc_input.lock() {
+            *d = Some(method.input());
+        }
+    } else {
+        let message = grpc::from_json(&method.input(), &call.message)?;
+        conn.push(
+            Direction::Sent,
+            "data",
+            grpc::to_json(&message),
+            message_size(&message),
+            None,
+        );
+        let _ = tx.send(message);
+        drop(tx);
+    }
+    let stream = tokio_stream::wrappers::UnboundedReceiverStream::new(rx);
+    // The call runs in the background: for client streaming the server
+    // answers (even its headers) only after the client side ends.
+    let metadata = call.metadata.clone();
+    let deadline = call.deadline;
+    conn.info_message("open", format!("calling {}", method.full_name()));
+    conn.set_status(StreamStatus::Open);
+    tokio::spawn(async move {
+        let started = tokio::select! {
+            r = grpc::call(channel, &method, &metadata, stream, deadline) => Some(r),
+            _ = conn.stop_notify.notified() => None,
+        };
+        match started {
+            None => conn.info_message("close", "cancelled"),
+            Some(Err(status)) => grpc_status(&conn, &status),
+            Some(Ok(mut response)) => {
+                if let Ok(mut info) = conn.info.lock() {
+                    info.headers = response.headers.clone();
+                }
+                conn.events
+                    .publish(Event::new("stream.status", conn.info()));
+                loop {
+                    tokio::select! {
+                        message = response.messages.message() => match message {
+                            Ok(Some(m)) => {
+                                let size = message_size(&m);
+                                conn.push(Direction::Received, "data", grpc::to_json(&m), size, None);
+                            }
+                            Ok(None) => {
+                                let trailers = response.messages.trailers().await.ok().flatten();
+                                let pairs = trailers.as_ref().map(grpc::metadata_pairs).unwrap_or_default();
+                                let extra: Vec<String> = pairs
+                                    .iter()
+                                    .filter(|(k, _)| !k.starts_with("grpc-"))
+                                    .map(|(k, v)| format!("{k}: {v}"))
+                                    .collect();
+                                let mut text = "status OK (0)".to_string();
+                                if !extra.is_empty() {
+                                    text.push_str(&format!("; trailers: {}", extra.join(", ")));
+                                }
+                                conn.info_message("close", text);
+                                break;
+                            }
+                            Err(status) => {
+                                grpc_status(&conn, &status);
+                                break;
+                            }
+                        },
+                        _ = conn.stop_notify.notified() => {
+                            conn.info_message("close", "cancelled");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if let Ok(mut g) = conn.grpc_tx.lock() {
+            g.take();
+        }
+        conn.set_status(StreamStatus::Closed);
+    });
+    Ok(())
+}
+
+fn message_size(m: &prost_reflect::DynamicMessage) -> u64 {
+    prost::Message::encoded_len(m) as u64
+}
+
+fn grpc_status(conn: &Connection, status: &tonic::Status) {
+    let code = status.code();
+    conn.info_message(
+        "error",
+        format!(
+            "status {} ({}): {}",
+            reqly_protocols::grpc::code_name(code),
+            code as i32,
+            status.message()
+        ),
+    );
+}
+
+async fn send_grpc(
+    ctx: &AppContext,
+    conn: &Connection,
+    request_id: Id,
+    body: &str,
+) -> CoreResult<StreamMessage> {
+    let tx = conn
+        .grpc_tx
+        .lock()
+        .ok()
+        .and_then(|g| g.clone())
+        .ok_or_else(|| {
+            CoreError::new("stream.not_open", "this call does not take more messages")
+        })?;
+    let desc = conn
+        .grpc_input
+        .lock()
+        .ok()
+        .and_then(|d| d.clone())
+        .ok_or_else(|| {
+            CoreError::new("stream.not_open", "this call does not take more messages")
+        })?;
+    let body = super::http::render_in_request(ctx, request_id, body).await?;
+    let message = reqly_protocols::grpc::from_json(&desc, &body)?;
+    let size = message_size(&message);
+    let json = reqly_protocols::grpc::to_json(&message);
+    tx.send(message)
+        .map_err(|_| CoreError::new("stream.not_open", "the call has ended"))?;
+    conn.push(Direction::Sent, "data", json, size, None);
+    conn.log
+        .lock()
+        .ok()
+        .and_then(|l| l.back().cloned())
+        .ok_or_else(|| CoreError::internal("log"))
+}
+
+pub struct StreamEnd;
+
+impl Command<AppContext> for StreamEnd {
+    /// Ends the client side of a gRPC stream (the server then answers).
+    const NAME: &'static str = "stream.end";
+    type Input = StreamIdInput;
+    type Output = Empty;
+
+    async fn run(ctx: &AppContext, input: StreamIdInput) -> CoreResult<Empty> {
+        let conn = ctx.streams.get(&input.connection_id)?;
+        let had = conn
+            .grpc_tx
+            .lock()
+            .ok()
+            .and_then(|mut g| g.take())
+            .is_some();
+        if had {
+            conn.info_message("end", "sent all messages");
+        }
+        Ok(Empty {})
+    }
+}
 
 #[cfg(test)]
 mod tests {
