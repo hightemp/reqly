@@ -1,6 +1,6 @@
 <!-- Runtime variables set by scripts for this session (highest priority). -->
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { errorMessage } from '$lib/errors';
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
@@ -26,13 +26,14 @@
     void load();
   });
 
-  const off = services.transport.subscribe((e) => {
-    if (e.topic === 'variables.runtimeChanged') {
-      const p = e.payload as { collectionId?: string };
-      if (p.collectionId === collectionId) void load();
-    }
-  });
-  onDestroy(off);
+  onMount(() =>
+    services.transport.subscribe((e) => {
+      if (e.topic === 'variables.runtimeChanged') {
+        const p = e.payload as { collectionId?: string };
+        if (p.collectionId === collectionId) void load();
+      }
+    }),
+  );
 
   async function clear() {
     if (!collectionId) return;
