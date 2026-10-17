@@ -6,6 +6,7 @@ pub mod crypto;
 mod db;
 pub mod environments;
 pub mod history;
+pub mod oauth2;
 pub mod search;
 pub mod sessions;
 pub mod settings;

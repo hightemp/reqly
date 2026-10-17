@@ -41,27 +41,6 @@ expression: bundle.report
       "raw": null
     },
     {
-      "kind": "unsupported",
-      "code": "auth_unsupported",
-      "path": "Shop API / Signed call",
-      "message": "`awsv4` authentication is not supported yet; the request was imported without it",
-      "raw": {
-        "type": "awsv4",
-        "awsv4": [
-          {
-            "key": "accessKey",
-            "value": "AKIA",
-            "type": "string"
-          },
-          {
-            "key": "region",
-            "value": "eu-west-1",
-            "type": "string"
-          }
-        ]
-      }
-    },
-    {
       "kind": "converted",
       "code": "collection_auth",
       "path": "Shop API",

@@ -17,7 +17,7 @@ fn prepared(
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect(),
         body,
-        settings: Default::default(),
+        ..Default::default()
     }
 }
 

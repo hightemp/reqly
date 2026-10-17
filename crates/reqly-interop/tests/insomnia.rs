@@ -114,7 +114,31 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
     assert_eq!(bundle.cookies[0].expires, Some(1_893_456_000));
     assert!(bundle.cookies[1].include_subdomains);
 
-    // Report: digest + oauth2 auth, WebSocket + gRPC, scripts, GraphQL.
+    // Digest and OAuth 2.0 are imported as such.
+    let ImportedItem::Request { data: form, .. } = find(&c.items, "Search form") else {
+        panic!()
+    };
+    assert_eq!(
+        form.auth,
+        Auth::Digest {
+            username: "u".into(),
+            password: "p".into()
+        }
+    );
+    let ImportedItem::Request { data: graphql, .. } = find(&c.items, "GraphQL viewer") else {
+        panic!()
+    };
+    let Auth::OAuth2(oauth) = &graphql.auth else {
+        panic!("{:?}", graphql.auth)
+    };
+    assert_eq!(
+        oauth.grant,
+        reqly_core::model::OAuth2Grant::ClientCredentials
+    );
+    assert_eq!(oauth.token_url, "https://auth.example.com/token");
+    assert_eq!(oauth.client_secret, "xyz");
+
+    // Report: WebSocket + gRPC, scripts, GraphQL.
     let codes: Vec<_> = bundle
         .report
         .entries
@@ -122,16 +146,15 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
         .map(|e| (e.kind, e.code.as_str()))
         .collect();
     for expected in [
-        (ReportKind::Unsupported, "auth_unsupported"),
         (ReportKind::Unsupported, "protocol_unsupported"),
         (ReportKind::Unsupported, "script_kept"),
         (ReportKind::Converted, "graphql_as_json"),
     ] {
         assert!(codes.contains(&expected), "{expected:?} in {codes:?}");
     }
-    assert_eq!(
-        codes.iter().filter(|c| c.1 == "auth_unsupported").count(),
-        2
+    assert!(
+        !codes.iter().any(|c| c.1 == "auth_unsupported"),
+        "{codes:?}"
     );
     assert_eq!(
         codes
@@ -141,14 +164,6 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
         2
     );
     assert!(!codes.iter().any(|c| c.1 == "tag_unsupported"), "{codes:?}");
-    let digest = bundle
-        .report
-        .entries
-        .iter()
-        .find(|e| e.code == "auth_unsupported")
-        .unwrap();
-    assert_eq!(digest.path, "Example API / Search form");
-    assert!(digest.raw.is_some());
 }
 
 #[test]

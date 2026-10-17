@@ -93,7 +93,9 @@ fn full_collection() {
         matches!(&request(&c.items, "GraphQL search").auth, Auth::Basic { username, .. } if username == "admin")
     );
     assert_eq!(request(&c.items, "No auth").auth, Auth::None);
-    assert_eq!(request(&c.items, "Signed call").auth, Auth::None);
+    assert!(
+        matches!(&request(&c.items, "Signed call").auth, Auth::AwsSigV4 { access_key, region, .. } if access_key == "AKIA" && region == "eu-west-1")
+    );
 
     let codes: Vec<_> = bundle
         .report
@@ -102,11 +104,6 @@ fn full_collection() {
         .map(|e| (e.kind, e.code.as_str(), e.path.as_str()))
         .collect();
     for expected in [
-        (
-            ReportKind::Unsupported,
-            "auth_unsupported",
-            "Shop API / Signed call",
-        ),
         (ReportKind::Unsupported, "collection_scripts", "Shop API"),
         (ReportKind::Converted, "collection_auth", "Shop API"),
         (
@@ -152,6 +149,48 @@ fn third_party_fixtures() {
         &v20.collections[0].items[0],
         ImportedItem::Request { data, .. } if matches!(&data.auth, Auth::Basic { username, .. } if username == "basic-username")
     ));
+    let first_auth = |name: &str| {
+        let b = load(&format!("third-party/postman/{name}"));
+        fn walk(items: &[ImportedItem]) -> Option<Auth> {
+            items.iter().find_map(|i| match i {
+                ImportedItem::Request { data, .. }
+                    if !matches!(data.auth, Auth::Inherit | Auth::None) =>
+                {
+                    Some(data.auth.clone())
+                }
+                ImportedItem::Folder { children, .. } => walk(children),
+                _ => None,
+            })
+        }
+        assert!(
+            !b.report
+                .entries
+                .iter()
+                .any(|e| e.code == "auth_unsupported"),
+            "{name}"
+        );
+        walk(&b.collections[0].items).unwrap()
+    };
+    assert_eq!(
+        first_auth("digest-auth-v2_0-input.json"),
+        Auth::Digest {
+            username: "guest".into(),
+            password: "guest".into()
+        }
+    );
+    assert!(matches!(
+        first_auth("aws-signature-auth-v2_1-input.json"),
+        Auth::AwsSigV4 { region, service, .. } if region == "aws-region" && service == "aws-service-name"
+    ));
+    assert!(matches!(
+        first_auth("oauth1_0-auth-v2_1-input.json"),
+        Auth::OAuth1 { realm, location: reqly_core::model::OAuth1Location::Query, .. } if realm == "realm-value"
+    ));
+    let Auth::OAuth2(oauth) = first_auth("oauth2_0-auth-v2_1-input.json") else {
+        panic!()
+    };
+    assert_eq!(oauth.token_prefix, "test");
+    assert_eq!(oauth.audience, "test");
     let complex = load("third-party/postman/complex-v2_1-input.json");
     let first = request(&complex.collections[0].items, "{{base_url}}/api/users");
     assert_eq!(first.body.kind, BodyKind::Multipart);

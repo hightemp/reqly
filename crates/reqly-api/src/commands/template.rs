@@ -562,22 +562,41 @@ async fn render_rows(r: &Renderer<'_>, rows: &mut [KeyValue]) -> CoreResult<()> 
     Ok(())
 }
 
+/// Renders every string field of `auth` (all schemes, including OAuth and signing keys).
 async fn render_auth(r: &Renderer<'_>, auth: &mut Auth) -> CoreResult<()> {
-    match auth {
-        Auth::Basic { username, password } => {
-            render_str(r, username).await?;
-            render_str(r, password).await
-        }
-        Auth::Bearer { token, prefix } => {
-            render_str(r, token).await?;
-            render_str(r, prefix).await
-        }
-        Auth::ApiKey { key, value, .. } => {
-            render_str(r, key).await?;
-            render_str(r, value).await
-        }
-        Auth::Inherit | Auth::None => Ok(()),
+    if matches!(auth, Auth::Inherit | Auth::None) {
+        return Ok(());
     }
+    let mut value = serde_json::to_value(&*auth).map_err(|e| CoreError::internal(e.to_string()))?;
+    render_value(r, &mut value).await?;
+    *auth = serde_json::from_value(value).map_err(|e| CoreError::internal(e.to_string()))?;
+    Ok(())
+}
+
+fn render_value<'a>(
+    r: &'a Renderer<'_>,
+    value: &'a mut Value,
+) -> Pin<Box<dyn Future<Output = CoreResult<()>> + Send + 'a>> {
+    Box::pin(async move {
+        match value {
+            Value::String(s) => render_str(r, s).await?,
+            Value::Array(items) => {
+                for item in items {
+                    render_value(r, item).await?;
+                }
+            }
+            Value::Object(map) => {
+                for (key, item) in map.iter_mut() {
+                    // The scheme tag itself is not a template.
+                    if key != "type" {
+                        render_value(r, item).await?;
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    })
 }
 
 async fn render_settings(r: &Renderer<'_>, settings: &mut RequestSettings) -> CoreResult<()> {
@@ -651,13 +670,23 @@ fn rows_text(rows: &[KeyValue]) -> impl Iterator<Item = &str> {
         .flat_map(|r| [r.name.as_str(), r.value.as_str()])
 }
 
-fn auth_text(auth: &Auth) -> Vec<&str> {
-    match auth {
-        Auth::Basic { username, password } => vec![username, password],
-        Auth::Bearer { token, prefix } => vec![token, prefix],
-        Auth::ApiKey { key, value, .. } => vec![key, value],
-        Auth::Inherit | Auth::None => vec![],
+/// Every string field of an auth scheme.
+fn auth_text(auth: &Auth) -> Vec<String> {
+    fn walk(v: &Value, key: &str, out: &mut Vec<String>) {
+        match v {
+            Value::String(s) if key != "type" => out.push(s.clone()),
+            Value::Array(items) => items.iter().for_each(|i| walk(i, "", out)),
+            Value::Object(map) => map.iter().for_each(|(k, i)| walk(i, k, out)),
+            _ => {}
+        }
     }
+    let mut out = Vec::new();
+    walk(
+        &serde_json::to_value(auth).unwrap_or_default(),
+        "",
+        &mut out,
+    );
+    out
 }
 
 // ----- commands ------------------------------------------------------------------
@@ -1011,6 +1040,7 @@ pub async fn prompts_for(ctx: &AppContext, request_id: Id) -> CoreResult<Vec<Pro
     let node = tree.get_node(request_id).await?;
     let scope = Scope::load(ctx, node.collection_id, Some(request_id)).await?;
     let mut texts: Vec<&str> = Vec::new();
+    let mut auth_texts: Vec<String> = Vec::new();
     if let NodeData::Request(r) = &node.data {
         texts.push(&r.url);
         texts.extend(rows_text(&r.params));
@@ -1018,14 +1048,15 @@ pub async fn prompts_for(ctx: &AppContext, request_id: Id) -> CoreResult<Vec<Pro
         texts.extend(rows_text(&r.headers));
         texts.push(&r.body.text);
         texts.extend(rows_text(&r.body.fields));
-        texts.extend(auth_text(&r.auth));
+        auth_texts.extend(auth_text(&r.auth));
     }
     for n in &scope.ancestors {
         if let NodeData::Folder(f) = &n.data {
             texts.extend(rows_text(&f.headers));
-            texts.extend(auth_text(&f.auth));
+            auth_texts.extend(auth_text(&f.auth));
         }
     }
+    texts.extend(auth_texts.iter().map(String::as_str));
     let var_texts: Vec<String> = scope
         .variables
         .iter()

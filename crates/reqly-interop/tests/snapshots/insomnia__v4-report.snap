@@ -20,31 +20,6 @@ expression: bundle.report
       "raw": null
     },
     {
-      "kind": "unsupported",
-      "code": "auth_unsupported",
-      "path": "Example API / Search form",
-      "message": "`digest` authentication is not supported yet; the request was imported without it",
-      "raw": {
-        "type": "digest",
-        "disabled": false,
-        "username": "u",
-        "password": "p"
-      }
-    },
-    {
-      "kind": "unsupported",
-      "code": "auth_unsupported",
-      "path": "Example API / GraphQL viewer",
-      "message": "`oauth2` authentication is not supported yet; the request was imported without it",
-      "raw": {
-        "type": "oauth2",
-        "grantType": "client_credentials",
-        "accessTokenUrl": "https://auth.example.com/token",
-        "clientId": "abc",
-        "clientSecret": "xyz"
-      }
-    },
-    {
       "kind": "converted",
       "code": "graphql_as_json",
       "path": "Example API / GraphQL viewer",

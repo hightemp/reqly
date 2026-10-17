@@ -158,6 +158,9 @@ fn auth(auth: &Auth, ids: &Ids) -> Value {
             "type": "apikey", "key": key, "value": template(value, ids), "disabled": false,
             "addTo": match location { ApiKeyLocation::Header => "header", ApiKeyLocation::Query => "queryParams" }
         }),
+        // Schemes Insomnia lacks (EdgeGrid, JWT) are left out.
+        other => crate::auth_map::to_insomnia(other, &|s| template(s, ids))
+            .unwrap_or_else(|| json!({ "type": "none" })),
     }
 }
 

@@ -229,6 +229,11 @@ impl Importer {
                 },
             },
             other => {
+                if let Some(auth) =
+                    crate::auth_map::from_bruno(other, &crate::auth_map::Fields { get: &v })
+                {
+                    return auth;
+                }
                 let raw: Map<String, Value> = dict(blocks, &format!("auth:{other}"))
                     .iter()
                     .map(|p| (p.key.clone(), Value::String(p.value.clone())))

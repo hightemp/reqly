@@ -200,6 +200,20 @@ impl Importer {
                 },
             },
             other => {
+                // OAuth 2.0 audience/resource are `{id: value}` maps in Postman.
+                let get = |k: &str| match p.get(k) {
+                    Some(Value::Object(map)) => map
+                        .values()
+                        .map(|v| value_text(Some(v)))
+                        .collect::<Vec<_>>()
+                        .join(" "),
+                    v => vars_to_reqly(&value_text(v)),
+                };
+                if let Some(auth) =
+                    crate::auth_map::from_postman(other, &crate::auth_map::Fields { get: &get })
+                {
+                    return auth;
+                }
                 self.report.push_raw(
                     ReportKind::Unsupported,
                     "auth_unsupported",
@@ -711,6 +725,14 @@ fn auth_out(auth: &Auth) -> Option<Value> {
             "type": "apikey",
             "apikey": [param("key", key), param("value", value), param("in", match location { ApiKeyLocation::Header => "header", ApiKeyLocation::Query => "query" })]
         }),
+        other => {
+            let (ty, params) = crate::auth_map::to_postman(other, &vars_to_postman)?;
+            let params: Vec<Value> = params
+                .into_iter()
+                .map(|(k, v)| json!({ "key": k, "value": v, "type": if v.is_boolean() { "boolean" } else { "string" } }))
+                .collect();
+            json!({ "type": ty, ty: params })
+        }
     })
 }
 

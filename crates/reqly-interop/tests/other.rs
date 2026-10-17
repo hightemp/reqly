@@ -178,11 +178,9 @@ fn openapi_server_variables_and_security() {
 
     let oauth = load("third-party/openapi3/oauth2-input.yaml");
     assert!(
-        oauth
-            .report
-            .entries
+        requests(&oauth.collections[0].items)
             .iter()
-            .any(|e| e.code == "auth_unsupported")
+            .any(|r| matches!(&r.auth, reqly_core::model::Auth::OAuth2(c) if !c.token_url.is_empty() || !c.auth_url.is_empty()))
     );
 }
 

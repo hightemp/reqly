@@ -42,6 +42,14 @@ import type { Node } from "./Node";
 import type { NodeCreateInput } from "./NodeCreateInput";
 import type { NodeSummary } from "./NodeSummary";
 import type { NodeUpdateInput } from "./NodeUpdateInput";
+import type { OAuth2AuthorizeInput } from "./OAuth2AuthorizeInput";
+import type { OAuth2AuthorizeOutput } from "./OAuth2AuthorizeOutput";
+import type { OAuth2CompleteInput } from "./OAuth2CompleteInput";
+import type { OAuth2DeviceOutput } from "./OAuth2DeviceOutput";
+import type { OAuth2DevicePollInput } from "./OAuth2DevicePollInput";
+import type { OAuth2DevicePollOutput } from "./OAuth2DevicePollOutput";
+import type { OAuth2NodeInput } from "./OAuth2NodeInput";
+import type { OAuth2TokenInfo } from "./OAuth2TokenInfo";
 import type { PromptInfo } from "./PromptInfo";
 import type { RenameInput } from "./RenameInput";
 import type { RequestIdInput } from "./RequestIdInput";
@@ -132,6 +140,13 @@ export type Commands = {
   "import.fromUrl": { input: ImportFromUrlInput; output: ImportFromUrlOutput };
   "import.apply": { input: ImportApplyInput; output: ImportApplyOutput };
   "export.run": { input: ExportRunInput; output: ExportRunOutput };
+  "oauth2.status": { input: OAuth2NodeInput; output: OAuth2TokenInfo };
+  "oauth2.fetch": { input: OAuth2NodeInput; output: OAuth2TokenInfo };
+  "oauth2.clear": { input: OAuth2NodeInput; output: Empty };
+  "oauth2.authorize": { input: OAuth2AuthorizeInput; output: OAuth2AuthorizeOutput };
+  "oauth2.complete": { input: OAuth2CompleteInput; output: OAuth2TokenInfo };
+  "oauth2.deviceStart": { input: OAuth2NodeInput; output: OAuth2DeviceOutput };
+  "oauth2.devicePoll": { input: OAuth2DevicePollInput; output: OAuth2DevicePollOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

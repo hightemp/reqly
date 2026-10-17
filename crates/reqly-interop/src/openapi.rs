@@ -293,6 +293,19 @@ impl<'a> Spec<'a> {
                         location,
                     };
                 }
+                ("http", "digest") => {
+                    self.variables.entry("username").or_insert(json!(""));
+                    self.variables.entry("password").or_insert(json!(""));
+                    return Auth::Digest {
+                        username: "{{ username }}".into(),
+                        password: "{{ password }}".into(),
+                    };
+                }
+                ("oauth2", _) => {
+                    if let Some(auth) = self.oauth2(&scheme, req.get(name)) {
+                        return auth;
+                    }
+                }
                 _ => {}
             }
             self.report.push_raw(
@@ -304,6 +317,55 @@ impl<'a> Spec<'a> {
             );
         }
         Auth::None
+    }
+
+    /// The first OAuth 2.0 flow of a scheme (OpenAPI 3 `flows`, Swagger 2 `flow`).
+    fn oauth2(&mut self, scheme: &Value, scopes: Option<&Value>) -> Option<Auth> {
+        use reqly_core::model::{OAuth2Config, OAuth2Grant};
+        let flows: Vec<(OAuth2Grant, Value)> =
+            if let Some(Value::Object(flows)) = scheme.get("flows") {
+                [
+                    ("authorizationCode", OAuth2Grant::AuthorizationCode),
+                    ("clientCredentials", OAuth2Grant::ClientCredentials),
+                    ("password", OAuth2Grant::Password),
+                    ("implicit", OAuth2Grant::Implicit),
+                ]
+                .into_iter()
+                .filter_map(|(k, g)| flows.get(k).map(|f| (g, f.clone())))
+                .collect()
+            } else {
+                let grant = match s(scheme, "flow") {
+                    "accessCode" => OAuth2Grant::AuthorizationCode,
+                    "application" => OAuth2Grant::ClientCredentials,
+                    "password" => OAuth2Grant::Password,
+                    "implicit" => OAuth2Grant::Implicit,
+                    _ => return None,
+                };
+                vec![(grant, scheme.clone())]
+            };
+        let (grant, flow) = flows.into_iter().next()?;
+        let scope = scopes
+            .and_then(Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(Value::as_str)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .unwrap_or_default();
+        self.variables.entry("client_id").or_insert(json!(""));
+        self.variables.entry("client_secret").or_insert(json!(""));
+        Some(Auth::OAuth2(OAuth2Config {
+            grant,
+            auth_url: s(&flow, "authorizationUrl").into(),
+            token_url: s(&flow, "tokenUrl").into(),
+            client_id: "{{ client_id }}".into(),
+            client_secret: "{{ client_secret }}".into(),
+            scope,
+            pkce: grant == OAuth2Grant::AuthorizationCode,
+            auto_refresh: true,
+            ..OAuth2Config::default()
+        }))
     }
 
     fn body_v3(&mut self, path: &str, op: &Value, headers: &mut Vec<KeyValue>) -> Body {

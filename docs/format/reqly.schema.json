@@ -97,15 +97,32 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["inherit", "none", "basic", "bearer", "apiKey"] },
+        "type": {
+          "enum": [
+            "inherit", "none", "basic", "bearer", "apiKey", "digest", "ntlm", "oauth1", "oauth2",
+            "awsSigV4", "hawk", "asap", "netrc", "edgeGrid", "jwt"
+          ]
+        },
         "username": { "type": "string" },
         "password": { "type": "string" },
         "token": { "type": "string" },
         "prefix": { "type": "string" },
         "key": { "type": "string" },
         "value": { "type": "string" },
-        "location": { "enum": ["header", "query"] }
-      }
+        "location": { "enum": ["header", "query", "body"] },
+        "domain": { "type": "string", "description": "ntlm" },
+        "signatureMethod": {
+          "enum": ["HMAC-SHA1", "HMAC-SHA256", "HMAC-SHA512", "RSA-SHA1", "RSA-SHA256", "PLAINTEXT"],
+          "description": "oauth1"
+        },
+        "grant": {
+          "enum": ["authorizationCode", "implicit", "password", "clientCredentials", "deviceCode"],
+          "description": "oauth2"
+        },
+        "clientAuth": { "enum": ["basic", "body"], "description": "oauth2" },
+        "algorithm": { "type": "string", "description": "hawk (sha256, sha1) or jwt (HS256, RS256, ES256…)" }
+      },
+      "additionalProperties": { "type": ["string", "boolean", "integer"] }
     },
     "settings": {
       "type": "object",

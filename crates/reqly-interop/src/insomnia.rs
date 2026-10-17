@@ -41,6 +41,16 @@ fn s<'a>(v: &'a Value, key: &str) -> &'a str {
     v.get(key).and_then(Value::as_str).unwrap_or("")
 }
 
+/// A JSON field as text (booleans and numbers as written).
+fn field_text(v: &Value, key: &str) -> String {
+    match v.get(key) {
+        Some(Value::String(s)) => s.clone(),
+        Some(Value::Bool(b)) => b.to_string(),
+        Some(Value::Number(n)) => n.to_string(),
+        _ => String::new(),
+    }
+}
+
 fn b(v: &Value, key: &str) -> Option<bool> {
     v.get(key).and_then(Value::as_bool)
 }
@@ -387,6 +397,12 @@ impl<'a> Converter<'a> {
                 },
             },
             other => {
+                let get = |k: &str| field_text(raw, k);
+                if let Some(auth) =
+                    crate::auth_map::from_insomnia(other, &crate::auth_map::Fields { get: &get })
+                {
+                    return auth;
+                }
                 self.report.push_raw(
                     ReportKind::Unsupported,
                     "auth_unsupported",

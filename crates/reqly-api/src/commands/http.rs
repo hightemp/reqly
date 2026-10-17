@@ -310,25 +310,45 @@ pub(crate) async fn prepare_stored_with(
     if render {
         template::render_request(&renderer, &mut http).await?;
     }
-    let mut folders: Vec<FolderData> = Vec::new();
+    let mut rendered_folders: Vec<(Id, FolderData)> = Vec::new();
     for n in &scope.ancestors {
         if let NodeData::Folder(f) = &n.data {
             let mut f = f.clone();
             if render {
                 template::render_folder(&renderer, &mut f).await?;
             }
-            folders.push(f);
+            rendered_folders.push((n.meta.id, f));
         }
     }
-    let folders: Vec<&FolderData> = folders.iter().collect();
+    let folders: Vec<&FolderData> = rendered_folders.iter().map(|(_, f)| f).collect();
     let collection = tree.get_collection(node.collection_id).await?;
     let global: RequestSettings = setting(ctx, HTTP_DEFAULTS_KEY).await?;
     let base = collection.settings.merge(&global);
 
-    Ok((
-        prepare_with_base(&http, &folders, &base)?,
-        collection.workspace_id,
-    ))
+    let mut prepared = prepare_with_base(&http, &folders, &base)?;
+    if render {
+        let mut sign =
+            reqly_http::auth::SignContext::system(ctx.platform != super::Platform::Server);
+        // OAuth 2.0 tokens belong to the node that defines the auth.
+        let owner = match &http.auth {
+            reqly_core::model::Auth::OAuth2(config) => Some((request_id, config.clone())),
+            reqly_core::model::Auth::Inherit => rendered_folders
+                .iter()
+                .rev()
+                .find_map(|(id, f)| match &f.auth {
+                    reqly_core::model::Auth::Inherit => None,
+                    reqly_core::model::Auth::OAuth2(config) => Some(Some((*id, config.clone()))),
+                    _ => Some(None),
+                })
+                .flatten(),
+            _ => None,
+        };
+        if let Some((owner, config)) = owner {
+            sign.oauth2_token = Some(super::oauth2::access_token(ctx, owner, &config).await?);
+        }
+        reqly_http::auth::finalize(&mut prepared, &sign)?;
+    }
+    Ok((prepared, collection.workspace_id))
 }
 
 pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<ResponseRecord> {

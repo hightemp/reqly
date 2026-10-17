@@ -5,6 +5,7 @@
 //! [`ImportReport`] listing everything that was converted approximately or
 //! could not be imported. Nothing is dropped silently.
 
+mod auth_map;
 pub mod bruno;
 pub mod codegen;
 pub mod curl;
