@@ -9,6 +9,7 @@ pub mod detect;
 pub mod insomnia;
 pub mod insomnia_export;
 pub mod model;
+pub mod postman;
 pub mod report;
 pub mod reqly;
 pub mod text;
@@ -44,6 +45,7 @@ pub enum ExportFormat {
     ReqlyYaml,
     Insomnia4,
     Insomnia5,
+    Postman,
 }
 
 impl ExportFormat {
@@ -53,35 +55,89 @@ impl ExportFormat {
             Self::ReqlyYaml => "reqly.yaml",
             Self::Insomnia4 => "insomnia.json",
             Self::Insomnia5 => "insomnia.yaml",
+            Self::Postman => "postman_collection.json",
         }
     }
 
     pub fn mime(self) -> &'static str {
         match self {
-            Self::ReqlyJson | Self::Insomnia4 => "application/json",
+            Self::ReqlyJson | Self::Insomnia4 | Self::Postman => "application/json",
             Self::ReqlyYaml | Self::Insomnia5 => "application/yaml",
         }
     }
 }
 
-/// Writes `data` in `format`. `exported_at` is Unix milliseconds.
+/// One file of an export.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, ts_rs::TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ExportFile {
+    pub name: String,
+    pub mime: String,
+    pub content: String,
+}
+
+/// A file-name-safe version of `name` (lowercase, dashes).
+pub fn file_stem(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect();
+    let mut out = String::new();
+    for c in cleaned.chars() {
+        if c == '-' && out.ends_with('-') {
+            continue;
+        }
+        out.push(c);
+    }
+    let trimmed = out.trim_matches('-');
+    if trimmed.is_empty() {
+        "export".into()
+    } else {
+        trimmed.to_lowercase()
+    }
+}
+
+/// Writes `data` in `format`; `stem` names the files. `exported_at` is Unix milliseconds.
 pub fn export(
     data: &ExportData,
     format: ExportFormat,
     exported_at: i64,
     source: &str,
-) -> CoreResult<String> {
+    stem: &str,
+) -> CoreResult<Vec<ExportFile>> {
     let options = |syntax| reqly::ExportOptions {
         syntax,
         exported_at: Some(exported_at),
         source: source.to_string(),
     };
-    match format {
-        ExportFormat::ReqlyJson => reqly::export(data, &options(reqly::Syntax::Json)),
-        ExportFormat::ReqlyYaml => reqly::export(data, &options(reqly::Syntax::Yaml)),
-        ExportFormat::Insomnia4 => insomnia_export::export_v4(data, exported_at),
-        ExportFormat::Insomnia5 => insomnia_export::export_v5(data),
-    }
+    let one = |content: String| {
+        vec![ExportFile {
+            name: format!("{}.{}", file_stem(stem), format.extension()),
+            mime: format.mime().into(),
+            content,
+        }]
+    };
+    Ok(match format {
+        ExportFormat::ReqlyJson => one(reqly::export(data, &options(reqly::Syntax::Json))?),
+        ExportFormat::ReqlyYaml => one(reqly::export(data, &options(reqly::Syntax::Yaml))?),
+        ExportFormat::Insomnia4 => one(insomnia_export::export_v4(data, exported_at)?),
+        ExportFormat::Insomnia5 => one(insomnia_export::export_v5(data)?),
+        ExportFormat::Postman => postman::export(data)?
+            .into_iter()
+            .map(|(suffix, content)| ExportFile {
+                name: format!("{}.{suffix}", file_stem(stem)),
+                mime: "application/json".into(),
+                content,
+            })
+            .collect(),
+    })
 }
 
 pub(crate) fn invalid(format: Format, message: impl Into<String>) -> CoreError {
@@ -103,6 +159,20 @@ pub fn import(sources: &[Source], format: Option<Format>) -> CoreResult<ImportBu
     let mut bundle = match format {
         Format::Reqly => reqly::import(&first.content)?,
         Format::Insomnia => insomnia::import(&first.content)?,
+        Format::Postman => {
+            // Several Postman files (collection + environments) can be imported together.
+            let mut bundle = ImportBundle {
+                format,
+                ..ImportBundle::default()
+            };
+            for source in sources {
+                let part = postman::import(&source.content)?;
+                bundle.collections.extend(part.collections);
+                bundle.environments.extend(part.environments);
+                bundle.report.entries.extend(part.report.entries);
+            }
+            bundle
+        }
     };
     bundle.format = format;
     bundle.report.format = format;

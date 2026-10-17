@@ -109,12 +109,16 @@ impl Fx {
         (login, me)
     }
 
+    /// The single exported file as `{ fileName, content }`.
     async fn export(&self, scope: Value, options: Value) -> Value {
-        self.call(
-            "export.run",
-            json!({ "scope": scope, "format": "reqlyJson", "options": options }),
-        )
-        .await
+        let out = self
+            .call(
+                "export.run",
+                json!({ "scope": scope, "format": "reqlyJson", "options": options }),
+            )
+            .await;
+        assert_eq!(out["files"].as_array().unwrap().len(), 1);
+        json!({ "fileName": out["files"][0]["name"], "content": out["files"][0]["content"] })
     }
 
     async fn import(&self, content: &str, target: Value) -> Value {
@@ -368,4 +372,29 @@ async fn import_from_url() {
         .await;
     assert_eq!(out["name"], "echo");
     assert!(out["content"].as_str().unwrap().contains("\"method\""));
+}
+
+#[tokio::test]
+async fn postman_export_has_environment_files() {
+    let fx = Fx::new().await;
+    fx.sample().await;
+    let out = fx
+        .call(
+            "export.run",
+            json!({ "scope": { "kind": "collection", "collectionId": fx.collection }, "format": "postman" }),
+        )
+        .await;
+    let names: Vec<_> = out["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| f["name"].as_str().unwrap().to_string())
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "my-collection.postman_collection.json",
+            "my-collection.prod.postman_environment.json"
+        ]
+    );
 }

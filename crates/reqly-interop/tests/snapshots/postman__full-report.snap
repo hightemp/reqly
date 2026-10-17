@@ -1,0 +1,89 @@
+---
+source: crates/reqly-interop/tests/postman.rs
+expression: bundle.report
+---
+{
+  "format": "postman",
+  "entries": [
+    {
+      "kind": "info",
+      "code": "variable_disabled",
+      "path": "Shop API",
+      "message": "disabled variable `unused` was not imported",
+      "raw": null
+    },
+    {
+      "kind": "info",
+      "code": "examples_skipped",
+      "path": "Shop API / Products / List products",
+      "message": "1 saved example response(s) were not imported",
+      "raw": null
+    },
+    {
+      "kind": "unsupported",
+      "code": "script_kept",
+      "path": "Shop API / Products / List products",
+      "message": "Postman scripts were kept but are not executed (scripting arrives in stage 6)",
+      "raw": null
+    },
+    {
+      "kind": "unsupported",
+      "code": "script_kept",
+      "path": "Shop API / Create order",
+      "message": "Postman scripts were kept but are not executed (scripting arrives in stage 6)",
+      "raw": null
+    },
+    {
+      "kind": "converted",
+      "code": "graphql_as_json",
+      "path": "Shop API / GraphQL search",
+      "message": "GraphQL body was imported as JSON (GraphQL requests arrive in stage 5)",
+      "raw": null
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "Shop API / Signed call",
+      "message": "`awsv4` authentication is not supported yet; the request was imported without it",
+      "raw": {
+        "type": "awsv4",
+        "awsv4": [
+          {
+            "key": "accessKey",
+            "value": "AKIA",
+            "type": "string"
+          },
+          {
+            "key": "region",
+            "value": "eu-west-1",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "converted",
+      "code": "collection_auth",
+      "path": "Shop API",
+      "message": "collection authentication was applied to the top-level folders and requests",
+      "raw": null
+    },
+    {
+      "kind": "unsupported",
+      "code": "collection_scripts",
+      "path": "Shop API",
+      "message": "collection-level scripts are not supported; they are listed here",
+      "raw": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "console.log('collection');"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

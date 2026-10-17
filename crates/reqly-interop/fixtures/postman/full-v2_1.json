@@ -1,0 +1,151 @@
+{
+  "info": {
+    "_postman_id": "6f1c1c1e-1b9e-4b5e-9c55-9d6f0e3a4b21",
+    "name": "Shop API",
+    "description": "Orders and **products**.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "1234567"
+  },
+  "item": [
+    {
+      "name": "Products",
+      "description": "Catalog",
+      "item": [
+        {
+          "name": "List products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test(\"ok\", () => pm.response.to.have.status(200));"],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": { "followRedirects": false, "disableUrlEncoding": true },
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "X-Trace", "value": "{{$guid}}", "type": "text", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{api.host}}/v1/products?limit={{page size}}&sort=price",
+              "host": ["{{api.host}}"],
+              "path": ["v1", "products"],
+              "query": [
+                { "key": "limit", "value": "{{page size}}" },
+                { "key": "sort", "value": "price" },
+                { "key": "debug", "value": "1", "disabled": true }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Example OK",
+              "originalRequest": { "method": "GET", "header": [], "url": "{{api.host}}/v1/products" },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "[]"
+            }
+          ]
+        },
+        {
+          "name": "Get product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api.host}}/v1/products/:productId",
+              "host": ["{{api.host}}"],
+              "path": ["v1", "products", ":productId"],
+              "variable": [{ "key": "productId", "value": "42", "description": "Product id" }]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": { "type": "apikey", "apikey": [{ "key": "in", "value": "query", "type": "string" }, { "key": "key", "value": "api_key", "type": "string" }, { "key": "value", "value": "{{key}}", "type": "string" }] }
+    },
+    {
+      "name": "Create order",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "exec": ["pm.variables.set('ts', Date.now());", ""], "type": "text/javascript" }
+        }
+      ],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"product\": 42,\n  \"email\": \"{{$randomEmail}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{api.host}}/v1/orders",
+        "description": { "content": "Creates an order.", "type": "text/markdown" }
+      },
+      "response": []
+    },
+    {
+      "name": "GraphQL search",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "graphql",
+          "graphql": { "query": "query { search(q: \"x\") { id } }", "variables": "{\"a\": 1}" }
+        },
+        "url": { "raw": "https://shop.example.com/graphql", "protocol": "https", "host": ["shop", "example", "com"], "path": ["graphql"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Upload image",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": { "mode": "file", "file": { "src": "/tmp/image.png" } },
+        "url": { "raw": "https://shop.example.com/images/1", "protocol": "https", "host": ["shop", "example", "com"], "path": ["images", "1"] }
+      },
+      "response": []
+    },
+    {
+      "name": "Signed call",
+      "request": {
+        "auth": { "type": "awsv4", "awsv4": [{ "key": "accessKey", "value": "AKIA", "type": "string" }, { "key": "region", "value": "eu-west-1", "type": "string" }] },
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "https://s3.example.com/bucket", "protocol": "https", "host": ["s3", "example", "com"], "path": ["bucket"] }
+      },
+      "response": []
+    },
+    {
+      "name": "No auth",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "DELETE",
+        "header": [],
+        "url": "https://shop.example.com/cache"
+      },
+      "response": []
+    }
+  ],
+  "auth": { "type": "basic", "basic": [{ "key": "password", "value": "{{password}}", "type": "string" }, { "key": "username", "value": "admin", "type": "string" }] },
+  "event": [
+    { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["console.log('collection');"] } },
+    { "listen": "test", "script": { "type": "text/javascript", "exec": [""] } }
+  ],
+  "variable": [
+    { "key": "api.host", "value": "https://shop.example.com", "type": "string" },
+    { "key": "page size", "value": "20", "type": "string" },
+    { "key": "token", "value": "t0ken", "type": "secret" },
+    { "key": "unused", "value": "x", "type": "string", "disabled": true }
+  ]
+}

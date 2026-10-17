@@ -259,7 +259,10 @@ fn round_trip_through_insomnia_formats() {
     }
     lossy(&mut expected[0].items);
     for format in [ExportFormat::Insomnia4, ExportFormat::Insomnia5] {
-        let text = export(&data, format, 1_700_000_000_000, "test").unwrap();
+        let text = export(&data, format, 1_700_000_000_000, "test", "x")
+            .unwrap()
+            .remove(0)
+            .content;
         let sources = [Source::new("x", text.clone())];
         assert_eq!(detect(&sources), Some(Format::Insomnia), "{format:?}");
         let bundle = import(&sources, None).unwrap();
@@ -295,7 +298,7 @@ fn round_trip_through_insomnia_formats() {
 fn v5_needs_a_single_collection() {
     let mut data = common::sample();
     data.collections.push(data.collections[0].clone());
-    let err =
-        reqly_interop::export(&data, reqly_interop::ExportFormat::Insomnia5, 0, "t").unwrap_err();
+    let err = reqly_interop::export(&data, reqly_interop::ExportFormat::Insomnia5, 0, "t", "x")
+        .unwrap_err();
     assert_eq!(err.code, "export.single_collection");
 }

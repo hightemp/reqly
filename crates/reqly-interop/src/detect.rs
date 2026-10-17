@@ -13,6 +13,7 @@ pub enum Format {
     #[default]
     Reqly,
     Insomnia,
+    Postman,
 }
 
 impl Format {
@@ -20,6 +21,7 @@ impl Format {
         match self {
             Self::Reqly => "reqly",
             Self::Insomnia => "insomnia",
+            Self::Postman => "postman",
         }
     }
 
@@ -27,6 +29,7 @@ impl Format {
         match self {
             Self::Reqly => "Reqly",
             Self::Insomnia => "Insomnia",
+            Self::Postman => "Postman",
         }
     }
 }
@@ -51,6 +54,9 @@ pub fn detect(sources: &[Source]) -> Option<Format> {
     }
     if crate::insomnia::is_v4(&value) || crate::insomnia::is_v5(&value) {
         return Some(Format::Insomnia);
+    }
+    if crate::postman::is_collection(&value) || crate::postman::is_environment(&value) {
+        return Some(Format::Postman);
     }
     None
 }

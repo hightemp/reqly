@@ -7,7 +7,7 @@ use base64::engine::general_purpose::STANDARD;
 use reqly_core::model::{EnvironmentKind, Node, NodeData, NodeKind, ResponseRecord};
 use reqly_core::{CoreError, CoreResult, Id};
 use reqly_interop::{
-    ExportData, ExportFormat, ExportedResponse, Format, ImportBundle, ImportReport,
+    ExportData, ExportFile, ExportFormat, ExportedResponse, Format, ImportBundle, ImportReport,
     ImportedCollection, ImportedCookie, ImportedEnvironment, ImportedItem, Source,
 };
 use reqly_storage::cookies::{Cookie, CookieRepo};
@@ -666,9 +666,8 @@ pub struct ExportRunInput {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct ExportRunOutput {
-    pub file_name: String,
-    pub mime: String,
-    pub content: String,
+    /// Usually one file; Postman exports add one file per environment.
+    pub files: Vec<ExportFile>,
 }
 
 fn build_items(
@@ -879,25 +878,6 @@ pub async fn export_data(
     Ok(data)
 }
 
-fn file_stem(name: &str) -> String {
-    let cleaned: String = name
-        .chars()
-        .map(|c| {
-            if c.is_alphanumeric() || c == '-' || c == '_' {
-                c
-            } else {
-                '-'
-            }
-        })
-        .collect();
-    let trimmed = cleaned.trim_matches('-');
-    if trimmed.is_empty() {
-        "export".into()
-    } else {
-        trimmed.to_lowercase()
-    }
-}
-
 command!(
     ExportRun,
     "export.run",
@@ -915,11 +895,7 @@ command!(
                 .unwrap_or_default(),
         };
         let source = format!("reqly {}", env!("CARGO_PKG_VERSION"));
-        let content = reqly_interop::export(&data, input.format, ctx.clock.now().0, &source)?;
-        Ok(ExportRunOutput {
-            file_name: format!("{}.{}", file_stem(&stem), input.format.extension()),
-            mime: input.format.mime().into(),
-            content,
-        })
+        let files = reqly_interop::export(&data, input.format, ctx.clock.now().0, &source, &stem)?;
+        Ok(ExportRunOutput { files })
     }
 );
