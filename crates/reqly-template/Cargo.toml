@@ -1,0 +1,35 @@
+[package]
+name = "reqly-template"
+description = "Template language for Reqly: variables, functions (template tags) and faker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+async-trait.workspace = true
+base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+hex = "0.4"
+hmac = "0.13"
+jsonwebtoken = { version = "11", default-features = false, features = ["rust_crypto", "use_pem"] }
+md-5 = "0.11"
+percent-encoding = "2"
+rand = "0.10"
+rand_regex = "0.19"
+regex-syntax = "0.8"
+serde.workspace = true
+serde_json.workspace = true
+serde_json_path = "0.7"
+sha1 = "0.11"
+sha2 = "0.11"
+ts-rs.workspace = true
+uuid = { workspace = true, features = ["v4"] }
+
+[dev-dependencies]
+proptest.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true
