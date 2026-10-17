@@ -5,6 +5,11 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- A settings button in the sidebar toolbar (the one in the status bar was
+  easy to miss).
+
 ### Fixed
 
 - Linux desktop: with `HTTP_PROXY` set, the webview sent `localhost` (the dev

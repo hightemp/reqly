@@ -242,6 +242,7 @@
           onFolderSettings={(id) => (folderSettings = id)}
           onCollapse={toggleSidebar}
           onOpen={(m) => (modal = m)}
+          onSettings={() => (settingsOpen = true)}
         />
       {/snippet}
       {#snippet second()}

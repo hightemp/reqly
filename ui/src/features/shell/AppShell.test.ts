@@ -40,6 +40,17 @@ describe('AppShell', () => {
     expect(screen.getByRole('complementary')).toBeInTheDocument();
   });
 
+  it('opens settings from the sidebar toolbar', async () => {
+    await setup();
+    const sidebar = screen.getByRole('complementary', { name: 'Collections' });
+    const button = [...sidebar.querySelectorAll('button')].find(
+      (b) => b.getAttribute('aria-label') === 'Settings',
+    );
+    expect(button).toBeTruthy();
+    await fireEvent.click(button!);
+    expect(await screen.findByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
+  });
+
   it('switches response layout', async () => {
     const { services } = await setup();
     await fireEvent.keyDown(window, { code: 'KeyL', key: 'l', ctrlKey: true, altKey: true });

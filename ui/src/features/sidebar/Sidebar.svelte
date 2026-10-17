@@ -20,9 +20,10 @@
     onFolderSettings: (id: string) => void;
     onCollapse: () => void;
     onOpen: (modal: 'cookies' | 'trash' | 'log' | 'environments') => void;
+    onSettings: () => void;
   }
 
-  let { services, onFolderSettings, onCollapse, onOpen }: Props = $props();
+  let { services, onFolderSettings, onCollapse, onOpen, onSettings }: Props = $props();
   const ws = $derived(services.workspace);
   const prefs = $derived(services.prefs);
 
@@ -262,6 +263,7 @@
           sidebarMode: prefs.value.sidebarMode === 'tree' ? 'categories' : 'tree',
         })}
     />
+    <IconButton icon="settings" label={t('settings.title')} onclick={onSettings} />
     <IconButton icon="sidebar" label={t('sidebar.collapse')} onclick={onCollapse} />
   </div>
 
