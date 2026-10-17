@@ -1,12 +1,12 @@
-## Что сделано
+## What changed
 
-<!-- Кратко: что и зачем. Ссылка на задачу из TASKS.md (например, T1.4.2). -->
+<!-- In short: what and why. Link the task from TASKS.md (e.g. T1.4.2). -->
 
-## Проверка
+## Checklist
 
-- [ ] Тесты написаны до реализации (TDD) и проходят
-- [ ] `cargo clippy`, `pnpm lint` без ошибок
-- [ ] Строки UI добавлены в en и ru
-- [ ] Проверено в desktop и web (если применимо)
-- [ ] Проверено во всех встроенных темах, работает с клавиатуры
-- [ ] Обновлены CHANGELOG и документация
+- [ ] Tests were written before the implementation (TDD) and pass
+- [ ] `cargo clippy` and `pnpm lint` report no errors
+- [ ] UI strings were added in en and ru
+- [ ] Checked in desktop and web (if applicable)
+- [ ] Checked in all built-in themes and with the keyboard
+- [ ] CHANGELOG and documentation are updated

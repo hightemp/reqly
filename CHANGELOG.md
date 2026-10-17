@@ -1,100 +1,104 @@
 # Changelog
 
-Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
-версии следуют [SemVer](https://semver.org/lang/ru/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
 ## [0.3.0] — 2026-10-17
 
-Этап 3: импорт, экспорт и генерация кода.
+Stage 3: import, export and code generation.
 
 ### Added
 
-- Мастер импорта: файлы, папка, перетаскивание, вставка, URL; автоопределение
-  формата, превью дерева, отчёт о неподдерживаемом (копирование и сохранение),
-  импорт в новую коллекцию или в существующую (объединить, добавить, заменить).
-- Импорт Insomnia v3/v4/v5, Postman v2.0/v2.1 и окружений, OpenAPI 3.0/3.1 и
-  Swagger 2.0, HAR 1.2, cURL (несколько команд), Bruno (папка или zip).
-- Собственный формат Reqly (JSON или YAML) с `formatVersion`, миграциями и
-  JSON Schema (`docs/format/reqly.schema.json`); экспорт workspace,
-  коллекции или выбранных элементов, опционально с секретами, cookies и
-  историей.
-- Экспорт в Insomnia v4/v5, Postman v2.1 (+ окружения), HAR и cURL.
-- Генерация кода для 26 языков и библиотек, «Копировать как» в меню запроса.
-- Скрипты запросов и папок сохраняются при импорте (выполнение — этап 6).
+- Import wizard: files, a folder, drag and drop, pasted text or a URL; format
+  detection with manual override, preview tree, a report of everything that
+  could not be imported exactly (copy or save it), import into a new
+  collection or into an existing one (merge, add alongside, replace).
+- Import from Insomnia v3/v4/v5, Postman Collection v2.0/v2.1 with
+  environments and globals, OpenAPI 3.0/3.1 and Swagger 2.0, HAR 1.2, cURL
+  (several commands at once) and Bruno (a collection folder or a zip).
+- The Reqly exchange format (JSON or YAML) with `formatVersion`, migrations
+  and a JSON Schema (`docs/format/reqly.schema.json`); export a workspace, a
+  collection or selected items, optionally with secret values, cookies and
+  response history.
+- Export to Insomnia v4/v5, Postman v2.1 (environments as separate files),
+  HAR and cURL.
+- Code generation for 26 languages and libraries, plus a "Copy as" submenu
+  for requests.
+- Request and folder scripts are kept on import (they run from stage 6).
 
 ### Changed
 
-- Escape в дереве снимает выделение.
-- Порядок аргументов `{% base64 %}` совпадает с Insomnia
-  (`action, kind, value`), двухаргументная форма по-прежнему работает.
-- `export.run` возвращает список файлов.
+- Escape in the tree clears the selection.
+- `{% base64 %}` takes its arguments in Insomnia's order
+  (`action, kind, value`); the two-argument form still works.
+- `export.run` returns a list of files.
 
 ## [0.2.0] — 2026-10-17
 
-Этап 2: переменные, окружения, теги шаблонов и faker.
+Stage 2: variables, environments, template tags and fake data.
 
 ### Added
 
-- Язык шаблонов: `{{ var }}`, пути `{{ a.b[0] }}`, совместимость с `_.` из
-  Insomnia, теги `{% tag args %}`, вызовы `{{ $fn() }}`, комментарии; вложенные
-  шаблоны в переменных с поиском циклов. Описание — `docs/templates.md`.
-- Окружения: глобальные (workspace), базовое и переключаемые (коллекция), цвета,
-  редактор таблицей и JSON (`Ctrl+E`), переключатель в сайдбаре; переменные
-  папок и запросов.
-- Секреты окружений: маскирование и шифрование at-rest (XChaCha20-Poly1305,
-  ключ `secret.key` рядом с базой).
-- Подсветка шаблонов «пилюлями» (найдена / не найдена), превью значения при
-  наведении, автодополнение после `{{` и `{%`, редактор аргументов тега с
-  живым превью; однострочный шаблонный ввод для URL, таблиц и авторизации.
-- Функции: uuid, now, random (в том числе по regex), base64, urlencode, hash,
-  hmac, jsonpath, jwt, cookie, request, prompt (окно перед отправкой), file, os,
-  response chaining с триггерами повторной отправки.
-- Faker в нейминге faker-js с данными en и ru (род, отчества, `+7`); язык
-  глобально и для коллекции; динамические переменные Postman (`$guid`,
-  `$randomEmail`…).
+- Template language: `{{ var }}`, paths such as `{{ a.b[0] }}`, Insomnia's
+  `_.` prefix, tags `{% tag args %}`, calls `{{ $fn() }}` and comments;
+  templates inside variable values with cycle detection. See
+  `docs/templates.md`.
+- Environments: global (workspace), base and switchable (collection) ones
+  with colors, a table and JSON editor (`Ctrl+E`) and a switcher in the
+  sidebar; folder and request variables.
+- Secret environment values: masked in the UI and encrypted at rest
+  (XChaCha20-Poly1305, key in `secret.key` next to the database).
+- Template highlighting (defined / missing), value preview on hover,
+  completion after `{{` and `{%`, a tag editor with live preview, and a
+  single-line template input for the URL, tables and auth fields.
+- Functions: uuid, now, random (including regex), base64, urlencode, hash,
+  hmac, jsonpath, jwt, cookie, request, prompt (asked before sending), file,
+  os and response chaining with resend triggers.
+- Fake data with faker-js naming in English and Russian (grammatical gender,
+  patronymics, `+7` phone numbers), set globally or per collection; Postman
+  dynamic variables (`$guid`, `$randomEmail`…).
 
 ### Fixed
 
-- Сборка desktop под Windows и macOS: имена модулей, различающиеся только
-  регистром, конфликтовали на файловых системах без учёта регистра.
+- Desktop builds on Windows and macOS: module names that differed only in
+  case clashed on case-insensitive file systems.
 
 ## [0.1.0] — 2026-10-17
 
-Первая версия: полноценный HTTP-клиент (этап 1).
+The first version: a complete HTTP client (stage 1).
 
 ### Added
 
-- Workspaces, коллекции, дерево папок и запросов: режимы «дерево» и
-  «папки + список», drag & drop (в том числе между режимами), мультивыделение,
-  вырезать/копировать/вставить, дублирование, корзина с отменой, сортировка по
-  папкам, поиск с фильтрами `method:` и `url:`.
-- Вкладки как в Postman: preview-вкладка, закрепление, «закрыть другие / справа /
-  все», повторное открытие закрытых, восстановление после перезапуска.
-- Редактор HTTP-запроса: синхронизация URL и параметров, path-параметры, все
-  типы тела (включая multipart с файлами и binary), Basic/Bearer/API key с
-  наследованием от папок, заголовки папок, настройки запроса, описание в
-  Markdown, импорт cURL вставкой и «Копировать как cURL».
-- Движок на libcurl: timeline, разбивка времени по фазам, HTTP/2, прокси,
-  пользовательские CA, клиентские сертификаты, cookies на workspace, отмена.
-- Просмотр ответа: Pretty/Raw/Preview, большие ответы, фильтры JSONPath/jq/XPath,
-  заголовки, cookies, timeline, история ответов и журнал запросов.
-- Настройки: 10 встроенных тем и редактор тем, плотность, шрифты, масштаб,
-  системная рамка окна, переназначаемые сочетания клавиш, значения запросов по
-  умолчанию, прокси, сертификаты, лимиты истории; командная палитра.
-- Сервер: вход по токену (сессии, CSRF, rate limit), защита от SSRF, Docker и
-  docker compose, релизный workflow (установщики, бинарники, образ GHCR).
-
-### Earlier (stage 0)
-
-- Монорепозиторий: Cargo workspace (`reqly-core`, `reqly-storage`, `reqly-api`,
-  `reqly-testserver`, `reqly-server`, `reqly-desktop`) и Svelte 5 UI.
-- Контракт команд UI ↔ ядро с генерацией TypeScript-типов; транспорты Tauri IPC
-  и HTTP + WebSocket; общий contract-набор тестов.
-- SQLite-хранилище с миграциями и бэкапом перед миграцией.
-- Каркас UI: темы (Light, Dark, System), i18n (en, ru), хоткеи, SplitPane,
-  кастомный titlebar, сохранение настроек на сервере и синхронизация между вкладками.
+- Workspaces, collections and a tree of folders and requests: "tree" and
+  "folders + list" views, drag and drop (also between views), multi-select,
+  cut/copy/paste, duplicate, trash with undo, per-folder sorting, search with
+  `method:` and `url:` filters.
+- Postman-style tabs: preview tab, pinning, close others / to the right /
+  all, reopen closed tabs, restored after restart.
+- HTTP request editor: URL and query parameters kept in sync, path
+  parameters, every body type (including multipart with files and binary),
+  Basic / Bearer / API key auth inherited from folders, folder headers,
+  request settings, Markdown descriptions, cURL import by pasting and
+  "Copy as cURL".
+- libcurl engine: timeline, timing breakdown by phase, HTTP/2, proxies,
+  custom CAs, client certificates, cookies per workspace, cancellation.
+- Response viewer: Pretty / Raw / Preview, large responses, JSONPath / jq /
+  XPath filters, headers, cookies, timeline, response history and request
+  log.
+- Settings: 10 built-in themes and a theme editor, density, fonts, zoom,
+  native window frame, remappable shortcuts, request defaults, proxy,
+  certificates, history limits; command palette.
+- Server: token sign-in (sessions, CSRF protection, rate limiting), SSRF
+  protection, Docker and docker compose, release workflow (installers,
+  binaries, GHCR image).
+- A typed UI ↔ core command contract with generated TypeScript types; Tauri
+  IPC and HTTP + WebSocket transports; a shared contract test suite.
+- SQLite storage with migrations and a backup before migrating.
+- UI foundation: themes (Light, Dark, System), i18n (English, Russian),
+  shortcuts, split panes, a custom title bar, settings stored on the server
+  and synced between tabs.
 
 [Unreleased]: https://github.com/hightemp/reqly/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/hightemp/reqly/compare/v0.2.0...v0.3.0

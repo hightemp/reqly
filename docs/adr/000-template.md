@@ -1,21 +1,21 @@
-# ADR-NNN: Заголовок
+# ADR-NNN: Title
 
-- Статус: предложено | принято | заменено ADR-XXX
-- Дата: YYYY-MM-DD
+- Status: proposed | accepted | superseded by ADR-XXX
+- Date: YYYY-MM-DD
 
-## Контекст
+## Context
 
-Какая проблема решается, какие есть ограничения.
+What problem is being solved and what the constraints are.
 
-## Варианты
+## Options
 
 1. …
 2. …
 
-## Решение
+## Decision
 
-Что выбрано и почему.
+What was chosen and why.
 
-## Последствия
+## Consequences
 
-Что становится проще и сложнее, какие риски остаются.
+What becomes easier or harder, and which risks remain.

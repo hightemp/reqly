@@ -1,22 +1,22 @@
-# Референсы: Insomnia 10.2
+# References: Insomnia 10.2
 
-Снято 2026-10-17 с изолированного профиля (Scratch Pad, демо-коллекция по
-адресу `127.0.0.1:8484`, личных данных нет). Ниже для каждого экрана: что берём
-и что делаем иначе.
+Captured on 2026-10-17 from an isolated profile (Scratch Pad, a demo
+collection at `127.0.0.1:8484`, no personal data). For each screen: what we
+take and what we do differently.
 
-| Файл | Экран | Берём | Меняем |
+| File | Screen | We take | We change |
 |---|---|---|---|
-| `01-tree.png` | Дерево коллекции | Компактные строки, бейдж метода слева от имени, отступы вложенности, фильтр сверху, сортировка и «свернуть всё» рядом с фильтром | Бейджи методов окрашиваем токенами `--c-method-*` (у Insomnia GET фиолетовый — у нас зелёный), добавляем режим «категории + список» и мультивыделение |
-| `02-missing-variable.png` | Ненайденная переменная | Переменная-«пилюля» в URL, красная с ⚠ для ненайденной | Пилюли с превью значения по наведению (этап 2) |
-| `03-env-switcher-and-headers.png` | Переключатель окружений и вкладка Headers | Автоматические заголовки (`Accept`, `Host <calculated at runtime>`) показаны отдельно над пользовательскими; счётчик на вкладке | Также показываем унаследованные от папок заголовки с указанием источника |
-| `04-env-editor-table.png`, `05-env-editor-raw.png` | Редактор окружений | Переключатель «таблица / raw JSON», список окружений слева | Цвет окружения, флаг secret, sub-окружения (этап 2) |
-| `06-request-response.png` | Запрос и ответ | Трёхколоночная раскладка, статус-бейдж, время и размер в шапке ответа, фильтр JSONPath внизу панели ответа, «Beautify JSON» внизу тела | Добавляем вкладки открытых запросов (как в Postman) и переключение раскладки «ответ снизу» |
-| `07-response-headers.png` | Заголовки ответа | Таблица и счётчик | — |
-| `08-context-menu-folder.png`, `09-context-menu-request.png` | Контекстные меню | Группировка пунктов по секциям (Create / Import / Actions), хоткеи справа | Добавляем Cut, Copy и Paste, групповые действия, «Copy as cURL» |
-| `10-themes.png` | Выбор темы | Сетка превью тем с мини-раскладкой и палитрой; флаг «Use OS color scheme» | Свой набор тем, редактор и импорт тем в JSON |
-| `11-import-preview.png` | Импорт | Предпросмотр «что будет импортировано» с количеством сущностей | Подробный отчёт о неподдерживаемом (этап 3) |
+| `01-tree.png` | Collection tree | Compact rows, method badge left of the name, nesting indents, filter on top, sort and "collapse all" next to the filter | Method badges use `--c-method-*` tokens (Insomnia's GET is purple, ours green); we add the "categories + list" view and multi-select |
+| `02-missing-variable.png` | Missing variable | Variable "pill" in the URL, red with ⚠ when not found | Pills with a value preview on hover (stage 2) |
+| `03-env-switcher-and-headers.png` | Environment switcher and Headers tab | Automatic headers (`Accept`, `Host <calculated at runtime>`) shown separately above user headers; count on the tab | We also show headers inherited from folders with their source |
+| `04-env-editor-table.png`, `05-env-editor-raw.png` | Environment editor | Table / raw JSON switch, environment list on the left | Environment colors, secret flag, sub-environments (stage 2) |
+| `06-request-response.png` | Request and response | Three-column layout, status badge, time and size in the response header, JSONPath filter at the bottom of the response, "Beautify JSON" below the body | We add tabs for open requests (like Postman) and a "response below" layout |
+| `07-response-headers.png` | Response headers | Table and count | — |
+| `08-context-menu-folder.png`, `09-context-menu-request.png` | Context menus | Items grouped in sections (Create / Import / Actions), shortcuts on the right | We add Cut, Copy and Paste, bulk actions and "Copy as cURL" |
+| `10-themes.png` | Theme picker | Grid of theme previews with a mini layout and palette; "Use OS color scheme" flag | Our own theme set, a theme editor and JSON theme import |
+| `11-import-preview.png` | Import | Preview of what will be imported with counts | A detailed report of unsupported data (stage 3) |
 
-Что в Insomnia мешает и чего у нас не будет: постоянный баннер логина,
-выпадающие списки на нативных `<select>` («No Global Environment»), вкладки
-ответа, которые не помещаются по ширине (вкладка Timeline уезжает за край без
-индикатора прокрутки).
+What gets in the way in Insomnia and we will not have: the permanent sign-in
+banner, dropdowns built on native `<select>` ("No Global Environment"), and
+response tabs that do not fit the width (the Timeline tab slides out of view
+without a scroll indicator).

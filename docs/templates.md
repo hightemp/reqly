@@ -1,116 +1,117 @@
-# Шаблоны, переменные и окружения
+# Templates, variables and environments
 
-Шаблоны работают в URL, query- и path-параметрах, заголовках, теле запроса
-(текст и поля форм), полях авторизации, а также в значениях переменных.
-Рендеринг выполняет ядро на Rust при отправке, поэтому desktop и сервер дают
-одинаковый результат. В историю попадает уже отрендеренный запрос.
+Templates work in the URL, query and path parameters, headers, the body (text
+and form fields), auth fields, proxy settings and in variable values. The Rust
+core renders them when sending, so desktop and server give the same result.
+History stores the rendered request.
 
-## Синтаксис
+## Syntax
 
-| Запись | Значение |
+| Syntax | Meaning |
 | --- | --- |
-| `{{ name }}` | переменная |
-| `{{ api.version }}`, `{{ hosts[0] }}`, `{{ _['odd key'] }}` | путь внутри JSON-значения |
-| `{{ _.name }}` | то же, что `{{ name }}` (совместимость с Insomnia) |
-| `{% uuid 'v4' %}` | тег (функция) в стиле Insomnia |
-| `{{ $uuid('v7') }}` | та же функция в виде вызова |
-| `{{ $faker.person.firstName }}` | генератор тестовых данных |
-| `{{ $guid }}`, `{{ $randomEmail }}` | динамические переменные Postman |
-| `{# комментарий #}` | не попадает в результат |
-| `\{{` | буквальные `{{` |
+| `{{ name }}` | a variable |
+| `{{ api.version }}`, `{{ hosts[0] }}`, `{{ _['odd key'] }}` | a path inside a JSON value |
+| `{{ _.name }}` | same as `{{ name }}` (Insomnia compatibility) |
+| `{% uuid 'v4' %}` | an Insomnia-style tag (function) |
+| `{{ $uuid('v7') }}` | the same function as a call |
+| `{{ $faker.person.firstName }}` | fake data |
+| `{{ $guid }}`, `{{ $randomEmail }}` | Postman dynamic variables |
+| `{# comment #}` | not rendered |
+| `\{{` | a literal `{{` |
 
-Аргументы: строки в одинарных или двойных кавычках (`\'` — экранирование),
-числа, `true`/`false`/`null`, переменные и вложенные вызовы:
-`{% hash 'sha256', 'hex', token %}`, `{% base64 'encode', $now('unix') %}`.
+Arguments are strings in single or double quotes (`\'` escapes), numbers,
+`true` / `false` / `null`, variables and nested calls:
+`{% hash 'sha256', 'hex', token %}`, `{% base64 'encode', 'normal', $now('unix') %}`.
 
-Значения переменных тоже могут содержать шаблоны:
-`base_url = {{ host }}/api/{{ version }}`. Циклы (`a → b → a`) дают ошибку
-`template.cycle`. Неопределённая переменная останавливает отправку с ошибкой
-`template.undefined`. В редакторе такие переменные подсвечиваются красным.
+Variable values may contain templates too:
+`base_url = {{ host }}/api/{{ version }}`. Cycles (`a → b → a`) fail with
+`template.cycle`. An undefined variable stops the send with
+`template.undefined`; the editor highlights it in red.
 
-Значение вызова фиксируется на одну отправку: `{{ $uuid }}` в URL и в
-заголовке даст один и тот же UUID.
+A call yields one value per send: `{{ $uuid }}` in the URL and in a header is
+the same UUID.
 
-## Откуда берутся переменные
+## Where variables come from
 
-Порядок применения, каждый следующий уровень переопределяет предыдущий:
+Later levels override earlier ones:
 
-1. глобальное окружение workspace (активное);
-2. базовое окружение коллекции;
-3. активное окружение коллекции (dev, stage, prod…);
-4. переменные папок, от внешней к внутренней;
-5. переменные запроса.
+1. the active global environment of the workspace;
+2. the collection's base environment;
+3. the collection's active environment (dev, stage, prod…);
+4. folder variables, from the outermost folder inwards;
+5. request variables.
 
-Переопределение идёт по ключам верхнего уровня. Окружения редактируются в
-окне **Environments** (`Ctrl+E`) таблицей или как JSON. Активное окружение
-переключается в шапке сайдбара. Переменные папки задаются в её настройках,
-переменные запроса — на вкладке **Variables**.
+Overriding works on top-level keys. Environments are edited in the
+**Environments** window (`Ctrl+E`) as a table or as JSON. The active
+environment is switched in the sidebar header. Folder variables are set in
+the folder settings, request variables on the **Variables** tab.
 
-### Секреты
+### Secrets
 
-Ключ окружения можно пометить как секрет (замок в строке):
+An environment key can be marked as secret (the lock in its row):
 
-- значение маскируется в таблице и в подсказке при наведении;
-- в базе данных значение хранится зашифрованным (XChaCha20-Poly1305), ключ
-  лежит в файле `secret.key` рядом с базой (доступ только владельцу);
-- без `secret.key` секреты расшифровать нельзя: при переносе данных
-  копируйте его вместе с `reqly.db`.
+- the value is masked in the table and in the hover preview;
+- the database stores it encrypted (XChaCha20-Poly1305) with a key in
+  `secret.key` next to the database (readable by the owner only);
+- without `secret.key` secrets cannot be decrypted: copy it together with
+  `reqly.db` when moving data;
+- exports leave secret values empty unless you choose to include them.
 
-## Функции
+## Functions
 
-| Функция | Аргументы | Пример |
+| Function | Arguments | Example |
 | --- | --- | --- |
-| `uuid` | `v4` (по умолчанию), `v7` | `{% uuid 'v7' %}` |
-| `now` | `iso-8601`, `unix`, `millis`, `rfc-2822`, `custom` + формат strftime | `{% now 'custom', '%Y-%m-%d' %}` |
-| `random` | `int` min max, `float` min max, `string` длина [алфавит], `regex` шаблон | `{% random 'regex', '[A-Z]{3}-\d{4}' %}` |
-| `base64` | `encode`/`decode`, [`normal`/`url`], значение (порядок как в Insomnia) | `{% base64 'encode', 'normal', 'user:pass' %}` |
-| `urlencode` | `encode`/`decode`, значение | `{% urlencode 'encode', 'a b' %}` |
-| `hash` | `md5`/`sha1`/`sha256`/`sha384`/`sha512`, `hex`/`base64`/`base64url`, значение | `{% hash 'sha256', 'hex', body %}` |
-| `hmac` | алгоритм, кодировка, ключ, значение | `{% hmac 'sha256', 'hex', secret, payload %}` |
-| `jsonpath` | JSON (значение или строка), выражение | `{% jsonpath user, '$.roles[0]' %}` |
-| `jwt` | `encode` payload ключ [алгоритм]; `decode` токен [`header`/`payload`] | `{% jwt 'encode', '{"sub":"1"}', secret, 'HS256' %}` |
-| `faker` | имя функции, аргументы | `{% faker 'number.int', 1, 10 %}` |
-| `cookie` | URL, имя | `{% cookie 'https://api.example.com', 'sid' %}` |
-| `request` | `url`, `method`, `name`, `id`, `folder`, `header` имя | `{% request 'header', 'Accept' %}` |
-| `response` | поле, id запроса, путь, триггер, maxAge (с) | см. ниже |
-| `prompt` | заголовок, подпись, значение по умолчанию, ключ | `{% prompt 'OTP', 'Код из SMS' %}` |
-| `file` | путь (desktop) или хеш загруженного файла (сервер) | `{% file '/tmp/token.txt' %}` |
-| `os` | `platform`, `arch`, `hostname`, `username`, `env` имя | `{% os 'env', 'HOME' %}` |
+| `uuid` | `v4` (default), `v7` | `{% uuid 'v7' %}` |
+| `now` | `iso-8601`, `unix`, `millis`, `rfc-2822`, `custom` + strftime format | `{% now 'custom', '%Y-%m-%d' %}` |
+| `random` | `int` min max, `float` min max, `string` length [alphabet], `regex` pattern | `{% random 'regex', '[A-Z]{3}-\d{4}' %}` |
+| `base64` | `encode`/`decode`, [`normal`/`url`], value (Insomnia's order) | `{% base64 'encode', 'normal', 'user:pass' %}` |
+| `urlencode` | `encode`/`decode`, value | `{% urlencode 'encode', 'a b' %}` |
+| `hash` | `md5`/`sha1`/`sha256`/`sha384`/`sha512`, `hex`/`base64`/`base64url`, value | `{% hash 'sha256', 'hex', body %}` |
+| `hmac` | algorithm, encoding, key, value | `{% hmac 'sha256', 'hex', secret, payload %}` |
+| `jsonpath` | JSON (a value or a string), expression | `{% jsonpath user, '$.roles[0]' %}` |
+| `jwt` | `encode` payload key [algorithm]; `decode` token [`header`/`payload`] | `{% jwt 'encode', '{"sub":"1"}', secret, 'HS256' %}` |
+| `faker` | function name, arguments | `{% faker 'number.int', 1, 10 %}` |
+| `cookie` | URL, name | `{% cookie 'https://api.example.com', 'sid' %}` |
+| `request` | `url`, `method`, `name`, `id`, `folder`, `header` name | `{% request 'header', 'Accept' %}` |
+| `response` | field, request id, path, trigger, maxAge (s) | see below |
+| `prompt` | title, label, default value, key | `{% prompt 'OTP', 'Code from the SMS' %}` |
+| `file` | path (desktop) or the hash of an uploaded file (server) | `{% file '/tmp/token.txt' %}` |
+| `os` | `platform`, `arch`, `hostname`, `username`, `env` name | `{% os 'env', 'HOME' %}` |
 
-Наведите курсор на тег, чтобы увидеть его значение, и нажмите **Edit…**
-(или `Ctrl`+клик), чтобы изменить аргументы в форме с живым превью.
+Hover a tag to see its value, and click **Edit…** (or `Ctrl`+click) to change
+its arguments in a form with a live preview.
 
-### Цепочки ответов
+### Response chaining
 
-`{% response 'body', '<id запроса>', '$.token', 'no-history', 300 %}`
+`{% response 'body', '<request id>', '$.token', 'no-history', 300 %}`
 
-- поле: `body` (путь `$…` — JSONPath, `/…` — XPath, пусто — всё тело),
-  `header` (путь — имя заголовка), `raw`, `url`, `status`;
-- триггер: `never` — взять последний ответ; `no-history` — отправить, если
-  ответов нет; `when-expired` — отправить, если последний ответ старше maxAge
-  секунд; `always` — отправлять каждый раз;
-- взаимные зависимости запросов дают ошибку `template.response_cycle`.
+- field: `body` (a `$…` path is JSONPath, `/…` is XPath, empty is the whole
+  body), `header` (the path is the header name), `raw`, `url`, `status`;
+- trigger: `never` uses the latest response; `no-history` sends when there is
+  no response; `when-expired` sends when the latest response is older than
+  maxAge seconds; `always` sends every time;
+- requests that depend on each other fail with `template.response_cycle`.
 
 ### prompt
 
-Перед отправкой Reqly собирает все `prompt` запроса, его папок и
-переменных и показывает одно окно со всеми полями. Значения можно запомнить
-до конца сессии.
+Before sending, Reqly collects all `prompt` tags of the request, its folders
+and the variables and shows one window with all fields. Values can be
+remembered for the session.
 
-### Ограничения сервера
+### Server restrictions
 
-В серверной версии `file` читает только загруженные через UI файлы, а
-`os 'hostname'`, `os 'username'` и `os 'env'` недоступны: шаблоны
-выполняются на сервере и не должны раскрывать его окружение.
+On the server, `file` only reads files uploaded through the UI, and
+`os 'hostname'`, `os 'username'` and `os 'env'` are not available: templates
+run on the server and must not reveal its environment.
 
-## Faker
+## Fake data
 
-Имена функций как в faker-js. Язык данных — English или Русский
-(**Settings → Templates**), его можно переопределить для коллекции.
-Русские данные учитывают род (Иванов / Иванова), добавляют отчества,
-телефоны `+7` и шестизначные индексы.
+Function names follow faker-js. The data language is English or Russian
+(**Settings → Templates**) and can be overridden per collection. Russian data
+respects grammatical gender (Ivanov / Ivanova) and adds patronymics, `+7`
+phone numbers and six-digit postal codes.
 
-| Категория | Функции |
+| Category | Functions |
 | --- | --- |
 | `person` | `firstName`, `lastName`, `middleName`, `fullName`, `prefix`, `sex`, `jobTitle` |
 | `internet` | `email`, `username`, `password(length?)`, `url`, `domainName`, `ipv4`, `ipv6`, `mac`, `port`, `userAgent` |
@@ -127,8 +128,8 @@
 | `finance` | `amount`, `accountNumber`, `iban`, `currencyCode`, `creditCardNumber`, `bic` |
 | `image` | `url`, `avatar` |
 
-### Динамические переменные Postman
+### Postman dynamic variables
 
-`$guid`, `$randomUUID`, `$timestamp`, `$isoTimestamp`, `$randomInt` и
+`$guid`, `$randomUUID`, `$timestamp`, `$isoTimestamp`, `$randomInt` and
 `$random*` (`$randomFirstName`, `$randomEmail`, `$randomCity`,
-`$randomPrice`, `$randomIP`…) сводятся к функциям выше.
+`$randomPrice`, `$randomIP`…) map to the functions above.

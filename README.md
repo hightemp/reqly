@@ -11,9 +11,9 @@
 Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS) and a
 self-hosted web version served by a single Rust binary.
 
-> Status: v0.1 (stage 1 of the [roadmap](PRD.md#9-этапы-roadmap)). HTTP
-> requests are fully supported; variables, imports, more auth types and
-> protocols come next. Planning docs are in Russian: [PRD.md](PRD.md), [TASKS.md](TASKS.md).
+> Status: v0.3 (stage 3 of the [roadmap](PRD.md)). HTTP requests,
+> environments and templates, import/export and code generation are
+> supported; more auth types and protocols come next. Planning docs are in Russian: [PRD.md](PRD.md), [TASKS.md](TASKS.md).
 
 ## Features
 

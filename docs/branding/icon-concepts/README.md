@@ -1,12 +1,11 @@
-# Концепты иконки (T0.6.2)
+# Icon concepts (T0.6.2)
 
-Сгенерированы через Codex CLI; превью в размерах 256 и 32 px: `preview.png`.
+Generated with the Codex CLI; previews at 256 and 32 px: `preview.png`.
 
-1. **Exchange** (`concept-1.svg`): две встречные стрелки, цикл запрос/ответ.
-2. **Forward R** (`concept-2.svg`): буква R с ногой-стрелкой, отсылка к «отправить запрос».
-3. **Power Braces** (`concept-3.svg`): молния в фигурных скобках, быстрая работа с API.
-4. **Live Pulse** (`concept-4.svg`): пульс-волна с точкой подключения, живой трафик.
+1. **Exchange** (`concept-1.svg`): two opposite arrows, the request/response cycle.
+2. **Forward R** (`concept-2.svg`): the letter R with an arrow leg, "send a request".
+3. **Power Braces** (`concept-3.svg`): a lightning bolt in curly braces, fast API work.
+4. **Live Pulse** (`concept-4.svg`): a pulse wave with a connection dot, live traffic.
 
-Выбран **концепт 3 (Power Braces)**: `docs/branding/icon.svg`. Иконки приложения
-генерируются командой `cargo tauri icon docs/branding/icon.svg` (из `apps/desktop`).
-
+**Concept 3 (Power Braces)** was chosen: `docs/branding/icon.svg`. App icons
+are generated with `cargo tauri icon docs/branding/icon.svg` (from `apps/desktop`).

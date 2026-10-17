@@ -1,33 +1,35 @@
-# ADR-003: Сборка под Android (Tauri 2 mobile)
+# ADR-003: Android build (Tauri 2 mobile)
 
-- Статус: принято
-- Дата: 2026-10-17
+- Status: accepted
+- Date: 2026-10-17
 
-## Контекст
+## Context
 
-Android запланирован на этап 8. Нужно заранее убедиться, что выбранный стек
-(Tauri 2, sqlx/SQLite, tokio, rustls, libcurl) его не блокирует.
+Android is planned for stage 8. We need to make sure early that the chosen
+stack (Tauri 2, sqlx/SQLite, tokio, rustls, libcurl) does not block it.
 
-## Что проверено
+## What was checked
 
-- `cargo tauri android init` создаёт проект в `apps/desktop/gen/android`
-  (коммитится, `build/` игнорируется).
-- `cargo tauri android build --debug --target x86_64 --apk` собирает APK. На
-  эмуляторе Android 15 (API 35, x86_64) приложение запускается:
-  - ядро открывает SQLite в `/data/user/0/dev.reqly.app` (видно в logcat);
-  - команды через Tauri IPC работают, UI загружает настройки.
-- HTTP-движки (libcurl со статическим OpenSSL и reqwest) собираются под
-  `aarch64-linux-android` (NDK 28, API 29), см. ADR-002.
+- `cargo tauri android init` creates the project in `apps/desktop/gen/android`
+  (committed; `build/` is ignored).
+- `cargo tauri android build --debug --target x86_64 --apk` builds an APK. On
+  an Android 15 emulator (API 35, x86_64) the app starts:
+  - the core opens SQLite in `/data/user/0/dev.reqly.app` (visible in logcat);
+  - commands over Tauri IPC work and the UI loads its settings.
+- The HTTP engines (libcurl with static OpenSSL, and reqwest) build for
+  `aarch64-linux-android` (NDK 28, API 29), see ADR-002.
 
-## Найдено для этапа 8
+## Findings for stage 8
 
-- На мобильных не нужен кастомный titlebar (уже отключён: `isMobile()` в UI).
-- Раскладка не адаптивна: сайдбар занимает пол-экрана, нет safe-area-отступов
-  под статус-бар. Нужны drawer и стек панелей (T8.2).
-- Debug-APK с символами весит около 180 МБ. Для установки на эмулятор собирать с
-  `CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_DEV_STRIP=symbols` (около 27 МБ).
-- Точка входа: `#[cfg_attr(mobile, tauri::mobile_entry_point)]` на `run()`.
+- Mobile does not need the custom title bar (already disabled: `isMobile()` in the UI).
+- The layout is not responsive: the sidebar takes half the screen and there
+  are no safe-area insets for the status bar. A drawer and stacked panels are
+  needed (T8.2).
+- A debug APK with symbols is about 180 MB. To install it on an emulator,
+  build with `CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_DEV_STRIP=symbols`
+  (about 27 MB).
+- Entry point: `#[cfg_attr(mobile, tauri::mobile_entry_point)]` on `run()`.
 
-## Решение
+## Decision
 
-Стек подтверждён для Android. Сборка под Android добавляется в CI на этапе 8.
+The stack is confirmed for Android. Android builds are added to CI in stage 8.

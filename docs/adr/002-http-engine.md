@@ -1,65 +1,65 @@
-# ADR-002: HTTP-движок
+# ADR-002: HTTP engine
 
-- Статус: принято
-- Дата: 2026-10-17
-- Спайк: `spikes/http-engine` (`cargo test -p spike-http-engine -- --nocapture`)
+- Status: accepted
+- Date: 2026-10-17
+- Spike: `spikes/http-engine` (`cargo test -p spike-http-engine -- --nocapture`)
 
-## Контекст
+## Context
 
-Нужны (PRD §5.5, §7.5–7.7): timeline с сырыми запросом и ответом, метрики фаз
-(DNS, connect, TLS, TTFB), HTTP/1.1 и HTTP/2, прокси HTTP, HTTPS и SOCKS5,
-клиентские сертификаты, кастомный CA, Digest, NTLM, AWS SigV4, отмена запроса,
-сборка под Linux, Windows, macOS и Android.
+Requirements (PRD §5.5, §7.5–7.7): a timeline with the raw request and
+response, phase timings (DNS, connect, TLS, TTFB), HTTP/1.1 and HTTP/2, HTTP,
+HTTPS and SOCKS5 proxies, client certificates, custom CAs, Digest, NTLM, AWS
+SigV4, cancellation, and builds for Linux, Windows, macOS and Android.
 
-## Варианты
+## Options
 
-1. **libcurl** (`curl` 0.4 / `curl-sys`, libcurl 8.22, статическая сборка с vendored OpenSSL)
+1. **libcurl** (`curl` 0.4 / `curl-sys`, libcurl 8.22, static build with vendored OpenSSL)
 2. **reqwest 0.13 / hyper** (rustls)
 
-## Результаты спайка
+## Spike results
 
-Обе реализации проверены одним набором тестов против `reqly-testserver`.
+Both implementations ran the same test suite against `reqly-testserver`.
 
-| Критерий | libcurl | reqwest |
+| Criterion | libcurl | reqwest |
 |---|---|---|
-| Базовый запрос, заголовки, тело | ✅ | ✅ |
-| Timeline (сырые заголовки, TLS-handshake, ALPN, редиректы) | ✅ `CURLOPT_DEBUGFUNCTION`, вывод совпадает с Insomnia | ❌ нужен собственный connector и обёртка над hyper |
-| Фазы времени DNS / connect / TLS / TTFB | ✅ `*_TIME` | ⚠️ только TTFB и total |
-| Число редиректов | ✅ | ⚠️ вручную через policy |
-| HTTP/2 через ALPN | ✅ (`nghttp2`) | ✅ |
-| mTLS из PEM-строк, CA из PEM | ✅ `*_BLOB` | ✅ |
-| Отмена в полёте | ✅ через progress-callback, < 1 с | ✅ drop future |
-| Digest / NTLM | ✅ встроены (`ntlm` feature) | ❌ сторонние crates или своя реализация |
-| AWS SigV4 | ⚠️ `CURLOPT_AWS_SIGV4` нет в safe-API, используем `aws-sigv4` и подписываем сами | то же |
-| Прокси HTTP / HTTPS / SOCKS4/5 + auth, `no_proxy` | ✅ | ✅ (кроме SOCKS4a/HTTPS-proxy частично) |
-| HTTP/3 | ❌ в статической сборке нет (нужен ngtcp2/quiche) | ⚠️ экспериментально |
-| Размер probe-бинарника (Linux x86_64, release, strip) | 7.0 МБ | 12.7 МБ |
-| Кросс-компиляция Android aarch64 (NDK 28) | ✅ | ✅ |
-| Windows / macOS | не проверялось локально; проверяется матрицей CI при появлении `reqly-http` | — |
+| Basic request, headers, body | ✅ | ✅ |
+| Timeline (raw headers, TLS handshake, ALPN, redirects) | ✅ `CURLOPT_DEBUGFUNCTION`, output matches Insomnia | ❌ needs a custom connector and a hyper wrapper |
+| DNS / connect / TLS / TTFB timings | ✅ `*_TIME` | ⚠️ only TTFB and total |
+| Redirect count | ✅ | ⚠️ manually via a policy |
+| HTTP/2 via ALPN | ✅ (`nghttp2`) | ✅ |
+| mTLS from PEM strings, CA from PEM | ✅ `*_BLOB` | ✅ |
+| Cancelling in flight | ✅ via the progress callback, < 1 s | ✅ drop the future |
+| Digest / NTLM | ✅ built in (`ntlm` feature) | ❌ third-party crates or our own code |
+| AWS SigV4 | ⚠️ `CURLOPT_AWS_SIGV4` is not in the safe API; we sign with `aws-sigv4` ourselves | same |
+| HTTP / HTTPS / SOCKS4/5 proxies with auth, `no_proxy` | ✅ | ✅ (SOCKS4a / HTTPS proxies only partly) |
+| HTTP/3 | ❌ not in the static build (needs ngtcp2/quiche) | ⚠️ experimental |
+| Probe binary size (Linux x86_64, release, stripped) | 7.0 MB | 12.7 MB |
+| Cross-compiling for Android aarch64 (NDK 28) | ✅ | ✅ |
+| Windows / macOS | not checked locally; covered by the CI matrix once `reqly-http` exists | — |
 
-## Решение
+## Decision
 
-**libcurl** через трейт `HttpEngine` в будущем crate `reqly-http`:
+**libcurl** behind an `HttpEngine` trait in the `reqly-http` crate:
 
-- Фичи `curl`: `ssl`, `static-curl`, `static-ssl`, `http2`, `ntlm`. Без системных
-  зависимостей в рантайме.
-- `Easy2` выполняется в blocking-пуле tokio (`spawn_blocking`). Отмена работает
-  через атомарный флаг, который проверяет progress/xferinfo-callback. При большом
-  числе параллельных запросов (Runner, этап 9) можно перейти на `Multi`, не меняя
-  трейт.
-- **Прокси задаются только явно.** libcurl по умолчанию читает `http_proxy` и
-  `https_proxy` из окружения. Движок всегда выставляет `CURLOPT_PROXY` и
-  `CURLOPT_NOPROXY` из настроек Reqly; режим «системный прокси» читает окружение
-  или ОС осознанно.
-- AWS SigV4, OAuth и прочие подписи считаются в Rust до передачи запроса в движок.
-- HTTP/3 откладывается (этап 4, «опционально»). Если понадобится, сначала
-  оценим отдельную сборку libcurl с ngtcp2.
+- `curl` features: `ssl`, `static-curl`, `static-ssl`, `http2`, `ntlm`. No
+  system dependencies at runtime.
+- `Easy2` runs in tokio's blocking pool (`spawn_blocking`). Cancellation uses
+  an atomic flag checked by the progress/xferinfo callback. With many
+  parallel requests (Runner, stage 9) we can move to `Multi` without changing
+  the trait.
+- **Proxies are always set explicitly.** By default libcurl reads
+  `http_proxy` and `https_proxy` from the environment. The engine always sets
+  `CURLOPT_PROXY` and `CURLOPT_NOPROXY` from Reqly's settings; the "system
+  proxy" mode reads the environment or the OS on purpose.
+- AWS SigV4, OAuth and other signatures are computed in Rust before the
+  request reaches the engine.
+- HTTP/3 is postponed (stage 4, optional). If needed, a separate libcurl
+  build with ngtcp2 will be evaluated first.
 
-## Последствия
+## Consequences
 
-- Timeline и метрики «как в Insomnia» достаются почти бесплатно.
-- C-зависимости (libcurl, OpenSSL, nghttp2, zlib) собираются из исходников, что
-  увеличивает время чистой сборки. Под Android сборка подтверждена.
-- `reqwest` остаётся в dev-зависимостях тестов и, возможно, во внутренних
-  клиентах (OAuth token endpoint), но не используется как движок пользовательских
-  запросов.
+- An Insomnia-like timeline and timings come almost for free.
+- C dependencies (libcurl, OpenSSL, nghttp2, zlib) are built from source,
+  which makes clean builds slower. The Android build is confirmed.
+- `reqwest` stays in test dev-dependencies and possibly in internal clients
+  (OAuth token endpoint), but is not the engine for user requests.
