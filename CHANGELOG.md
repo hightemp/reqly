@@ -5,6 +5,29 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Scripts: pre-request and after-response JavaScript on collections, folders
+  and requests, run in that order in a QuickJS sandbox (5 s and 64 MB by
+  default, no files or network except `sendRequest`). See `docs/scripts.md`
+  and ADR-006.
+- The `rq` API with `pm` (Postman) and `insomnia` (Insomnia) compatible
+  names: request editing, response access and assertions, variables of every
+  level, tests with chai, `sendRequest`, console, timers, `skipRequest`, and
+  the modules crypto-js, lodash, chai, moment and uuid.
+- Runtime variables set by scripts (highest priority, per collection, until
+  restart), listed and cleared in the environment manager.
+- Scripts tab with API completion and snippets; Console and Tests tabs in
+  the response.
+- Imported Postman and Insomnia scripts run, collection-level scripts
+  included; the import report lists unsupported APIs. Bruno scripts are kept
+  commented out.
+
+### Fixed
+
+- Pressing Enter in the URL field right after typing could send the request
+  instead of accepting the highlighted completion.
+
 ## [0.5.0] — 2026-10-17
 
 Stage 5: GraphQL, WebSocket, server-sent events and gRPC.
