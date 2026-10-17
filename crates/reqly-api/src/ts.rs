@@ -31,6 +31,8 @@ mod tests {
         assert!(ts.contains("import type { AppInfoOutput } from \"./AppInfoOutput\";"));
         assert!(ts.contains("\"app.info\": { input: Empty; output: AppInfoOutput };"));
         assert!(ts.contains("export type CommandName = keyof Commands;"));
+        // Types wrapped in Vec/Option are imported too.
+        assert!(ts.contains("import type { NodeSummary } from \"./NodeSummary\";"));
     }
 
     /// Writes the generated file next to ts-rs output. CI fails if it is stale.

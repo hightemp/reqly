@@ -78,16 +78,33 @@ impl<C: Send + Sync + 'static> Registry<C> {
             input: K::Input::name(&cfg),
             output: K::Output::name(&cfg),
         });
-        for (name, path) in [
-            (K::Input::name(&cfg), K::Input::output_path()),
-            (K::Output::name(&cfg), K::Output::output_path()),
-        ] {
-            if let Some(path) = path {
-                let stem = path.with_extension("").to_string_lossy().replace('\\', "/");
-                self.ts_decls.insert(name, stem);
+        self.record_ts_imports::<K::Input>(&cfg);
+        self.record_ts_imports::<K::Output>(&cfg);
+        self
+    }
+
+    /// Remembers the files to import for `T`: the type itself when it is
+    /// exported, otherwise (e.g. `Vec<NodeSummary>`) its exported generics.
+    fn record_ts_imports<T: TS + 'static + ?Sized>(&mut self, cfg: &ts_rs::Config) {
+        struct Collect<'a> {
+            cfg: &'a ts_rs::Config,
+            out: &'a mut BTreeMap<String, String>,
+        }
+        impl ts_rs::TypeVisitor for Collect<'_> {
+            fn visit<U: TS + 'static + ?Sized>(&mut self) {
+                match U::output_path() {
+                    Some(path) => {
+                        let stem = path.with_extension("").to_string_lossy().replace('\\', "/");
+                        self.out.insert(U::name(self.cfg), stem);
+                    }
+                    None => U::visit_generics(self),
+                }
             }
         }
-        self
+        ts_rs::TypeVisitor::visit::<T>(&mut Collect {
+            cfg,
+            out: &mut self.ts_decls,
+        });
     }
 
     pub async fn dispatch(&self, ctx: &C, name: &str, input: Value) -> CoreResult<Value> {

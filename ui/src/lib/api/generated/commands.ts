@@ -13,6 +13,7 @@ import type { IdsInput } from "./IdsInput";
 import type { NameInput } from "./NameInput";
 import type { Node } from "./Node";
 import type { NodeCreateInput } from "./NodeCreateInput";
+import type { NodeSummary } from "./NodeSummary";
 import type { NodeUpdateInput } from "./NodeUpdateInput";
 import type { RenameInput } from "./RenameInput";
 import type { SearchInput } from "./SearchInput";
