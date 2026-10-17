@@ -3,67 +3,103 @@ name: Release
 on:
   push:
     tags: ['v*']
+  # Re-run a release by hand, e.g. to rebuild the Docker image of a tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release (e.g. v0.3.0)
+        required: true
+      only:
+        description: What to build
+        type: choice
+        options: [all, docker, macos]
+        default: all
 
 permissions:
   contents: write
   packages: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+  ONLY: ${{ inputs.only || 'all' }}
 
 jobs:
   release:
     name: GitHub release
     runs-on: ubuntu-24.04
     outputs:
-      id: ${{ steps.create.outputs.id }}
+      id: ${{ steps.publish.outputs.id }}
+      latest: ${{ steps.latest.outputs.latest }}
+      desktop: ${{ steps.plan.outputs.desktop }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.TAG }}
           fetch-depth: 0
+      - name: Is this the highest version?
+        id: latest
+        run: |
+          highest=$(git ls-remote --tags --refs origin 'v*' | sed 's|.*refs/tags/||' | sort -V | tail -n1)
+          echo "latest=$([ "$highest" = "$TAG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - name: Plan
+        id: plan
+        run: |
+          all='[{"platform":"ubuntu-22.04","args":""},{"platform":"windows-latest","args":""},{"platform":"macos-latest","args":"--target universal-apple-darwin"}]'
+          case "$ONLY" in
+            all) desktop="$all" ;;
+            macos) desktop='[{"platform":"macos-latest","args":"--target universal-apple-darwin"}]' ;;
+            *) desktop='[]' ;;
+          esac
+          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
       - name: Check versions
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${TAG#v}"
           grep -q "^version = \"$version\"" Cargo.toml || { echo "Cargo.toml version is not $version"; exit 1; }
           grep -q "\"version\": \"$version\"" ui/package.json || { echo "ui/package.json version is not $version"; exit 1; }
       - name: Release notes
+        if: env.ONLY != 'docker'
         run: |
-          scripts/release-notes.sh "$GITHUB_REF_NAME" > notes.md
-          cat >> notes.md <<'NOTES'
-
-          ---
-
-          **Downloads:** desktop installers for Linux, Windows and macOS and the
-          server binary (`reqly-server-*-linux-*.tar.gz`) are attached below.
-          Docker: `docker pull ghcr.io/hightemp/reqly-server:${{ github.ref_name }}`.
-          NOTES
-          sed -i "s/reqly-server:v/reqly-server:/" notes.md
-      - name: Create release
-        id: create
+          version="${TAG#v}"
+          # The changelog of the workflow's commit: for a tag push it is the tag
+          # itself, for a manual run the current branch (newest wording).
+          git show "$GITHUB_SHA:CHANGELOG.md" > "$RUNNER_TEMP/CHANGELOG.md"
+          git show "$GITHUB_SHA:scripts/release-notes.sh" > "$RUNNER_TEMP/release-notes.sh"
+          bash "$RUNNER_TEMP/release-notes.sh" "$version" "$RUNNER_TEMP/CHANGELOG.md" > notes.md
+          {
+            echo
+            echo '---'
+            echo
+            echo '**Downloads:** desktop installers for Linux, Windows and macOS and the'
+            echo 'server binary (`reqly-server-*-linux-*.tar.gz`) are attached below.'
+            echo "Docker: \`docker pull ghcr.io/hightemp/reqly-server:$version\`."
+          } >> notes.md
+      - name: Create or update the release
+        id: publish
+        if: env.ONLY != 'docker'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST: ${{ steps.latest.outputs.latest }}
         run: |
-          # Only the highest version is marked as the latest release.
-          highest=$(git tag --list 'v*' --sort=-v:refname | head -n1)
-          latest=false
-          [ "$highest" = "$GITHUB_REF_NAME" ] && latest=true
-          gh release create "$GITHUB_REF_NAME" --verify-tag --title "Reqly $GITHUB_REF_NAME" \
-            --notes-file notes.md --latest="$latest"
-          echo "id=$(gh release view "$GITHUB_REF_NAME" --json databaseId --jq .databaseId)" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file notes.md
+          else
+            gh release create "$TAG" --verify-tag --title "Reqly $TAG" --notes-file notes.md --latest="$LATEST"
+          fi
+          echo "id=$(gh release view "$TAG" --json databaseId --jq .databaseId)" >> "$GITHUB_OUTPUT"
 
   desktop:
     name: Desktop (${{ matrix.platform }})
     needs: release
+    if: needs.release.outputs.desktop != '[]'
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: ubuntu-22.04
-            args: ''
-          - platform: windows-latest
-            args: ''
-          - platform: macos-latest
-            args: '--target universal-apple-darwin'
+        include: ${{ fromJSON(needs.release.outputs.desktop) }}
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
@@ -78,13 +114,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: pnpm install --frozen-lockfile
+      # macOS code signing only when the secrets exist (an empty certificate
+      # makes the bundler fail).
+      - name: Signing
+        if: runner.os == 'macOS'
+        env:
+          CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          if [ -n "$CERT" ]; then
+            {
+              echo "APPLE_CERTIFICATE=$CERT"
+              echo "APPLE_CERTIFICATE_PASSWORD=$CERT_PASSWORD"
+              echo "APPLE_SIGNING_IDENTITY=$IDENTITY"
+            } >> "$GITHUB_ENV"
+          fi
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional code signing (set these secrets to sign):
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         with:
           projectPath: apps/desktop
           releaseId: ${{ needs.release.outputs.id }}
@@ -93,6 +141,7 @@ jobs:
   server:
     name: Server binary (${{ matrix.arch }})
     needs: release
+    if: needs.release.outputs.desktop != '[]' && (inputs.only || 'all') == 'all'
     strategy:
       matrix:
         include:
@@ -103,6 +152,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
@@ -115,18 +166,21 @@ jobs:
       - run: cargo build --release -p reqly-server --locked
       - run: |
           mkdir dist
-          tar -C target/release -czf dist/reqly-server-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz reqly-server
+          tar -C target/release -czf "dist/reqly-server-$TAG-linux-${{ matrix.arch }}.tar.gz" reqly-server
       - name: Upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+        run: gh release upload "$TAG" dist/* --clobber
 
   docker:
     name: Docker image
     needs: release
+    if: (inputs.only || 'all') != 'macos'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -134,20 +188,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Is this the highest version?
-        id: latest
-        run: |
-          git fetch --tags --quiet
-          highest=$(git tag --list 'v*' --sort=-v:refname | head -n1)
-          echo "latest=$([ "$highest" = "$GITHUB_REF_NAME" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: docker/metadata-action@v5
         id: meta
         with:
           images: ghcr.io/${{ github.repository_owner }}/reqly-server
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ steps.latest.outputs.latest }}
+            type=semver,pattern={{version}},value=${{ env.TAG }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ env.TAG }}
+            type=raw,value=latest,enable=${{ needs.release.outputs.latest }}
       - uses: docker/build-push-action@v6
         with:
           context: .
