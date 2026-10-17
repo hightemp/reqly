@@ -286,11 +286,24 @@ pub(crate) async fn prepare_stored_with(
 ) -> CoreResult<(PreparedRequest, Id)> {
     let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
     let node = tree.get_node(request_id).await?;
-    let NodeData::Request(http) = &node.data else {
-        return Err(
-            CoreError::new("request.not_http", "only HTTP requests can be sent")
-                .with_param("id", request_id.to_string()),
-        );
+    // WebSocket handshakes and gRPC calls are prepared like HTTP requests.
+    let converted;
+    let http = match &node.data {
+        NodeData::Request(r) => r,
+        NodeData::WebSocket(w) => {
+            converted = w.as_http();
+            &converted
+        }
+        NodeData::Grpc(g) => {
+            converted = g.as_http();
+            &converted
+        }
+        NodeData::Folder(_) => {
+            return Err(
+                CoreError::new("request.not_http", "only requests can be sent")
+                    .with_param("id", request_id.to_string()),
+            );
+        }
     };
     let scope = Scope::load(ctx, node.collection_id, Some(request_id)).await?;
     let host = SendHost {
@@ -367,6 +380,58 @@ pub(crate) async fn exec_options(
     })
 }
 
+/// TLS options for connections that do not go through libcurl (WebSocket, gRPC).
+pub(crate) async fn stream_tls(
+    ctx: &AppContext,
+    url: &str,
+    settings: &RequestSettings,
+) -> CoreResult<reqly_protocols::tls::TlsOptions> {
+    let tls: TlsSettings = setting(ctx, HTTP_TLS_KEY).await?;
+    let global: RequestSettings = setting(ctx, HTTP_DEFAULTS_KEY).await?;
+    let identity = match client_identity(&tls, url)? {
+        Some(ClientIdentity::Pem { cert, key }) => Some((cert, key)),
+        Some(ClientIdentity::Pkcs12 { .. }) => {
+            tracing::warn!("PKCS#12 client certificates are not supported for WebSocket and gRPC");
+            None
+        }
+        None => None,
+    };
+    Ok(reqly_protocols::tls::TlsOptions {
+        verify: settings.verify_tls.or(global.verify_tls).unwrap_or(true),
+        ca_pems: tls.ca_pems,
+        identity,
+        alpn: Vec::new(),
+    })
+}
+
+/// Renders `text` in the scope of a request (variables, environments, tags).
+pub(crate) async fn render_in_request(
+    ctx: &AppContext,
+    request_id: Id,
+    text: &str,
+) -> CoreResult<String> {
+    if !reqly_template::has_template(text) {
+        return Ok(text.to_string());
+    }
+    let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
+    let node = tree.get_node(request_id).await?;
+    let scope = Scope::load(ctx, node.collection_id, Some(request_id)).await?;
+    let prompts = HashMap::new();
+    let host = SendHost {
+        ctx,
+        scope: &scope,
+        prompt_values: &prompts,
+        chain: &[],
+    };
+    let options = RenderOptions {
+        locale: template::faker_locale(ctx, node.collection_id).await,
+        ..RenderOptions::default()
+    };
+    Renderer::new(&scope.vars, &host, options)
+        .render(text)
+        .await
+}
+
 /// Sends through the network policy when the server has one.
 pub(crate) async fn execute(
     ctx: &AppContext,
@@ -394,6 +459,15 @@ pub async fn send_request_with(
     prompts: &HashMap<String, String>,
     chain: &[Id],
 ) -> CoreResult<ResponseRecord> {
+    let node = TreeRepo::new(&ctx.storage, ctx.clock.as_ref())
+        .get_node(request_id)
+        .await?;
+    if matches!(node.data, NodeData::WebSocket(_) | NodeData::Grpc(_)) {
+        return Err(CoreError::new(
+            "request.use_connect",
+            "this request opens a connection; connect instead",
+        ));
+    }
     let (mut prepared, workspace_id) = prepare_stored(ctx, request_id, prompts, chain).await?;
     let snapshot = serde_json::to_value(RequestSnapshot::from(&prepared)).unwrap_or_default();
     resolve_blobs(ctx, &mut prepared)?;

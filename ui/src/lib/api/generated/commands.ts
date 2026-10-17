@@ -70,6 +70,11 @@ import type { SearchInput } from "./SearchInput";
 import type { SettingsGetInput } from "./SettingsGetInput";
 import type { SettingsGetOutput } from "./SettingsGetOutput";
 import type { SettingsSetInput } from "./SettingsSetInput";
+import type { StreamConnectInput } from "./StreamConnectInput";
+import type { StreamIdInput } from "./StreamIdInput";
+import type { StreamInfo } from "./StreamInfo";
+import type { StreamMessage } from "./StreamMessage";
+import type { StreamSendInput } from "./StreamSendInput";
 import type { TargetInfo } from "./TargetInfo";
 import type { TemplateFunctionsOutput } from "./TemplateFunctionsOutput";
 import type { TemplatePreviewInput } from "./TemplatePreviewInput";
@@ -155,6 +160,12 @@ export type Commands = {
   "graphql.schemaGet": { input: GraphqlRequestInput; output: GraphqlSchemaOutput };
   "graphql.schemaSet": { input: GraphqlSchemaSetInput; output: GraphqlSchema };
   "graphql.schemaClear": { input: GraphqlRequestInput; output: Empty };
+  "stream.connect": { input: StreamConnectInput; output: StreamInfo };
+  "stream.send": { input: StreamSendInput; output: StreamMessage };
+  "stream.disconnect": { input: StreamIdInput; output: Empty };
+  "stream.list": { input: Empty; output: Array<StreamInfo> };
+  "stream.log": { input: StreamIdInput; output: Array<StreamMessage> };
+  "stream.clearLog": { input: StreamIdInput; output: Empty };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

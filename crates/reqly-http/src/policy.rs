@@ -128,6 +128,25 @@ impl NetworkPolicy {
             .any(|h| h.eq_ignore_ascii_case(host))
     }
 
+    /// Checks the target of a non-curl connection (WebSocket, gRPC). Returns
+    /// the checked address to connect to, so DNS cannot change in between;
+    /// `None` when the host is allowed as is.
+    pub async fn check_target(&self, url: &str) -> CoreResult<Option<std::net::SocketAddr>> {
+        let Some(pin) = self.check_url(url).await? else {
+            return Ok(None);
+        };
+        // `host:port:address`
+        let mut parts = pin.splitn(3, ':');
+        let (_, port, addr) = (parts.next(), parts.next(), parts.next());
+        let ip = addr
+            .map(|a| a.trim_matches(|c| c == '[' || c == ']'))
+            .and_then(|a| a.parse::<IpAddr>().ok());
+        Ok(match (ip, port.and_then(|p| p.parse::<u16>().ok())) {
+            (Some(ip), Some(port)) => Some(std::net::SocketAddr::new(ip, port)),
+            _ => None,
+        })
+    }
+
     /// Resolves and checks `url`; returns a curl `--resolve` pin, if any.
     async fn check_url(&self, url: &str) -> CoreResult<Option<String>> {
         let parsed = Url::parse(url).map_err(|e| {

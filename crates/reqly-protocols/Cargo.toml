@@ -1,0 +1,30 @@
+[package]
+name = "reqly-protocols"
+description = "WebSocket, server-sent events, GraphQL subscriptions and gRPC clients"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+base64 = "0.22"
+futures.workspace = true
+http = "1"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-native-certs = "0.8"
+rustls-pemfile = "2"
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tokio-tungstenite = { version = "0.29", features = ["rustls-tls-webpki-roots"] }
+tracing.workspace = true
+url = "2"
+webpki-roots = "1"
+
+[dev-dependencies]
+reqly-testserver.workspace = true
+proptest.workspace = true
+
+[lints]
+workspace = true

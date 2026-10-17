@@ -4,6 +4,7 @@ pub mod graphql;
 pub mod http;
 pub mod interop;
 pub mod oauth2;
+pub mod stream;
 pub mod template;
 pub mod tree;
 
@@ -46,6 +47,8 @@ pub struct AppContext {
     >,
     /// Interactive OAuth 2.0 sign-ins in progress, by flow id.
     pub oauth2_flows: std::sync::Mutex<std::collections::HashMap<String, oauth2::PendingFlow>>,
+    /// Open WebSocket, SSE and GraphQL subscription connections.
+    pub streams: stream::Streams,
 }
 
 impl AppContext {
@@ -60,6 +63,7 @@ impl AppContext {
             data_dir: None,
             inflight: Default::default(),
             oauth2_flows: Default::default(),
+            streams: Default::default(),
         }
     }
 
@@ -91,6 +95,7 @@ pub fn registry() -> Registry<AppContext> {
     interop::register(&mut r);
     oauth2::register(&mut r);
     graphql::register(&mut r);
+    stream::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

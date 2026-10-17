@@ -46,7 +46,7 @@ pub enum ClientIdentity {
     Pkcs12 { der: Vec<u8>, passphrase: String },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ExecOptions {
     /// Extra trusted CAs (PEM), added to the OS and Mozilla roots.
     pub ca_pems: Vec<String>,
@@ -57,7 +57,31 @@ pub struct ExecOptions {
     pub max_body_in_memory: usize,
     /// `host:port:address` pins (curl `--resolve`), used by the network policy.
     pub resolve: Vec<String>,
+    /// Streams the body here instead of keeping it (server-sent events).
+    pub body_sink: Option<BodySink>,
 }
+
+impl std::fmt::Debug for ExecOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ExecOptions")
+            .field("ca_pems", &self.ca_pems.len())
+            .field("client_identity", &self.client_identity.is_some())
+            .field("cookies", &self.cookies.len())
+            .field("max_body_in_memory", &self.max_body_in_memory)
+            .field("resolve", &self.resolve)
+            .field("body_sink", &self.body_sink.is_some())
+            .finish()
+    }
+}
+
+/// What a [`BodySink`] receives: the response head once, then body chunks.
+pub enum BodyEvent<'a> {
+    /// Status line first, then header lines.
+    Head(&'a [String]),
+    Data(&'a [u8]),
+}
+
+pub type BodySink = std::sync::Arc<dyn Fn(BodyEvent<'_>) + Send + Sync>;
 
 impl Default for ExecOptions {
     fn default() -> Self {
@@ -67,6 +91,7 @@ impl Default for ExecOptions {
             cookies: Vec::new(),
             max_body_in_memory: 4 * 1024 * 1024,
             resolve: Vec::new(),
+            body_sink: None,
         }
     }
 }
@@ -160,6 +185,8 @@ struct Collector {
     /// Abort above this many body bytes (0 = no limit).
     max_bytes: u64,
     too_large: bool,
+    sink: Option<BodySink>,
+    head_sent: bool,
 }
 
 impl Collector {
@@ -178,6 +205,18 @@ impl Collector {
 
 impl Handler for Collector {
     fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+        if let Some(sink) = &self.sink {
+            if self.cancel.is_cancelled() {
+                return Ok(0);
+            }
+            if !self.head_sent {
+                self.head_sent = true;
+                sink(BodyEvent::Head(&self.headers));
+            }
+            self.body_size += data.len() as u64;
+            sink(BodyEvent::Data(data));
+            return Ok(data.len());
+        }
         if self.max_bytes > 0 && self.body_size + data.len() as u64 > self.max_bytes {
             self.too_large = true;
             return Ok(0); // aborts the transfer
@@ -702,6 +741,8 @@ pub fn execute_blocking(
         io_error: None,
         max_bytes: request.settings.max_response_bytes.unwrap_or(0),
         too_large: false,
+        sink: options.body_sink.clone(),
+        head_sent: false,
     });
     // Challenge-response auth starts with its first message (NTLM negotiate).
     let mut current = request.clone();

@@ -193,3 +193,40 @@ impl Default for GrpcRequest {
         }
     }
 }
+
+impl WebSocketRequest {
+    /// The handshake as an HTTP request (templates, auth and folder headers
+    /// apply to it the same way).
+    pub fn as_http(&self) -> super::HttpRequest {
+        super::HttpRequest {
+            method: "GET".into(),
+            url: self.url.clone(),
+            params: self.params.clone(),
+            headers: self.headers.clone(),
+            auth: self.auth.clone(),
+            settings: self.settings.clone(),
+            variables: self.variables.clone(),
+            ..super::HttpRequest::default()
+        }
+    }
+}
+
+impl GrpcRequest {
+    /// Metadata, auth and settings as an HTTP request; `message` rides in the body.
+    pub fn as_http(&self) -> super::HttpRequest {
+        super::HttpRequest {
+            method: "POST".into(),
+            url: self.url.clone(),
+            headers: self.metadata.clone(),
+            auth: self.auth.clone(),
+            settings: self.settings.clone(),
+            variables: self.variables.clone(),
+            body: super::Body {
+                kind: super::BodyKind::Json,
+                text: self.message.clone(),
+                ..super::Body::default()
+            },
+            ..super::HttpRequest::default()
+        }
+    }
+}

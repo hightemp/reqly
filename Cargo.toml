@@ -18,6 +18,7 @@ reqly-testserver = { path = "crates/reqly-testserver" }
 reqly-http = { path = "crates/reqly-http" }
 reqly-template = { path = "crates/reqly-template" }
 reqly-interop = { path = "crates/reqly-interop" }
+reqly-protocols = { path = "crates/reqly-protocols" }
 
 anyhow = "1"
 async-trait = "0.1"
