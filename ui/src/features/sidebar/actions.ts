@@ -20,10 +20,67 @@ export interface TreeActionHooks {
 
 const SORT_MODES: SortMode[] = ['manual', 'name', 'method', 'created', 'updated'];
 
-export async function createRequest(s: Services, at: string | null) {
-  const id = await s.tree.createRequest(at, t('names.newRequest'));
+export type RequestKind = 'http' | 'graphql' | 'webSocket' | 'sse' | 'grpc';
+
+export const REQUEST_KINDS: RequestKind[] = ['http', 'graphql', 'webSocket', 'sse', 'grpc'];
+
+/** Initial data of a new request of each kind. */
+export function newRequestData(kind: RequestKind): Record<string, unknown> {
+  switch (kind) {
+    case 'graphql':
+      return {
+        kind: 'request',
+        method: 'POST',
+        body: {
+          kind: 'graphql',
+          graphql: { query: 'query {\n  \n}\n', variables: '', operationName: '' },
+        },
+      };
+    case 'sse':
+      return { kind: 'request', eventStream: true };
+    case 'webSocket':
+      return { kind: 'webSocket' };
+    case 'grpc':
+      return { kind: 'grpc' };
+    default:
+      return { kind: 'request' };
+  }
+}
+
+const KIND_NAMES = {
+  http: 'names.newRequest',
+  graphql: 'names.newGraphql',
+  webSocket: 'names.newWebSocket',
+  sse: 'names.newSse',
+  grpc: 'names.newGrpc',
+} as const;
+
+const KIND_LABELS = {
+  http: 'actions.newRequest',
+  graphql: 'actions.newGraphql',
+  webSocket: 'actions.newWebSocket',
+  sse: 'actions.newSse',
+  grpc: 'actions.newGrpc',
+} as const;
+
+export function requestKindLabel(kind: RequestKind): string {
+  return t(KIND_LABELS[kind]);
+}
+
+export async function createRequest(s: Services, at: string | null, kind: RequestKind = 'http') {
+  const id = await s.tree.createRequest(at, t(KIND_NAMES[kind]), newRequestData(kind));
   if (id) s.tabs.open(id);
   return id;
+}
+
+/** Menu entries creating each kind of request. */
+export function createEntries(s: Services, at: string | null, shortcut?: string): MenuEntry[] {
+  return REQUEST_KINDS.map((kind) => ({
+    id: `new-${kind}`,
+    label: requestKindLabel(kind),
+    shortcut: kind === 'http' ? shortcut : undefined,
+    onSelect: () => void createRequest(s, at, kind),
+  }));
 }
 
 export async function createFolder(s: Services, at: string | null) {
@@ -73,12 +130,7 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
 
   const entries: MenuEntry[] = [
     { heading: t('actions.create') },
-    {
-      id: 'new-request',
-      label: t('actions.newRequest'),
-      shortcut: k('request.new'),
-      onSelect: () => void createRequest(s, at),
-    },
+    ...createEntries(s, at, k('request.new')),
     {
       id: 'new-folder',
       label: t('actions.newFolder'),

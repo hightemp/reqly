@@ -10,7 +10,7 @@
   import Select from '$lib/ui/overlay/Select.svelte';
   import EnvironmentSwitcher from '../environments/EnvironmentSwitcher.svelte';
   import { interopDialogs } from '../interop/dialogs.svelte';
-  import { bindTreeHotkeys, createFolder, createRequest, type TreeActionHooks } from './actions';
+  import { bindTreeHotkeys, createEntries, createFolder, type TreeActionHooks } from './actions';
   import CategoriesView from './CategoriesView.svelte';
   import { makeFilter, parseQuery } from './filter';
   import RequestTree from './RequestTree.svelte';
@@ -175,11 +175,8 @@
   function createMenu(anchor: HTMLElement) {
     const at = services.tree.selected.length === 1 ? services.tree.selected[0]! : null;
     menus.openBelow(anchor, [
-      {
-        id: 'request',
-        label: t('actions.newRequest'),
-        onSelect: () => void createRequest(services, at),
-      },
+      ...createEntries(services, at),
+      { separator: true },
       {
         id: 'folder',
         label: t('actions.newFolder'),

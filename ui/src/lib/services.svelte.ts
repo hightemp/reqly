@@ -8,6 +8,7 @@ import { PreferencesStore } from './preferences.svelte';
 import { EditorStore } from './stores/editor.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
+import { StreamStore } from './stores/streams.svelte';
 import { TabsStore } from './stores/tabs.svelte';
 import { TreeStore } from './stores/tree.svelte';
 import { WorkspaceStore } from './stores/workspace.svelte';
@@ -40,6 +41,7 @@ export interface Services {
   tabs: TabsStore;
   editor: EditorStore;
   responses: ResponseStore;
+  streams: StreamStore;
   environments: EnvironmentStore;
   scopes: FocusScopes;
 }
@@ -69,6 +71,7 @@ export async function createServices(
   const tabs = new TabsStore(transport);
   const editor = new EditorStore(transport, () => prefs.value.autosave);
   const responses = new ResponseStore(transport, (id) => editor.flush(id));
+  const streams = new StreamStore(transport, (id) => editor.flush(id));
   const environments = new EnvironmentStore(transport);
   try {
     await workspace.load();
@@ -94,6 +97,7 @@ export async function createServices(
     tabs,
     editor,
     responses,
+    streams,
     environments,
     scopes: new FocusScopes(),
   };

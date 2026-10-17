@@ -1,4 +1,5 @@
 <script lang="ts">
+  import GraphqlBody from '../../graphql/GraphqlBody.svelte';
   import { onMount, type Snippet } from 'svelte';
   import type { Body } from '$lib/api/generated/Body';
   import type { KeyValue } from '$lib/api/generated/KeyValue';
@@ -43,6 +44,7 @@
     { value: 'formUrlencoded', label: t('body.formUrlencoded') },
     { value: 'multipart', label: t('body.multipart') },
     { value: 'binary', label: t('body.binary') },
+    { value: 'graphql', label: 'GraphQL' },
   ]);
   const language = $derived(LANG[body.kind]);
 
@@ -75,6 +77,13 @@
   <div class="content">
     {#if body.kind === 'none'}
       <EmptyState title={t('body.noneHint')} />
+    {:else if body.kind === 'graphql' && nodeId}
+      <GraphqlBody
+        {services}
+        {nodeId}
+        value={body.graphql}
+        onchange={(graphql) => onchange({ ...body, graphql })}
+      />
     {:else if language}
       <div class="code">
         <CodeEditor

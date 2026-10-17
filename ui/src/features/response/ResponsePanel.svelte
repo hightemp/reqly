@@ -18,6 +18,8 @@
   import StatusBadge from '$lib/ui/StatusBadge.svelte';
   import Tabs from '$lib/ui/Tabs.svelte';
   import { parseSetCookie } from './body';
+  import { streamKind } from '$lib/protocols';
+  import StreamLog from '../stream/StreamLog.svelte';
   import BodyView from './BodyView.svelte';
 
   let { services }: { services: Services } = $props();
@@ -29,6 +31,13 @@
   onDestroy(() => clearInterval(timer));
 
   const requestId = $derived(services.tabs.activeId);
+  const streaming = $derived(
+    requestId ? streamKind(services.editor.get(requestId)?.node?.data) !== null : false,
+  );
+  const streamRun = $derived(requestId && streaming ? services.streams.run(requestId) : null);
+  $effect(() => {
+    if (requestId && streaming) void services.streams.load(requestId);
+  });
   const run = $derived(requestId ? services.responses.run(requestId) : null);
   const record = $derived(run?.current ?? null);
   const timings = $derived((record?.timings ?? null) as Timings | null);
@@ -103,7 +112,9 @@
   const prefix: Record<string, string> = { info: '*', headerOut: '>', dataOut: '|', headerIn: '<' };
 </script>
 
-{#if !requestId || !run}
+{#if requestId && streamRun}
+  <StreamLog run={streamRun} onclear={() => void services.streams.clear(requestId)} />
+{:else if !requestId || !run}
   <EmptyState title={t('response.empty')} />
 {:else}
   <div class="response">

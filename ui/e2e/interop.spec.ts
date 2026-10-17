@@ -40,10 +40,10 @@ test('import an Insomnia export from a file, with the report', async ({ page }) 
   await expect(tree).toContainText('List users');
   const report = dialog.getByRole('region', { name: 'Report' });
   await expect(report).not.toContainText('digest');
-  await expect(report).toContainText('WebSocket requests are not supported yet');
+  await expect(report).toContainText('the .proto file of this gRPC request is not in the export');
 
   await dialog.getByRole('button', { name: 'Import', exact: true }).click();
-  await expect(dialog).toContainText('Imported 8 requests');
+  await expect(dialog).toContainText('Imported 10 requests');
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(page.getByRole('combobox', { name: 'Collection' })).toHaveText(/Example API/);
   await expect(page.getByRole('treeitem', { name: /Users/ })).toBeVisible();

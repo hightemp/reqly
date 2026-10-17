@@ -24,7 +24,7 @@
   import SettingsModal from '../settings/SettingsModal.svelte';
   import RequestPanel from '../request/RequestPanel.svelte';
   import ResponsePanel from '../response/ResponsePanel.svelte';
-  import { createFolder, createRequest } from '../sidebar/actions';
+  import { createFolder, createRequest, REQUEST_KINDS, requestKindLabel } from '../sidebar/actions';
   import Sidebar from '../sidebar/Sidebar.svelte';
   import RequestTabs from '../tabs/RequestTabs.svelte';
   import { createTemplateHostFactory } from '../template/host';
@@ -52,6 +52,8 @@
   provideTemplateHost(createTemplateHostFactory(environments));
   // svelte-ignore state_referenced_locally
   services.responses.askPrompts = (prompts) => promptState.ask(prompts);
+  // svelte-ignore state_referenced_locally
+  services.streams.askPrompts = (prompts) => promptState.ask(prompts);
 
   // i18n-dynamic: languages.
   let offline = $state(false);
@@ -94,11 +96,11 @@
   );
 
   const paletteCommands = $derived<PaletteCommand[]>([
-    {
-      id: 'new-request',
-      label: t('actions.newRequest'),
-      run: () => void createRequest(services, selectedOne()),
-    },
+    ...REQUEST_KINDS.map((kind) => ({
+      id: `new-${kind}`,
+      label: requestKindLabel(kind),
+      run: () => void createRequest(services, selectedOne(), kind),
+    })),
     {
       id: 'new-folder',
       label: t('actions.newFolder'),

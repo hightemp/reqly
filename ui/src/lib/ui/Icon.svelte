@@ -38,6 +38,12 @@
     layers: 'M12 3l9 5-9 5-9-5z M3 13l9 5 9-5',
     braces:
       'M9 4H8a2 2 0 0 0-2 2v4l-2 2 2 2v4a2 2 0 0 0 2 2h1 M15 4h1a2 2 0 0 1 2 2v4l2 2-2 2v4a2 2 0 0 1-2 2h-1',
+    'arrow-up': 'M12 19V5 M6 11l6-6 6 6',
+    'arrow-down': 'M12 5v14 M6 13l6 6 6-6',
+    info: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 11v5 M12 8h.01',
+    book: 'M5 4h9a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z M5 17a3 3 0 0 1 3-3h9',
+    refresh: 'M20 11a8 8 0 0 0-14.9-3 M4 4v4h4 M4 13a8 8 0 0 0 14.9 3 M20 20v-4h-4',
+    file: 'M6 3h8l4 4v14H6z M14 3v4h4',
   } as const;
   export type IconName = keyof typeof PATHS;
 </script>

@@ -2,8 +2,11 @@
 // the server always ends with the latest local state.
 
 import type { FolderData } from '$lib/api/generated/FolderData';
+import type { GrpcRequest } from '$lib/api/generated/GrpcRequest';
 import type { HttpRequest } from '$lib/api/generated/HttpRequest';
 import type { Node } from '$lib/api/generated/Node';
+import type { NodeData } from '$lib/api/generated/NodeData';
+import type { WebSocketRequest } from '$lib/api/generated/WebSocketRequest';
 import type { Transport } from '$lib/api/transport';
 import { SvelteMap } from 'svelte/reactivity';
 import { errorMessage } from '$lib/errors';
@@ -13,6 +16,8 @@ const AUTOSAVE_DELAY_MS = 500;
 
 type RequestData = HttpRequest & { kind: 'request' };
 type FolderNodeData = FolderData & { kind: 'folder' };
+export type WebSocketData = WebSocketRequest & { kind: 'webSocket' };
+export type GrpcData = GrpcRequest & { kind: 'grpc' };
 
 export class Draft {
   node = $state<Node | null>(null);
@@ -31,6 +36,14 @@ export class Draft {
 
   get folder(): FolderNodeData | null {
     return this.node?.data.kind === 'folder' ? (this.node.data as FolderNodeData) : null;
+  }
+
+  get webSocket(): WebSocketData | null {
+    return this.node?.data.kind === 'webSocket' ? (this.node.data as WebSocketData) : null;
+  }
+
+  get grpc(): GrpcData | null {
+    return this.node?.data.kind === 'grpc' ? (this.node.data as GrpcData) : null;
   }
 }
 
@@ -99,6 +112,14 @@ export class EditorStore {
     const req = draft?.request;
     if (!draft?.node || !req) return;
     draft.node = { ...draft.node, data: mutate(req) };
+    this.changed(draft);
+  }
+
+  /** Edits node data of the same kind (WebSocket, gRPC…). */
+  editData<D extends NodeData>(id: string, kind: D['kind'], mutate: (d: D) => D) {
+    const draft = this.drafts.get(id);
+    if (!draft?.node || draft.node.data.kind !== kind) return;
+    draft.node = { ...draft.node, data: mutate(draft.node.data as D) };
     this.changed(draft);
   }
 

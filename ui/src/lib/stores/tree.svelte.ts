@@ -202,7 +202,11 @@ export class TreeStore {
     }
   }
 
-  async createRequest(at: string | null, name: string): Promise<string | undefined> {
+  async createRequest(
+    at: string | null,
+    name: string,
+    data: Record<string, unknown> = { kind: 'request' },
+  ): Promise<string | undefined> {
     if (!this.collectionId) return;
     const { parentId, placement } = this.containerFor(at);
     const node = await this.run(() =>
@@ -210,7 +214,7 @@ export class TreeStore {
         collectionId: this.collectionId!,
         parentId,
         name,
-        data: { kind: 'request' } as never,
+        data: data as never,
         placement,
       }),
     );

@@ -23,6 +23,8 @@
     oncode?: () => void;
     /** Request whose variables apply. */
     nodeId?: string | null;
+    /** Streams (SSE, subscriptions): Connect / Disconnect instead of Send / Cancel. */
+    streaming?: boolean;
   }
 
   let {
@@ -37,6 +39,7 @@
     oncurl,
     oncode,
     nodeId = null,
+    streaming = false,
   }: Props = $props();
   let input: TemplateInput | undefined = $state();
 
@@ -98,9 +101,13 @@
     <IconButton icon="braces" label={t('actions.generateCode')} onclick={oncode} />
   {/if}
   {#if sending}
-    <Button variant="default" onclick={oncancel}>{t('request.cancel')}</Button>
+    <Button variant="default" onclick={oncancel}
+      >{streaming ? t('stream.disconnect') : t('request.cancel')}</Button
+    >
   {:else}
-    <Button variant="primary" onclick={onsend}>{t('request.send')}</Button>
+    <Button variant="primary" onclick={onsend}
+      >{streaming ? t('stream.connect') : t('request.send')}</Button
+    >
   {/if}
 </div>
 

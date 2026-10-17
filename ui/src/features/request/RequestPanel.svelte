@@ -21,6 +21,9 @@
   import BodyPanel from './panels/BodyPanel.svelte';
   import DocsPanel from './panels/DocsPanel.svelte';
   import SettingsPanel from './panels/SettingsPanel.svelte';
+  import { streamKind } from '$lib/protocols';
+  import GrpcPanel from '../stream/GrpcPanel.svelte';
+  import WebSocketPanel from '../stream/WebSocketPanel.svelte';
   import UrlBar from './UrlBar.svelte';
   import { syncPathParams } from './urlsync';
 
@@ -38,6 +41,9 @@
   const activeId = $derived(services.tabs.activeId);
   const req = $derived(draft?.request ?? null);
   const run = $derived(activeId ? services.responses.run(activeId) : null);
+  /** SSE requests and GraphQL subscriptions connect instead of sending. */
+  const streaming = $derived(req ? streamKind(draft?.node?.data) !== null : false);
+  const streamRun = $derived(activeId && streaming ? services.streams.run(activeId) : null);
 
   $effect(() => {
     const id = activeId;
@@ -147,7 +153,14 @@
   }
 
   function send() {
-    if (activeId) void services.responses.send(activeId);
+    if (!activeId) return;
+    const kind = streamKind(services.editor.get(activeId)?.node?.data);
+    if (!kind) return void services.responses.send(activeId);
+    // WebSocket and gRPC panels handle their own keys (Ctrl+Enter sends a message).
+    if (kind === 'webSocket' || kind === 'grpc') return;
+    const stream = services.streams.run(activeId);
+    if (stream.open) void services.streams.disconnect(activeId);
+    else void services.streams.connect(activeId);
   }
 
   onMount(() => {
@@ -196,6 +209,10 @@
 
 {#if !activeId}
   <EmptyState title={t('request.empty')} />
+{:else if draft?.webSocket}
+  <WebSocketPanel {services} id={activeId} ws={draft.webSocket} />
+{:else if draft?.grpc}
+  <GrpcPanel {services} id={activeId} grpc={draft.grpc} />
 {:else if !req || !run}
   <div class="loading"><Spinner /></div>
 {:else}
@@ -206,11 +223,16 @@
       method={req.method}
       url={req.url}
       params={req.params}
-      sending={run.sending}
+      sending={streamRun ? streamRun.open : run.sending}
+      {streaming}
       onmethod={(method) => edit((r) => ({ ...r, method }))}
       onurl={setUrl}
       onsend={send}
-      oncancel={() => activeId && void services.responses.cancel(activeId)}
+      oncancel={() =>
+        activeId &&
+        (streaming
+          ? void services.streams.disconnect(activeId)
+          : void services.responses.cancel(activeId))}
       oncurl={(c) => void importCurl(c)}
       oncode={() => activeId && interopDialogs.openCodegen(activeId)}
     />
