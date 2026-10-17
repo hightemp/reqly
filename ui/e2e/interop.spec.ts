@@ -39,7 +39,7 @@ test('import an Insomnia export from a file, with the report', async ({ page }) 
   await expect(tree).toContainText('Example API');
   await expect(tree).toContainText('List users');
   const report = dialog.getByRole('region', { name: 'Report' });
-  await expect(report).toContainText('digest');
+  await expect(report).not.toContainText('digest');
   await expect(report).toContainText('WebSocket requests are not supported yet');
 
   await dialog.getByRole('button', { name: 'Import', exact: true }).click();
