@@ -28,6 +28,8 @@ import type { RenameInput } from "./RenameInput";
 import type { RequestIdInput } from "./RequestIdInput";
 import type { ResponseBodyChunkOutput } from "./ResponseBodyChunkOutput";
 import type { ResponseBodyInput } from "./ResponseBodyInput";
+import type { ResponseFilterInput } from "./ResponseFilterInput";
+import type { ResponseFilterOutput } from "./ResponseFilterOutput";
 import type { ResponseListInput } from "./ResponseListInput";
 import type { ResponseRecord } from "./ResponseRecord";
 import type { ResponseSaveInput } from "./ResponseSaveInput";
@@ -81,6 +83,7 @@ export type Commands = {
   "cookies.clear": { input: WorkspaceIdInput; output: Empty };
   "blob.upload": { input: BlobUploadInput; output: BlobUploadOutput };
   "response.saveBody": { input: ResponseSaveInput; output: Empty };
+  "response.filter": { input: ResponseFilterInput; output: ResponseFilterOutput };
   "curl.parse": { input: CurlParseInput; output: Array<CurlParseOutput> };
   "request.toCurl": { input: RequestIdInput; output: CurlOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };

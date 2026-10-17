@@ -10,6 +10,11 @@ export const DEFAULT_ACTIONS: ActionDefinition[] = [
   { id: 'tab.reopen', combos: ['Mod+Shift+T'], scope: 'global' },
   { id: 'tab.next', combos: ['Ctrl+Tab'], scope: 'global' },
   { id: 'tab.prev', combos: ['Ctrl+Shift+Tab'], scope: 'global' },
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ({
+    id: `tab.goto${n}`,
+    combos: [`Mod+${n}`],
+    scope: 'global',
+  })),
   { id: 'palette.open', combos: ['Mod+K', 'Mod+P'], scope: 'global' },
   { id: 'url.focus', combos: ['Mod+L'], scope: 'global' },
   { id: 'sidebar.toggle', combos: ['Mod+B'], scope: 'global' },
@@ -26,3 +31,37 @@ export const DEFAULT_ACTIONS: ActionDefinition[] = [
   { id: 'tree.paste', combos: ['Mod+V'], scope: 'tree' },
   { id: 'tree.selectAll', combos: ['Mod+A'], scope: 'tree' },
 ];
+
+/**
+ * Browsers never deliver these to pages (new window/tab, close tab, switch
+ * tabs), so the web build uses alternatives.
+ */
+export const BROWSER_RESERVED = [
+  'Mod+N',
+  'Mod+Shift+N',
+  'Mod+T',
+  'Mod+Shift+T',
+  'Mod+W',
+  'Ctrl+Tab',
+  'Ctrl+Shift+Tab',
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `Mod+${n}`),
+];
+
+const WEB_OVERRIDES: Record<string, string[]> = {
+  'request.new': ['Alt+N'],
+  'folder.new': ['Alt+Shift+N'],
+  'tab.close': ['Alt+W'],
+  'tab.reopen': ['Alt+Shift+T'],
+  'tab.next': ['Ctrl+Alt+]'],
+  'tab.prev': ['Ctrl+Alt+['],
+  ...Object.fromEntries(
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`tab.goto${n}`, [`Ctrl+Alt+${n}`]]),
+  ),
+};
+
+export function defaultActions(runtime: 'desktop' | 'web'): ActionDefinition[] {
+  if (runtime === 'desktop') return DEFAULT_ACTIONS;
+  return DEFAULT_ACTIONS.map((a) =>
+    WEB_OVERRIDES[a.id] ? { ...a, combos: WEB_OVERRIDES[a.id]! } : a,
+  );
+}

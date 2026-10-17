@@ -176,8 +176,13 @@
           <span class="handle"></span>
           <span class="cell-check"></span>
           <span class="cell readonly mono" role="cell">{row.name}</span>
-          <span class="cell readonly mono" role="cell">{row.value}</span>
-          <span class="source">{row.source}</span>
+          <span class="cell inherited-value" role="cell">
+            <span class="readonly mono">{row.value}</span>
+            <span class="source">{row.source}</span>
+          </span>
+          {#if allowFiles}<span class="kind"></span>{/if}
+          {#if showDescription}<span class="cell"></span>{/if}
+          <span class="spacer"></span>
         </div>
       {/each}
 
@@ -389,11 +394,29 @@
   .mono {
     font-family: var(--font-mono);
   }
+  .inherited-value {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  .inherited-value .readonly {
+    flex: 1;
+    min-width: 0;
+  }
+  .row.inherited {
+    height: 22px;
+  }
   .source {
     flex: none;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: var(--font-size-xs);
     color: var(--c-fg-subtle);
-    padding-right: var(--space-2);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-sm);
+    background: var(--c-bg-hover);
   }
   .file {
     width: 100%;

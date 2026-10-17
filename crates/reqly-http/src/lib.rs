@@ -4,6 +4,7 @@
 mod ca;
 pub mod curl;
 pub mod engine;
+pub mod filter;
 pub mod policy;
 pub mod prepare;
 pub mod snapshot;

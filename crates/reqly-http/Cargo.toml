@@ -10,6 +10,12 @@ rust-version.workspace = true
 reqly-core.workspace = true
 base64 = "0.22"
 http = "1"
+jaq-core = "3"
+jaq-json = "2"
+jaq-std = "3"
+serde_json_path = "0.7"
+sxd-document = "0.3"
+sxd-xpath = "0.4"
 curl = { version = "0.4", default-features = false, features = ["ssl", "static-curl", "static-ssl", "http2", "ntlm"] }
 percent-encoding = "2"
 rustls-native-certs = "0.8"

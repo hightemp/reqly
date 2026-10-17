@@ -34,6 +34,18 @@ export class FakeTransport implements Transport {
     this.listeners.forEach((l) => l(event));
   }
 
+  /** One workspace with one empty collection (enough to boot the app shell). */
+  withEmptyWorkspace() {
+    const meta = { createdAt: 0, updatedAt: 0, version: 1, deletedAt: null, sortKey: 'V' };
+    this.handle('workspace.ensureDefault', () => [{ id: 'w1', name: 'My Workspace', ...meta }]);
+    this.handle('workspace.list', () => [{ id: 'w1', name: 'My Workspace', ...meta }]);
+    this.handle('collection.list', () => [
+      { id: 'c1', workspaceId: 'w1', name: 'My Collection', settings: {} as never, ...meta },
+    ]);
+    this.handle('tree.list', () => []);
+    return this;
+  }
+
   /** Backs `settings.get` / `settings.set` with a map and echoes change events. */
   withSettings(initial: Record<string, unknown> = {}) {
     const store = new Map(Object.entries(initial));

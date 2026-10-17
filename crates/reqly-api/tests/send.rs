@@ -339,3 +339,30 @@ async fn save_body_writes_file_and_is_refused_on_server() {
         .unwrap_err();
     assert_eq!(err.code, "command.unavailable");
 }
+
+#[tokio::test]
+async fn filters_response_bodies() {
+    let server = TestServer::start().await;
+    let fx = Fx::new().await;
+    let req = fx
+        .request(
+            Value::Null,
+            json!({ "kind": "request", "url": server.url("/echo?a=1") }),
+        )
+        .await;
+    let record = fx.call("request.send", json!({ "requestId": req })).await;
+    let out = fx
+        .call(
+            "response.filter",
+            json!({ "id": record["id"], "kind": "jsonPath", "expression": "$.method" }),
+        )
+        .await;
+    assert_eq!(out["result"], "\"GET\"");
+    let out = fx
+        .call(
+            "response.filter",
+            json!({ "id": record["id"], "kind": "jq", "expression": ".query[0][1]" }),
+        )
+        .await;
+    assert_eq!(out["result"], "\"1\"");
+}

@@ -40,6 +40,7 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<CookiesClear>()
         .register::<BlobUpload>()
         .register::<ResponseSaveBody>()
+        .register::<ResponseFilter>()
         .register::<CurlParse>()
         .register::<RequestToCurl>();
 }
@@ -615,6 +616,48 @@ command!(
             None => tokio::fs::write(&input.path, b"").await.map_err(write_err)?,
         }
         Ok(Empty {})
+    }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub struct ResponseFilterInput {
+    pub id: Id,
+    pub kind: reqly_http::filter::FilterKind,
+    pub expression: String,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[ts(export)]
+pub struct ResponseFilterOutput {
+    pub result: String,
+}
+
+/// Bodies larger than this are not filtered (the UI suggests saving instead).
+const FILTER_LIMIT: usize = 64 * 1024 * 1024;
+
+command!(
+    /// Applies a JSONPath, jq or XPath expression to a response body.
+    ResponseFilter,
+    "response.filter",
+    ResponseFilterInput,
+    ResponseFilterOutput,
+    |ctx, input| {
+        let record = history(ctx).get(input.id).await?;
+        let Some(hash) = record.body_hash else {
+            return Ok(ResponseFilterOutput { result: String::new() });
+        };
+        if record.body_size as usize > FILTER_LIMIT {
+            return Err(CoreError::new("filter.too_large", "response body is too large to filter"));
+        }
+        let bytes = ctx.blobs.read(&hash).await?;
+        let body = String::from_utf8_lossy(&bytes).into_owned();
+        let expression = input.expression;
+        let kind = input.kind;
+        let result = tokio::task::spawn_blocking(move || reqly_http::filter::apply_filter(kind, &body, &expression))
+            .await
+            .map_err(|e| CoreError::internal(e.to_string()))??;
+        Ok(ResponseFilterOutput { result })
     }
 );
 

@@ -1,5 +1,5 @@
 <!--
-  Top-level layout: [titlebar] / sidebar | request editor | response / status bar.
+  Top-level layout: [titlebar] / sidebar | tabs + request editor | response / status bar.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -11,6 +11,12 @@
   import IconButton from '$lib/ui/IconButton.svelte';
   import OverlayHost from '$lib/ui/overlay/OverlayHost.svelte';
   import SplitPane from '$lib/ui/SplitPane.svelte';
+  import FolderSettings from '../folder/FolderSettings.svelte';
+  import RequestPanel from '../request/RequestPanel.svelte';
+  import ResponsePanel from '../response/ResponsePanel.svelte';
+  import { createFolder, createRequest } from '../sidebar/actions';
+  import Sidebar from '../sidebar/Sidebar.svelte';
+  import RequestTabs from '../tabs/RequestTabs.svelte';
   import Titlebar from './Titlebar.svelte';
 
   interface Props {
@@ -22,18 +28,29 @@
   let { services, windowController }: Props = $props();
   // Services are created once at startup and never replaced.
   // svelte-ignore state_referenced_locally
-  const { prefs, themes, hotkeys, transport, platform } = services;
+  const { prefs, themes, hotkeys, transport, platform, workspace, tree, tabs } = services;
 
   // svelte-ignore state_referenced_locally
   bindPreferences(services);
 
   // i18n-dynamic: languages.
   let offline = $state(false);
-  const scopes = ['global'];
+  let folderSettings = $state<string | null>(null);
+
+  // Follow the active collection / workspace.
+  $effect(() => {
+    const id = workspace.activeCollectionId;
+    if (id && id !== tree.collectionId) void tree.load(id);
+  });
+  $effect(() => {
+    const id = workspace.activeWorkspaceId;
+    if (id) void tabs.load(id);
+  });
 
   const toggleSidebar = () => prefs.update({ sidebarCollapsed: !prefs.value.sidebarCollapsed });
   const toggleLayout = () =>
     prefs.update({ responseLayout: prefs.value.responseLayout === 'right' ? 'bottom' : 'right' });
+  const selectedOne = () => (tree.selected.length === 1 ? tree.selected[0]! : null);
 
   const THEME_CYCLE = ['system', 'light', 'dark'];
   const THEME_ICON: Record<string, IconName> = { system: 'monitor', light: 'sun', dark: 'moon' };
@@ -59,19 +76,29 @@
     const offs = [
       hotkeys.on('sidebar.toggle', toggleSidebar),
       hotkeys.on('layout.toggle', toggleLayout),
+      hotkeys.on('request.new', () => void createRequest(services, selectedOne())),
+      hotkeys.on('folder.new', () => void createFolder(services, selectedOne())),
       transport.subscribe((e) => {
         if (e.topic === TRANSPORT_TOPICS.disconnected) offline = true;
         if (e.topic === TRANSPORT_TOPICS.reconnected) {
           offline = false;
           void prefs.load();
+          void tree.reload();
         }
       }),
     ];
-    const onKeyDown = (e: KeyboardEvent) => hotkeys.handle(e, scopes);
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Let text fields keep their own shortcuts (Ctrl+A/C/V…) unless the
+      // combo is a global app command.
+      hotkeys.handle(e, services.scopes.list);
+    };
     window.addEventListener('keydown', onKeyDown);
+    const onBeforeUnload = () => void services.editor.flushAll();
+    window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
       offs.forEach((off) => off());
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('beforeunload', onBeforeUnload);
     };
   });
 </script>
@@ -89,43 +116,49 @@
     <SplitPane
       bind:size={() => prefs.value.sidebarWidth, (v) => void prefs.update({ sidebarWidth: v })}
       collapsed={prefs.value.sidebarCollapsed}
-      min={180}
-      max={600}
+      min={200}
+      max={640}
       defaultSize={280}
       label={t('sidebar.title')}
     >
       {#snippet first()}
-        <aside class="sidebar" aria-label={t('sidebar.title')}>
-          <header class="panel-header">
-            <h2>{t('sidebar.title')}</h2>
-            <IconButton icon="sidebar" label={t('sidebar.collapse')} onclick={toggleSidebar} />
-          </header>
-          <p class="empty">{t('sidebar.empty')}</p>
-        </aside>
+        <Sidebar
+          {services}
+          onFolderSettings={(id) => (folderSettings = id)}
+          onCollapse={toggleSidebar}
+        />
       {/snippet}
       {#snippet second()}
-        <SplitPane
-          direction={prefs.value.responseLayout === 'right' ? 'horizontal' : 'vertical'}
-          bind:size={
-            () => prefs.value.requestPaneSize, (v) => void prefs.update({ requestPaneSize: v })
-          }
-          min={240}
-          max={1600}
-          defaultSize={520}
-          label={t('request.empty')}
-        >
-          {#snippet first()}
-            <section class="panel"><p class="empty">{t('request.empty')}</p></section>
-          {/snippet}
-          {#snippet second()}
-            <section class="panel response"><p class="empty">{t('response.empty')}</p></section>
-          {/snippet}
-        </SplitPane>
+        <div class="workspace">
+          <RequestTabs {services} />
+          <div class="editor">
+            <SplitPane
+              direction={prefs.value.responseLayout === 'right' ? 'horizontal' : 'vertical'}
+              bind:size={
+                () => prefs.value.requestPaneSize, (v) => void prefs.update({ requestPaneSize: v })
+              }
+              min={260}
+              max={1600}
+              defaultSize={520}
+              label={t('request.sections')}
+            >
+              {#snippet first()}
+                <section class="pane"><RequestPanel {services} /></section>
+              {/snippet}
+              {#snippet second()}
+                <section class="pane"><ResponsePanel {services} /></section>
+              {/snippet}
+            </SplitPane>
+          </div>
+        </div>
       {/snippet}
     </SplitPane>
   </main>
 
   <OverlayHost />
+  {#if folderSettings}
+    <FolderSettings {services} folderId={folderSettings} onclose={() => (folderSettings = null)} />
+  {/if}
 
   <footer class="statusbar">
     {#if prefs.value.sidebarCollapsed}
@@ -171,36 +204,18 @@
     flex: 1;
     min-height: 0;
   }
-  .sidebar {
+  .workspace {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: var(--c-bg-elevated);
   }
-  .panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 40px;
-    padding: 0 var(--space-2) 0 var(--space-3);
-    border-bottom: 1px solid var(--c-border);
+  .editor {
+    flex: 1;
+    min-height: 0;
   }
-  .panel-header h2 {
-    font-weight: 600;
-  }
-  .panel {
+  .pane {
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .response {
-    background: var(--c-bg-elevated);
-  }
-  .empty {
-    color: var(--c-fg-subtle);
-    padding: var(--space-4);
-    text-align: center;
+    min-width: 0;
   }
   .statusbar {
     display: flex;

@@ -11,6 +11,7 @@ const media = { matches: false, addEventListener() {}, removeEventListener() {} 
 async function setup() {
   const transport = new FakeTransport();
   const saved = transport.withSettings();
+  transport.withEmptyWorkspace();
   const services = await createServices(transport, {
     platform: 'linux',
     media,
