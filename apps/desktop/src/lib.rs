@@ -96,7 +96,10 @@ pub fn run() {
         )
         .init();
 
-    configure(tauri::Builder::default(), None)
-        .run(tauri::generate_context!())
-        .expect("error while running Reqly");
+    configure(
+        tauri::Builder::default().plugin(tauri_plugin_dialog::init()),
+        None,
+    )
+    .run(tauri::generate_context!())
+    .expect("error while running Reqly");
 }

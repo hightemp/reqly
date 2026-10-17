@@ -39,6 +39,7 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<CookiesDelete>()
         .register::<CookiesClear>()
         .register::<BlobUpload>()
+        .register::<ResponseSaveBody>()
         .register::<CurlParse>()
         .register::<RequestToCurl>();
 }
@@ -581,6 +582,39 @@ command!(
             offset: input.offset,
             total: record.body_size,
         })
+    }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub struct ResponseSaveInput {
+    pub id: Id,
+    /// Destination chosen in the native save dialog.
+    pub path: String,
+}
+
+command!(
+    /// Writes a response body to a local file. Desktop only: on the server
+    /// the path would be on the server's disk.
+    ResponseSaveBody,
+    "response.saveBody",
+    ResponseSaveInput,
+    Empty,
+    |ctx, input| {
+        if ctx.platform != super::Platform::Desktop && ctx.platform != super::Platform::Test {
+            return Err(CoreError::new("command.unavailable", "only available in the desktop app"));
+        }
+        let record = history(ctx).get(input.id).await?;
+        let write_err = |e: std::io::Error| {
+            CoreError::new("file.write", e.to_string()).with_param("path", input.path.clone())
+        };
+        match record.body_hash {
+            Some(hash) => {
+                tokio::fs::copy(ctx.blobs.path_of(&hash)?, &input.path).await.map_err(write_err)?;
+            }
+            None => tokio::fs::write(&input.path, b"").await.map_err(write_err)?,
+        }
+        Ok(Empty {})
     }
 );
 

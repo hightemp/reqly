@@ -307,3 +307,35 @@ async fn curl_import_and_export() {
     assert!(cmd.contains("--url 'http://h/x?a=1'"), "{cmd}");
     assert!(cmd.contains("--data-raw 'k=v'"), "{cmd}");
 }
+
+#[tokio::test]
+async fn save_body_writes_file_and_is_refused_on_server() {
+    let server = TestServer::start().await;
+    let fx = Fx::new().await;
+    let req = fx
+        .request(
+            Value::Null,
+            json!({ "kind": "request", "url": server.url("/bytes/10") }),
+        )
+        .await;
+    let record = fx.call("request.send", json!({ "requestId": req })).await;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("out.bin");
+    fx.call(
+        "response.saveBody",
+        json!({ "id": record["id"], "path": path }),
+    )
+    .await;
+    assert_eq!(std::fs::read(&path).unwrap().len(), 10);
+
+    let server_ctx = AppContext::for_tests_on(reqly_api::commands::Platform::Server).await;
+    let err = registry()
+        .dispatch(
+            &server_ctx,
+            "response.saveBody",
+            json!({ "id": record["id"], "path": path }),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(err.code, "command.unavailable");
+}

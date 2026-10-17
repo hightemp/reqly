@@ -30,6 +30,7 @@ import type { ResponseBodyChunkOutput } from "./ResponseBodyChunkOutput";
 import type { ResponseBodyInput } from "./ResponseBodyInput";
 import type { ResponseListInput } from "./ResponseListInput";
 import type { ResponseRecord } from "./ResponseRecord";
+import type { ResponseSaveInput } from "./ResponseSaveInput";
 import type { ResponseSummary } from "./ResponseSummary";
 import type { SearchInput } from "./SearchInput";
 import type { SettingsGetInput } from "./SettingsGetInput";
@@ -79,6 +80,7 @@ export type Commands = {
   "cookies.delete": { input: CookieDeleteInput; output: Empty };
   "cookies.clear": { input: WorkspaceIdInput; output: Empty };
   "blob.upload": { input: BlobUploadInput; output: BlobUploadOutput };
+  "response.saveBody": { input: ResponseSaveInput; output: Empty };
   "curl.parse": { input: CurlParseInput; output: Array<CurlParseOutput> };
   "request.toCurl": { input: RequestIdInput; output: CurlOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };

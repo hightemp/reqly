@@ -5,4 +5,4 @@ import type { ProxySettings } from "./ProxySettings";
  * Network settings. Every field is optional: `None` inherits from the
  * folder / collection / global level (resolved by [`RequestSettings::merge`]).
  */
-export type RequestSettings = { timeoutMs: bigint | null, connectTimeoutMs: bigint | null, followRedirects: boolean | null, maxRedirects: number | null, verifyTls: boolean | null, encodeUrl: boolean | null, sendCookies: boolean | null, storeCookies: boolean | null, proxy: ProxySettings | null, };
+export type RequestSettings = { timeoutMs: number | null, connectTimeoutMs: number | null, followRedirects: boolean | null, maxRedirects: number | null, verifyTls: boolean | null, encodeUrl: boolean | null, sendCookies: boolean | null, storeCookies: boolean | null, proxy: ProxySettings | null, };

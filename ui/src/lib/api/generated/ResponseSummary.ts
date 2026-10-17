@@ -5,4 +5,4 @@ import type { Timestamp } from "./Timestamp";
 /**
  * Row in the response history dropdown / workspace log.
  */
-export type ResponseSummary = { id: Id, requestId: Id, createdAt: Timestamp, status: number | null, statusText: string, totalMs: number | null, bodySize: bigint, method: string, url: string, errorCode: string | null, };
+export type ResponseSummary = { id: Id, requestId: Id, createdAt: Timestamp, status: number | null, statusText: string, totalMs: number | null, bodySize: number, method: string, url: string, errorCode: string | null, };

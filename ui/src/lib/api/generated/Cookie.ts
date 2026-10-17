@@ -9,4 +9,4 @@ domain: string, includeSubdomains: boolean, path: string, secure: boolean, httpO
 /**
  * Unix seconds; `None` = session cookie.
  */
-expires: bigint | null, name: string, value: string, };
+expires: number | null, name: string, value: string, };

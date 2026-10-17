@@ -3,4 +3,4 @@
 /**
  * A file attached to a request: a local path (desktop) or an uploaded blob (server).
  */
-export type FileRef = { "type": "path", path: string, } | { "type": "blob", hash: string, name: string, size: bigint, };
+export type FileRef = { "type": "path", path: string, } | { "type": "blob", hash: string, name: string, size: number, };

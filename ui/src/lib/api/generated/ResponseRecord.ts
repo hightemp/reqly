@@ -14,7 +14,7 @@ status: number | null, statusText: string, httpVersion: string, headers: Array<[
 /**
  * Blob hash of the decoded body.
  */
-bodyHash: string | null, bodySize: bigint, headersSize: bigint, contentType: string | null, 
+bodyHash: string | null, bodySize: number, headersSize: number, contentType: string | null, 
 /**
  * `Timings` from reqly-http.
  */
