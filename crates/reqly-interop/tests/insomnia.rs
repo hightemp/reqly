@@ -287,7 +287,13 @@ fn round_trip_through_insomnia_formats() {
             "{format:?}"
         );
         if format == ExportFormat::Insomnia4 {
-            insta::assert_snapshot!("export-v4", text);
+            insta::assert_snapshot!(
+                "export-v4",
+                text.replace(
+                    concat!("reqly:", env!("CARGO_PKG_VERSION")),
+                    "reqly:[version]"
+                )
+            );
         } else {
             insta::assert_snapshot!("export-v5", text);
         }

@@ -5,6 +5,16 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Network settings (globally, per collection, folder or request): HTTP
+  version (auto, 1.1, 2, h2c prior knowledge, 3 when the build supports it),
+  DNS overrides (`--resolve`), connect-to, minimum and maximum TLS version,
+  compression, keep-alive, a response size limit, a delay before sending,
+  and on desktop a Unix domain socket and a network interface. The server
+  checks overrides against its network policy and refuses sockets and
+  interfaces. cURL import and "Copy as cURL" understand the matching flags.
+
 ### Changed
 
 - A settings button in the sidebar toolbar (the one in the status bar was

@@ -208,3 +208,39 @@ fn exports_multipart_and_file_bodies() {
     assert!(out.contains("--form 'a=1'"), "{out}");
     assert!(out.contains("--form 'f=@/tmp/x y.bin'"), "{out}");
 }
+
+#[test]
+fn network_flags_round_trip() {
+    use reqly_core::model::{HttpVersion, TlsVersion};
+    let cmd = "curl --http2-prior-knowledge --no-keepalive --resolve a.test:443:10.0.0.1 \
+               --connect-to a.test:443:b.test:8443 --tlsv1.2 --tls-max 1.3 --max-filesize 10k \
+               --unix-socket /tmp/s.sock --interface eth0 https://a.test/x";
+    let parsed = reqly_http::curl::parse_curl(cmd).unwrap();
+    let s = &parsed.request.settings;
+    assert!(parsed.warnings.is_empty(), "{:?}", parsed.warnings);
+    assert_eq!(s.http_version, Some(HttpVersion::Http2PriorKnowledge));
+    assert_eq!(s.keep_alive, Some(false));
+    assert_eq!(
+        s.resolve.as_deref(),
+        Some(&["a.test:443:10.0.0.1".to_string()][..])
+    );
+    assert_eq!(
+        s.connect_to.as_deref(),
+        Some(&["a.test:443:b.test:8443".to_string()][..])
+    );
+    assert_eq!(
+        (s.tls_min, s.tls_max),
+        (Some(TlsVersion::Tls1_2), Some(TlsVersion::Tls1_3))
+    );
+    assert_eq!(s.max_response_bytes, Some(10240));
+    assert_eq!(s.unix_socket.as_deref(), Some("/tmp/s.sock"));
+    assert_eq!(s.interface.as_deref(), Some("eth0"));
+
+    let back =
+        reqly_http::curl::to_curl(&reqly_http::prepare::prepare(&parsed.request, &[]).unwrap());
+    let again = reqly_http::curl::parse_curl(&back).unwrap();
+    assert_eq!(again.request.settings.resolve, s.resolve);
+    assert_eq!(again.request.settings.http_version, s.http_version);
+    assert_eq!(again.request.settings.tls_max, s.tls_max);
+    assert_eq!(again.request.settings.interface, s.interface);
+}

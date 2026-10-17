@@ -171,6 +171,82 @@ impl NetworkPolicy {
     }
 }
 
+fn not_allowed(setting: &str) -> CoreError {
+    CoreError::new(
+        "http.not_allowed",
+        "this setting is not available on the server",
+    )
+    .with_param("setting", setting)
+}
+
+fn parse_ip(text: &str) -> Option<IpAddr> {
+    text.trim()
+        .trim_matches(|c| c == '[' || c == ']')
+        .parse()
+        .ok()
+}
+
+impl NetworkPolicy {
+    /// Checks the user's network overrides; returns pins for `connect-to` hosts.
+    async fn check_overrides(
+        &self,
+        settings: &reqly_core::model::RequestSettings,
+    ) -> CoreResult<Vec<String>> {
+        if settings
+            .unix_socket
+            .as_deref()
+            .is_some_and(|s| !s.trim().is_empty())
+        {
+            return Err(not_allowed("unixSocket"));
+        }
+        if settings
+            .interface
+            .as_deref()
+            .is_some_and(|s| !s.trim().is_empty())
+        {
+            return Err(not_allowed("interface"));
+        }
+        for line in settings
+            .resolve
+            .iter()
+            .flatten()
+            .filter(|l| !l.trim().is_empty())
+        {
+            let addresses = line.trim().splitn(3, ':').nth(2).unwrap_or("");
+            for addr in addresses.split(',') {
+                let ip = parse_ip(addr).ok_or_else(|| {
+                    CoreError::new("http.invalid_setting", format!("not an IP address: {addr}"))
+                        .with_param("setting", "resolve")
+                })?;
+                self.check_ip(ip)?;
+            }
+        }
+        let mut pins = Vec::new();
+        for line in settings
+            .connect_to
+            .iter()
+            .flatten()
+            .filter(|l| !l.trim().is_empty())
+        {
+            let parts: Vec<&str> = line.trim().split(':').collect();
+            let (Some(host), Some(port)) = (parts.get(2), parts.get(3)) else {
+                continue;
+            };
+            if host.is_empty() {
+                continue;
+            }
+            let url = format!(
+                "http://{host}:{}/",
+                if port.is_empty() { "80" } else { port }
+            );
+            if let Some(pin) = self.check_url(&url).await? {
+                pins.push(pin);
+            }
+        }
+        Ok(pins)
+    }
+}
+
 /// Executes `request` honoring `policy`, following redirects hop by hop.
 pub async fn send_checked(
     mut request: PreparedRequest,
@@ -184,13 +260,35 @@ pub async fn send_checked(
     request.settings.follow_redirects = Some(false);
 
     let mut options = options;
+    let override_pins = policy.check_overrides(&request.settings).await?;
+    // Hosts the user resolves explicitly (already checked) are not re-pinned.
+    let user_resolved: Vec<String> = request
+        .settings
+        .resolve
+        .iter()
+        .flatten()
+        .filter_map(|l| {
+            let mut parts = l.trim().splitn(3, ':');
+            Some(format!("{}:{}:", parts.next()?, parts.next()?).to_ascii_lowercase())
+        })
+        .collect();
     let mut timeline = Vec::new();
     let mut total_ms = 0.0;
     let mut redirects = 0u32;
 
     loop {
-        let pin = policy.check_url(&request.url).await?;
-        options.resolve = pin.into_iter().collect();
+        let target = Url::parse(&request.url).ok().and_then(|u| {
+            Some(format!("{}:{}:", u.host_str()?, u.port_or_known_default()?).to_ascii_lowercase())
+        });
+        let pin = match target {
+            // Resolved by the user to addresses that were already checked.
+            Some(t) if user_resolved.contains(&t) => None,
+            _ => policy.check_url(&request.url).await?,
+        };
+        options.resolve = pin
+            .into_iter()
+            .chain(override_pins.iter().cloned())
+            .collect();
 
         let mut res = execute(
             request.clone(),

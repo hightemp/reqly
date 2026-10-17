@@ -180,3 +180,67 @@ async fn redirect_limit_applies() {
         "http.too_many_redirects"
     );
 }
+
+#[tokio::test]
+async fn network_overrides_are_checked_on_the_server() {
+    use reqly_core::model::RequestSettings;
+    let server = TestServer::start().await;
+    let port = server.addr().port();
+    let policy = NetworkPolicy::server_default();
+    let with = |settings: RequestSettings, url: String| HttpRequest {
+        url,
+        settings,
+        ..Default::default()
+    };
+
+    // Resolving a name to a blocked address is refused.
+    let metadata = with(
+        RequestSettings {
+            resolve: Some(vec![format!("api.test:{port}:169.254.169.254")]),
+            ..Default::default()
+        },
+        format!("http://api.test:{port}/echo"),
+    );
+    assert_eq!(
+        send(&metadata, &policy).await.unwrap_err().code,
+        "http.blocked"
+    );
+    // …an allowed one works.
+    let ok = with(
+        RequestSettings {
+            resolve: Some(vec![format!("api.test:{port}:127.0.0.1")]),
+            ..Default::default()
+        },
+        format!("http://api.test:{port}/echo"),
+    );
+    assert_eq!(send(&ok, &policy).await.unwrap().status, 200);
+
+    let connect = with(
+        RequestSettings {
+            connect_to: Some(vec!["example.com:80:169.254.169.254:80".into()]),
+            ..Default::default()
+        },
+        "http://example.com/".into(),
+    );
+    assert_eq!(
+        send(&connect, &policy).await.unwrap_err().code,
+        "http.blocked"
+    );
+
+    for settings in [
+        RequestSettings {
+            unix_socket: Some("/var/run/docker.sock".into()),
+            ..Default::default()
+        },
+        RequestSettings {
+            interface: Some("lo".into()),
+            ..Default::default()
+        },
+    ] {
+        let r = with(settings, server.url("/echo"));
+        assert_eq!(
+            send(&r, &policy).await.unwrap_err().code,
+            "http.not_allowed"
+        );
+    }
+}

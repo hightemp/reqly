@@ -124,6 +124,38 @@ impl TestServer {
     }
 }
 
+/// The test routes served on a Unix domain socket (Linux, macOS).
+#[cfg(unix)]
+pub struct UnixTestServer {
+    pub path: std::path::PathBuf,
+    task: JoinHandle<()>,
+}
+
+#[cfg(unix)]
+impl UnixTestServer {
+    pub async fn start(path: &std::path::Path) -> Self {
+        let _ = std::fs::remove_file(path);
+        let listener = tokio::net::UnixListener::bind(path).expect("bind unix socket");
+        let task = tokio::spawn(async move {
+            axum::serve(listener, routes::router())
+                .await
+                .expect("serve");
+        });
+        Self {
+            path: path.to_path_buf(),
+            task,
+        }
+    }
+}
+
+#[cfg(unix)]
+impl Drop for UnixTestServer {
+    fn drop(&mut self) {
+        self.task.abort();
+        let _ = std::fs::remove_file(&self.path);
+    }
+}
+
 impl Drop for TestServer {
     fn drop(&mut self) {
         self.task.abort();

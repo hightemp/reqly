@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use curl::easy::{Easy2, Form, Handler, HttpVersion, InfoType, List, WriteError};
+use curl::easy::{Easy2, Form, Handler, HttpVersion, InfoType, List, SslVersion, WriteError};
 use reqly_core::model::{ProxyMode, ProxySettings, RequestSettings};
 use reqly_core::{CoreError, CoreResult};
 use serde::{Deserialize, Serialize};
@@ -157,6 +157,9 @@ struct Collector {
     cancel: CancelToken,
     progress: Option<ProgressFn>,
     io_error: Option<std::io::Error>,
+    /// Abort above this many body bytes (0 = no limit).
+    max_bytes: u64,
+    too_large: bool,
 }
 
 impl Collector {
@@ -175,6 +178,10 @@ impl Collector {
 
 impl Handler for Collector {
     fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+        if self.max_bytes > 0 && self.body_size + data.len() as u64 > self.max_bytes {
+            self.too_large = true;
+            return Ok(0); // aborts the transfer
+        }
         self.body_size += data.len() as u64;
         let result = if let Some(file) = self.file.as_mut() {
             file.write_all(data)
@@ -243,6 +250,10 @@ impl Handler for Collector {
 }
 
 fn map_curl_error(e: &curl::Error, collector: &Collector) -> CoreError {
+    if collector.too_large || e.is_filesize_exceeded() {
+        return CoreError::new("http.too_large", "the response is larger than the limit")
+            .with_param("limit", collector.max_bytes);
+    }
     let code = if collector.cancel.is_cancelled() || e.is_aborted_by_callback() {
         "http.cancelled"
     } else if e.is_operation_timedout() {
@@ -344,9 +355,93 @@ fn configure(
     easy.url(&request.url).map_err(e)?;
     easy.verbose(true).map_err(e)?;
     easy.progress(true).map_err(e)?;
-    easy.http_version(HttpVersion::V2TLS).map_err(e)?;
+    let invalid = |name: &str, message: String| {
+        CoreError::new("http.invalid_setting", message).with_param("setting", name)
+    };
+
+    use reqly_core::model::{HttpVersion as Version, TlsVersion};
+    let version = match settings.http_version.unwrap_or_default() {
+        Version::Auto => HttpVersion::V2TLS,
+        Version::Http1_1 => HttpVersion::V11,
+        Version::Http2 => HttpVersion::V2,
+        Version::Http2PriorKnowledge => HttpVersion::V2PriorKnowledge,
+        Version::Http3 if curl::Version::get().feature_http3() => HttpVersion::V3,
+        Version::Http3 => {
+            return Err(CoreError::new(
+                "http.http3_unsupported",
+                "this build of Reqly does not support HTTP/3",
+            ));
+        }
+    };
+    easy.http_version(version).map_err(e)?;
     // Advertise and transparently decode every supported encoding.
-    easy.accept_encoding("").map_err(e)?;
+    if settings.compression.unwrap_or(true) {
+        easy.accept_encoding("").map_err(e)?;
+    }
+
+    let tls = |v: TlsVersion| match v {
+        TlsVersion::Default => SslVersion::Default,
+        TlsVersion::Tls1_0 => SslVersion::Tlsv10,
+        TlsVersion::Tls1_1 => SslVersion::Tlsv11,
+        TlsVersion::Tls1_2 => SslVersion::Tlsv12,
+        TlsVersion::Tls1_3 => SslVersion::Tlsv13,
+    };
+    let (min, max) = (
+        settings.tls_min.unwrap_or_default(),
+        settings.tls_max.unwrap_or_default(),
+    );
+    if min != TlsVersion::Default && max != TlsVersion::Default && (min as u8) > (max as u8) {
+        return Err(invalid(
+            "tls",
+            "the minimum TLS version is above the maximum".into(),
+        ));
+    }
+    if min != TlsVersion::Default || max != TlsVersion::Default {
+        easy.ssl_min_max_version(tls(min), tls(max)).map_err(e)?;
+    }
+
+    if settings.keep_alive.unwrap_or(true) {
+        easy.tcp_keepalive(true).map_err(e)?;
+    } else {
+        easy.forbid_reuse(true).map_err(e)?;
+    }
+    if let Some(max) = settings.max_response_bytes.filter(|m| *m > 0) {
+        easy.max_filesize(max).map_err(e)?;
+    }
+    if let Some(path) = settings
+        .unix_socket
+        .as_deref()
+        .filter(|p| !p.trim().is_empty())
+    {
+        easy.unix_socket_path(Some(path.trim())).map_err(e)?;
+    }
+    if let Some(iface) = settings
+        .interface
+        .as_deref()
+        .filter(|i| !i.trim().is_empty())
+    {
+        easy.interface(iface.trim()).map_err(e)?;
+    }
+    let connect_to: Vec<&String> = settings
+        .connect_to
+        .iter()
+        .flatten()
+        .filter(|l| !l.trim().is_empty())
+        .collect();
+    if !connect_to.is_empty() {
+        let mut list = List::new();
+        for line in connect_to {
+            let parts: Vec<&str> = line.trim().split(':').collect();
+            if parts.len() != 4 {
+                return Err(invalid(
+                    "connectTo",
+                    format!("expected host:port:connect-host:connect-port, got {line}"),
+                ));
+            }
+            list.append(line.trim()).map_err(e)?;
+        }
+        easy.connect_to(list).map_err(e)?;
+    }
 
     let timeout = settings.timeout_ms.unwrap_or(0);
     if timeout > 0 {
@@ -380,10 +475,26 @@ fn configure(
         None => {}
     }
 
-    if !options.resolve.is_empty() {
+    // User overrides first; the network policy's pins (added last) win.
+    let user_resolve: Vec<&String> = settings
+        .resolve
+        .iter()
+        .flatten()
+        .filter(|l| !l.trim().is_empty())
+        .collect();
+    for line in &user_resolve {
+        let parts: Vec<&str> = line.trim().splitn(3, ':').collect();
+        if parts.len() != 3 || parts[1].parse::<u16>().is_err() || parts[2].is_empty() {
+            return Err(invalid(
+                "resolve",
+                format!("expected host:port:address, got {line}"),
+            ));
+        }
+    }
+    if !options.resolve.is_empty() || !user_resolve.is_empty() {
         let mut list = List::new();
-        for entry in &options.resolve {
-            list.append(entry).map_err(e)?;
+        for entry in user_resolve.into_iter().chain(options.resolve.iter()) {
+            list.append(entry.trim()).map_err(e)?;
         }
         easy.resolve(list).map_err(e)?;
     }
@@ -426,6 +537,9 @@ fn configure(
     }
     if !has("Expect") {
         headers.append("Expect:").map_err(e)?;
+    }
+    if !settings.keep_alive.unwrap_or(true) && !has("Connection") {
+        headers.append("Connection: close").map_err(e)?;
     }
     easy.http_headers(headers).map_err(e)?;
 
@@ -516,8 +630,23 @@ pub fn execute_blocking(
         cancel,
         progress,
         io_error: None,
+        max_bytes: request.settings.max_response_bytes.unwrap_or(0),
+        too_large: false,
     });
     configure(&mut easy, request, options)?;
+
+    // Delay before sending, in small steps so cancelling stays responsive.
+    let delay = Duration::from_millis(request.settings.delay_ms.unwrap_or(0));
+    let started = std::time::Instant::now();
+    while started.elapsed() < delay {
+        if easy.get_ref().cancel.is_cancelled() {
+            return Err(CoreError::new(
+                "http.cancelled",
+                "the request was cancelled",
+            ));
+        }
+        std::thread::sleep((delay - started.elapsed()).min(Duration::from_millis(25)));
+    }
 
     if let Err(err) = easy.perform() {
         let collector = easy.get_ref();

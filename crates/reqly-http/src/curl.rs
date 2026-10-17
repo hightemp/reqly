@@ -5,8 +5,10 @@
 
 use percent_encoding::percent_decode_str;
 use reqly_core::model::{
-    Auth, Body, BodyKind, HttpRequest, KeyValue, KeyValueKind, ProxyMode, ProxySettings,
+    Auth, Body, BodyKind, HttpRequest, HttpVersion, KeyValue, KeyValueKind, ProxyMode,
+    ProxySettings, TlsVersion,
 };
+
 use reqly_core::{CoreError, CoreResult};
 
 use crate::prepare::{PreparedBody, PreparedRequest};
@@ -195,6 +197,12 @@ pub struct ParsedCurl {
 
 /// Options that take a value, by long name; short aliases map to these.
 const VALUE_OPTIONS: &[&str] = &[
+    "resolve",
+    "connect-to",
+    "tls-max",
+    "max-filesize",
+    "unix-socket",
+    "interface",
     "request",
     "header",
     "data",
@@ -228,16 +236,12 @@ const VALUE_OPTIONS: &[&str] = &[
 ];
 
 const IGNORED_FLAGS: &[&str] = &[
-    "compressed",
     "silent",
     "show-error",
     "verbose",
     "include",
     "location",
     "globoff",
-    "http1.1",
-    "http2",
-    "http2-prior-knowledge",
     "fail",
     "no-buffer",
     "progress-bar",
@@ -504,6 +508,40 @@ fn parse_words(words: &[String]) -> CoreResult<ParsedCurl> {
                     value.parse::<f64>().ok().map(|s| (s * 1000.0) as u64);
             }
             "max-redirs" => request.settings.max_redirects = value.parse().ok(),
+            "http1.1" => request.settings.http_version = Some(HttpVersion::Http1_1),
+            "http2" => request.settings.http_version = Some(HttpVersion::Http2),
+            "http2-prior-knowledge" => {
+                request.settings.http_version = Some(HttpVersion::Http2PriorKnowledge)
+            }
+            "http3" | "http3-only" => request.settings.http_version = Some(HttpVersion::Http3),
+            "compressed" => request.settings.compression = Some(true),
+            "no-keepalive" => request.settings.keep_alive = Some(false),
+            "resolve" => request
+                .settings
+                .resolve
+                .get_or_insert_with(Vec::new)
+                .push(value),
+            "connect-to" => request
+                .settings
+                .connect_to
+                .get_or_insert_with(Vec::new)
+                .push(value),
+            "tlsv1" | "tlsv1.0" => request.settings.tls_min = Some(TlsVersion::Tls1_0),
+            "tlsv1.1" => request.settings.tls_min = Some(TlsVersion::Tls1_1),
+            "tlsv1.2" => request.settings.tls_min = Some(TlsVersion::Tls1_2),
+            "tlsv1.3" => request.settings.tls_min = Some(TlsVersion::Tls1_3),
+            "tls-max" => {
+                request.settings.tls_max = match value.as_str() {
+                    "1.0" => Some(TlsVersion::Tls1_0),
+                    "1.1" => Some(TlsVersion::Tls1_1),
+                    "1.2" => Some(TlsVersion::Tls1_2),
+                    "1.3" => Some(TlsVersion::Tls1_3),
+                    _ => None,
+                }
+            }
+            "max-filesize" => request.settings.max_response_bytes = parse_size(&value),
+            "unix-socket" => request.settings.unix_socket = Some(value),
+            "interface" => request.settings.interface = Some(value),
             n if IGNORED_FLAGS.contains(&n) => {}
             other => warnings.push(format!("--{other}")),
         }
@@ -613,6 +651,18 @@ fn quote(s: &str) -> String {
 }
 
 /// Renders a prepared request as a multi-line bash cURL command.
+/// `10k`, `5M`, `1G` or plain bytes (curl size syntax).
+fn parse_size(value: &str) -> Option<u64> {
+    let v = value.trim();
+    let (num, mult) = match v.chars().last()? {
+        'k' | 'K' => (&v[..v.len() - 1], 1024),
+        'm' | 'M' => (&v[..v.len() - 1], 1024 * 1024),
+        'g' | 'G' => (&v[..v.len() - 1], 1024 * 1024 * 1024),
+        _ => (v, 1),
+    };
+    num.parse::<u64>().ok().map(|n| n * mult)
+}
+
 pub fn to_curl(r: &PreparedRequest) -> String {
     let mut parts = vec![
         format!("curl --request {}", r.method),
@@ -644,8 +694,50 @@ pub fn to_curl(r: &PreparedRequest) -> String {
             }
         }
     }
-    if r.settings.verify_tls == Some(false) {
+    let st = &r.settings;
+    if st.verify_tls == Some(false) {
         parts.push("--insecure".into());
+    }
+    match st.http_version.unwrap_or_default() {
+        HttpVersion::Auto => {}
+        HttpVersion::Http1_1 => parts.push("--http1.1".into()),
+        HttpVersion::Http2 => parts.push("--http2".into()),
+        HttpVersion::Http2PriorKnowledge => parts.push("--http2-prior-knowledge".into()),
+        HttpVersion::Http3 => parts.push("--http3".into()),
+    }
+    if st.compression == Some(true) {
+        parts.push("--compressed".into());
+    }
+    if st.keep_alive == Some(false) {
+        parts.push("--no-keepalive".into());
+    }
+    for line in st.resolve.iter().flatten() {
+        parts.push(format!("--resolve {}", quote(line)));
+    }
+    for line in st.connect_to.iter().flatten() {
+        parts.push(format!("--connect-to {}", quote(line)));
+    }
+    let tls = |v: TlsVersion| match v {
+        TlsVersion::Default => None,
+        TlsVersion::Tls1_0 => Some("1.0"),
+        TlsVersion::Tls1_1 => Some("1.1"),
+        TlsVersion::Tls1_2 => Some("1.2"),
+        TlsVersion::Tls1_3 => Some("1.3"),
+    };
+    if let Some(v) = st.tls_min.and_then(tls) {
+        parts.push(format!("--tlsv{v}"));
+    }
+    if let Some(v) = st.tls_max.and_then(tls) {
+        parts.push(format!("--tls-max {v}"));
+    }
+    if let Some(max) = st.max_response_bytes.filter(|m| *m > 0) {
+        parts.push(format!("--max-filesize {max}"));
+    }
+    if let Some(path) = st.unix_socket.as_deref().filter(|p| !p.is_empty()) {
+        parts.push(format!("--unix-socket {}", quote(path)));
+    }
+    if let Some(iface) = st.interface.as_deref().filter(|p| !p.is_empty()) {
+        parts.push(format!("--interface {}", quote(iface)));
     }
     parts.join(" \\\n  ")
 }
