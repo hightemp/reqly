@@ -92,6 +92,16 @@ describe('Tree', () => {
     expect(onrename).toHaveBeenCalledWith('readme', 'README.md');
   });
 
+  it('Escape clears the selection, then is forwarded', async () => {
+    const { onkey } = setup();
+    await fireEvent.click(row('readme'));
+    await fireEvent.keyDown(screen.getByRole('tree'), { key: 'Escape' });
+    expect(screen.queryAllByRole('treeitem', { selected: true })).toHaveLength(0);
+    expect(onkey).not.toHaveBeenCalled();
+    await fireEvent.keyDown(screen.getByRole('tree'), { key: 'Escape' });
+    expect(onkey).toHaveBeenCalledWith(expect.objectContaining({ key: 'Escape' }));
+  });
+
   it('forwards unhandled keys', async () => {
     const { onkey } = setup();
     await fireEvent.click(row('readme'));

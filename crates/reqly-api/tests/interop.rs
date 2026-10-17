@@ -436,3 +436,23 @@ async fn code_generation() {
         "{raw}"
     );
 }
+
+#[tokio::test]
+async fn write_text_is_desktop_only() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("out.json");
+    let fx = Fx::new().await;
+    fx.call("file.writeText", json!({ "path": path, "content": "{}" }))
+        .await;
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "{}");
+    let server = AppContext::for_tests_on(reqly_api::commands::Platform::Server).await;
+    let err = registry()
+        .dispatch(
+            &server,
+            "file.writeText",
+            json!({ "path": path, "content": "x" }),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(err.code, "command.unavailable");
+}

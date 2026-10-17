@@ -9,6 +9,7 @@
   import { menus, type MenuEntry } from '$lib/ui/overlay/menus.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
   import EnvironmentSwitcher from '../environments/EnvironmentSwitcher.svelte';
+  import { interopDialogs } from '../interop/dialogs.svelte';
   import { bindTreeHotkeys, createFolder, createRequest, type TreeActionHooks } from './actions';
   import CategoriesView from './CategoriesView.svelte';
   import { makeFilter, parseQuery } from './filter';
@@ -58,6 +59,19 @@
       },
     ];
     entries.push(
+      { id: 'import', label: t('import.menu'), onSelect: () => interopDialogs.openImport() },
+      {
+        id: 'export',
+        label: t('export.workspace'),
+        disabled: !current,
+        onSelect: () =>
+          current &&
+          interopDialogs.openExport({
+            scope: { kind: 'workspace', workspaceId: current.id },
+            title: current.name,
+          }),
+      },
+      { separator: true },
       { id: 'cookies', label: t('cookieManager.title'), onSelect: () => onOpen('cookies') },
       { id: 'log', label: t('log.title'), onSelect: () => onOpen('log') },
       { separator: true },
@@ -106,6 +120,23 @@
       },
     ];
     entries.push(
+      {
+        id: 'import',
+        label: t('import.intoCollection'),
+        onSelect: () => interopDialogs.openImport(current?.id ?? null),
+      },
+      {
+        id: 'export',
+        label: t('export.collection'),
+        disabled: !current,
+        onSelect: () =>
+          current &&
+          interopDialogs.openExport({
+            scope: { kind: 'collection', collectionId: current.id },
+            title: current.name,
+          }),
+      },
+      { separator: true },
       { id: 'trash', label: t('trash.title'), onSelect: () => onOpen('trash') },
       { separator: true },
     );

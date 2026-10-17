@@ -15,6 +15,7 @@
   import Spinner from '$lib/ui/Spinner.svelte';
   import Tabs from '$lib/ui/Tabs.svelte';
   import VariablesEditor from '../environments/VariablesEditor.svelte';
+  import { interopDialogs } from '../interop/dialogs.svelte';
   import { COMMON_HEADERS } from './headers';
   import AuthPanel from './panels/AuthPanel.svelte';
   import BodyPanel from './panels/BodyPanel.svelte';
@@ -211,6 +212,7 @@
       onsend={send}
       oncancel={() => activeId && void services.responses.cancel(activeId)}
       oncurl={(c) => void importCurl(c)}
+      oncode={() => activeId && interopDialogs.openCodegen(activeId)}
     />
     <div class="tabs">
       <Tabs

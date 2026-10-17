@@ -11,7 +11,11 @@
   import IconButton from '$lib/ui/IconButton.svelte';
   import OverlayHost from '$lib/ui/overlay/OverlayHost.svelte';
   import SplitPane from '$lib/ui/SplitPane.svelte';
+  import CodegenModal from '../codegen/CodegenModal.svelte';
   import EnvironmentEditor from '../environments/EnvironmentEditor.svelte';
+  import { interopDialogs } from '../interop/dialogs.svelte';
+  import ExportDialog from '../interop/ExportDialog.svelte';
+  import ImportWizard from '../interop/ImportWizard.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
   import CookieManager from '../modals/CookieManager.svelte';
   import RequestLog from '../modals/RequestLog.svelte';
@@ -106,6 +110,32 @@
       label: t('environments.manage'),
       run: () => (modal = 'environments'),
     },
+    { id: 'import', label: t('import.menu'), run: () => interopDialogs.openImport() },
+    ...(workspace.activeCollection
+      ? [
+          {
+            id: 'export-collection',
+            label: t('export.collection'),
+            run: () =>
+              interopDialogs.openExport({
+                scope: {
+                  kind: 'collection' as const,
+                  collectionId: workspace.activeCollection!.id,
+                },
+                title: workspace.activeCollection!.name,
+              }),
+          },
+        ]
+      : []),
+    ...(tabs.activeId
+      ? [
+          {
+            id: 'codegen',
+            label: t('actions.generateCode'),
+            run: () => interopDialogs.openCodegen(tabs.activeId!),
+          },
+        ]
+      : []),
     ...environments.subs.map((e) => ({
       id: `env-${e.id}`,
       label: `${t('environments.label')}: ${e.name}`,
@@ -252,6 +282,27 @@
     <RequestLog {services} onclose={() => (modal = null)} />
   {:else if modal === 'environments'}
     <EnvironmentEditor {services} onclose={() => (modal = null)} />
+  {/if}
+  {#if interopDialogs.import}
+    <ImportWizard
+      {services}
+      collectionId={interopDialogs.import.collectionId}
+      onclose={() => (interopDialogs.import = null)}
+    />
+  {/if}
+  {#if interopDialogs.export}
+    <ExportDialog
+      {services}
+      request={interopDialogs.export}
+      onclose={() => (interopDialogs.export = null)}
+    />
+  {/if}
+  {#if interopDialogs.codegen}
+    <CodegenModal
+      {services}
+      requestId={interopDialogs.codegen}
+      onclose={() => (interopDialogs.codegen = null)}
+    />
   {/if}
   {#if tagEditor.request}
     <TagEditor {services} request={tagEditor.request} onclose={() => tagEditor.close()} />

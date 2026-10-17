@@ -82,3 +82,60 @@ fn rejects_other_documents() {
     assert_eq!(import("{\"a\": 1}").unwrap_err().code, "import.invalid");
     assert_eq!(import("not json").unwrap_err().code, "import.invalid");
 }
+
+#[test]
+fn exports_match_the_published_schema() {
+    let schema: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/format/reqly.schema.json"
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+    let validator = jsonschema::validator_for(&schema).unwrap();
+    let mut data = common::sample();
+    data.history.push(reqly_interop::ExportedResponse {
+        request_id: "req-login".into(),
+        record: json!({ "status": 200 }),
+        body_base64: Some("e30=".into()),
+    });
+    let text = export(
+        &data,
+        &ExportOptions {
+            exported_at: Some(1),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let doc: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let errors: Vec<String> = validator
+        .iter_errors(&doc)
+        .map(|e| format!("{} at {}", e, e.instance_path()))
+        .collect();
+    assert!(errors.is_empty(), "{errors:#?}");
+    // Imports from other formats export to valid documents too.
+    let insomnia = reqly_interop::import(
+        &[reqly_interop::Source::new(
+            "x",
+            common::fixture("insomnia/v4-full.json"),
+        )],
+        None,
+    )
+    .unwrap();
+    let data = reqly_interop::ExportData {
+        collections: insomnia.collections,
+        cookies: insomnia.cookies,
+        ..Default::default()
+    };
+    let doc: serde_json::Value =
+        serde_json::from_str(&export(&data, &ExportOptions::default()).unwrap()).unwrap();
+    assert!(
+        validator.is_valid(&doc),
+        "{:?}",
+        validator
+            .iter_errors(&doc)
+            .map(|e| e.to_string())
+            .collect::<Vec<_>>()
+    );
+}

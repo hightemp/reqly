@@ -27,6 +27,7 @@ import type { EnvironmentSetActiveInput } from "./EnvironmentSetActiveInput";
 import type { EnvironmentUpdateInput } from "./EnvironmentUpdateInput";
 import type { ExportRunInput } from "./ExportRunInput";
 import type { ExportRunOutput } from "./ExportRunOutput";
+import type { FileWriteTextInput } from "./FileWriteTextInput";
 import type { HistoryWorkspaceInput } from "./HistoryWorkspaceInput";
 import type { IdInput } from "./IdInput";
 import type { IdsInput } from "./IdsInput";
@@ -124,6 +125,7 @@ export type Commands = {
   "template.variables": { input: TemplateVariablesInput; output: Array<VariableInfo> };
   "template.functions": { input: Empty; output: TemplateFunctionsOutput };
   "template.prompts": { input: TemplatePromptsInput; output: Array<PromptInfo> };
+  "file.writeText": { input: FileWriteTextInput; output: Empty };
   "codegen.targets": { input: Empty; output: Array<TargetInfo> };
   "codegen.generate": { input: CodegenInput; output: CodegenOutput };
   "import.preview": { input: ImportPreviewInput; output: ImportBundle };

@@ -1,11 +1,15 @@
 // Menu entries and hotkeys for tree items, shared by both sidebar modes.
 
+import type { Target } from '$lib/api/generated/Target';
+import { errorMessage } from '$lib/errors';
 import { t } from '$lib/i18n';
 import type { Services } from '$lib/services.svelte';
 import type { SortMode } from '$lib/stores/tree.svelte';
 import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
 import type { MenuEntry } from '$lib/ui/overlay/menus.svelte';
+import { toasts } from '$lib/ui/overlay/toasts.svelte';
 import { formatCombo } from '$lib/hotkeys/hotkeys';
+import { interopDialogs } from '../interop/dialogs.svelte';
 
 export interface TreeActionHooks {
   /** Opens folder settings (headers, auth, settings). */
@@ -36,6 +40,25 @@ export async function promptRename(s: Services, id: string) {
     validate: (v) => (v.trim() ? null : t('actions.nameRequired')),
   });
   if (name) await s.tree.rename(id, name.trim());
+}
+
+/** Quick "Copy as" targets (the generate dialog has all of them). */
+const COPY_AS: [Target, string][] = [
+  ['curlBash', 'cURL'],
+  ['jsFetch', 'JavaScript fetch'],
+  ['pythonRequests', 'Python Requests'],
+  ['httpie', 'HTTPie'],
+];
+
+async function copyAs(s: Services, requestId: string, target: Target) {
+  try {
+    await s.editor.flush(requestId);
+    const { code } = await s.transport.call('codegen.generate', { requestId, target });
+    await navigator.clipboard.writeText(code);
+    toasts.show({ message: t('codegen.copied'), kind: 'success' });
+  } catch (e) {
+    toasts.error(errorMessage(e));
+  }
 }
 
 export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): MenuEntry[] {
@@ -99,7 +122,25 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
       onSelect: () => void s.tree.paste(at),
     },
   );
-  if (anyRequest) {
+  if (single && !single.isFolder) {
+    entries.push({
+      id: 'copy-as',
+      label: t('actions.copyAs'),
+      children: [
+        ...COPY_AS.map(([target, label]) => ({
+          id: `copy-as-${target}`,
+          label,
+          onSelect: () => void copyAs(s, single.id, target),
+        })),
+        { separator: true },
+        {
+          id: 'codegen',
+          label: t('actions.generateCode'),
+          onSelect: () => interopDialogs.openCodegen(single.id),
+        },
+      ],
+    });
+  } else if (anyRequest) {
     entries.push({
       id: 'curl',
       label: t('actions.copyCurl'),
@@ -113,6 +154,15 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
       onSelect: () => hooks.reveal!(single.id),
     });
   }
+  entries.push({
+    id: 'export',
+    label: t('actions.export'),
+    onSelect: () =>
+      interopDialogs.openExport({
+        scope: { kind: 'nodes', nodeIds: ids },
+        title: single?.label ?? t('actions.exportSelection', { count: ids.length }),
+      }),
+  });
   if (single?.isFolder) {
     entries.push(
       { separator: true },

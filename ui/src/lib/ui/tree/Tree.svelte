@@ -178,8 +178,9 @@
         selected = [...visibleIds];
         break;
       case 'Escape':
-        if (!treeDnd.dragging) return onkey?.(e);
-        treeDnd.end(false);
+        if (treeDnd.dragging) treeDnd.end(false);
+        else if (selected.length > 0) selected = [];
+        else return onkey?.(e);
         break;
       default:
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) return typeahead(e);

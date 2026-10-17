@@ -36,12 +36,10 @@ test('organize requests: cut/paste, drag & drop, search and the list view', asyn
   const other = `Archive ${suffix}`;
   const req = `Invoice ${suffix}`;
   await create(page, 'New folder', folder);
+  // Escape in the tree clears the selection, so the next folder goes to the root.
   await page.getByRole('treeitem', { name: new RegExp(folder) }).click();
   await page.keyboard.press('Escape');
-  await page
-    .getByRole('tree', { name: 'Collections' })
-    .click({ position: { x: 5, y: 5 } })
-    .catch(() => {});
+  await expect(page.getByRole('treeitem', { selected: true })).toHaveCount(0);
   await create(page, 'New folder', other);
   await create(page, 'New request', req);
 

@@ -3,6 +3,7 @@
   import type { KeyValue } from '$lib/api/generated/KeyValue';
   import { t } from '$lib/i18n';
   import Button from '$lib/ui/Button.svelte';
+  import IconButton from '$lib/ui/IconButton.svelte';
   import TemplateInput from '$lib/ui/code/TemplateInput.svelte';
   import Combobox from '$lib/ui/overlay/Combobox.svelte';
   import { methodColorVar } from '$lib/ui/badges';
@@ -19,6 +20,7 @@
     onsend: () => void;
     oncancel: () => void;
     oncurl: (command: string) => void;
+    oncode?: () => void;
     /** Request whose variables apply. */
     nodeId?: string | null;
   }
@@ -33,6 +35,7 @@
     onsend,
     oncancel,
     oncurl,
+    oncode,
     nodeId = null,
   }: Props = $props();
   let input: TemplateInput | undefined = $state();
@@ -91,6 +94,9 @@
       onenter={onsend}
     />
   </div>
+  {#if oncode}
+    <IconButton icon="braces" label={t('actions.generateCode')} onclick={oncode} />
+  {/if}
   {#if sending}
     <Button variant="default" onclick={oncancel}>{t('request.cancel')}</Button>
   {:else}

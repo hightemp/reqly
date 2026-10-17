@@ -26,7 +26,8 @@ use crate::events::Event;
 use crate::registry::{Command, Registry};
 
 pub fn register(r: &mut Registry<AppContext>) {
-    r.register::<CodegenTargets>()
+    r.register::<FileWriteText>()
+        .register::<CodegenTargets>()
         .register::<CodegenGenerate>()
         .register::<ImportPreview>()
         .register::<ImportFromUrl>()
@@ -961,5 +962,39 @@ command!(
         Ok(CodegenOutput {
             code: reqly_interop::codegen::generate(input.target, &request, options),
         })
+    }
+);
+
+// ----- saving exports (desktop) ----------------------------------------------------------
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct FileWriteTextInput {
+    /// Absolute path chosen in the native save dialog.
+    pub path: String,
+    pub content: String,
+}
+
+command!(
+    FileWriteText,
+    "file.writeText",
+    FileWriteTextInput,
+    super::Empty,
+    |ctx, input| {
+        // Only the desktop app writes to the user's disk; on the server the
+        // path would be on the server's file system.
+        if ctx.platform != super::Platform::Desktop && ctx.platform != super::Platform::Test {
+            return Err(CoreError::new(
+                "command.unavailable",
+                "only available in the desktop app",
+            ));
+        }
+        tokio::fs::write(&input.path, input.content.as_bytes())
+            .await
+            .map_err(|e| {
+                CoreError::new("file.write", e.to_string()).with_param("path", input.path.clone())
+            })?;
+        Ok(super::Empty {})
     }
 );

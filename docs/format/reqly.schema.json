@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hightemp/reqly/docs/format/reqly.schema.json",
+  "title": "Reqly export",
+  "description": "Collections, environments, cookies and history exported by Reqly. Values that equal their defaults may be omitted.",
+  "type": "object",
+  "required": ["format", "formatVersion"],
+  "properties": {
+    "format": { "const": "reqly" },
+    "formatVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of this format; the major version changes on breaking changes."
+    },
+    "exportedAt": { "type": "integer", "description": "Unix milliseconds." },
+    "source": { "type": "string", "description": "Application that wrote the file, e.g. `reqly 0.3.0`." },
+    "workspace": { "type": "string" },
+    "collections": { "type": "array", "items": { "$ref": "#/$defs/collection" } },
+    "environments": {
+      "type": "array",
+      "description": "Global environments of the workspace.",
+      "items": { "$ref": "#/$defs/environment" }
+    },
+    "cookies": { "type": "array", "items": { "$ref": "#/$defs/cookie" } },
+    "history": { "type": "array", "items": { "$ref": "#/$defs/response" } }
+  },
+  "$defs": {
+    "variables": {
+      "type": "object",
+      "description": "Variable values (any JSON); strings may contain templates.",
+      "additionalProperties": true
+    },
+    "collection": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "settings": { "$ref": "#/$defs/settings" },
+        "variables": { "$ref": "#/$defs/variables", "description": "Base environment." },
+        "variableSecrets": { "type": "array", "items": { "type": "string" } },
+        "environments": { "type": "array", "items": { "$ref": "#/$defs/environment" } },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/item" } }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "color": { "type": ["string", "null"] },
+        "data": { "$ref": "#/$defs/variables" },
+        "secrets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keys whose values are secret; their values are empty unless secrets were exported."
+        }
+      }
+    },
+    "item": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": { "const": "folder" },
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "data": { "$ref": "#/$defs/folder" },
+            "children": { "type": "array", "items": { "$ref": "#/$defs/item" } }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": { "const": "request" },
+            "id": { "type": "string", "description": "Referenced by `{% response %}` tags." },
+            "name": { "type": "string" },
+            "data": { "$ref": "#/$defs/request" }
+          }
+        }
+      ]
+    },
+    "row": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "value": { "type": "string" },
+        "enabled": { "type": "boolean", "default": true },
+        "description": { "type": "string" },
+        "kind": { "enum": ["text", "file"], "default": "text" }
+      }
+    },
+    "rows": { "type": "array", "items": { "$ref": "#/$defs/row" } },
+    "auth": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["inherit", "none", "basic", "bearer", "apiKey"] },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "token": { "type": "string" },
+        "prefix": { "type": "string" },
+        "key": { "type": "string" },
+        "value": { "type": "string" },
+        "location": { "enum": ["header", "query"] }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Missing values are inherited.",
+      "properties": {
+        "timeoutMs": { "type": "integer", "minimum": 0 },
+        "connectTimeoutMs": { "type": "integer", "minimum": 0 },
+        "followRedirects": { "type": "boolean" },
+        "maxRedirects": { "type": "integer", "minimum": 0 },
+        "verifyTls": { "type": "boolean" },
+        "encodeUrl": { "type": "boolean" },
+        "sendCookies": { "type": "boolean" },
+        "storeCookies": { "type": "boolean" },
+        "proxy": {
+          "type": "object",
+          "properties": {
+            "mode": { "enum": ["none", "system", "manual"] },
+            "url": { "type": "string" },
+            "username": { "type": "string" },
+            "password": { "type": "string" },
+            "noProxy": { "type": "string" }
+          }
+        }
+      }
+    },
+    "scripts": {
+      "type": "object",
+      "properties": {
+        "preRequest": { "type": "string" },
+        "afterResponse": { "type": "string" }
+      }
+    },
+    "folder": {
+      "type": "object",
+      "properties": {
+        "headers": { "$ref": "#/$defs/rows" },
+        "auth": { "$ref": "#/$defs/auth" },
+        "settings": { "$ref": "#/$defs/settings" },
+        "description": { "type": "string", "description": "Markdown." },
+        "variables": { "$ref": "#/$defs/variables" },
+        "scripts": { "$ref": "#/$defs/scripts" }
+      }
+    },
+    "request": {
+      "type": "object",
+      "properties": {
+        "method": { "type": "string" },
+        "url": { "type": "string", "description": "Without the query string; `:name` segments are path parameters." },
+        "params": { "$ref": "#/$defs/rows" },
+        "pathParams": { "$ref": "#/$defs/rows" },
+        "headers": { "$ref": "#/$defs/rows" },
+        "body": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": ["none", "json", "xml", "yaml", "text", "html", "formUrlencoded", "multipart", "binary"]
+            },
+            "text": { "type": "string" },
+            "fields": { "$ref": "#/$defs/rows" },
+            "file": {
+              "type": ["object", "null"],
+              "properties": {
+                "type": { "enum": ["path", "blob"] },
+                "path": { "type": "string" },
+                "hash": { "type": "string" },
+                "name": { "type": "string" },
+                "size": { "type": "integer" }
+              }
+            }
+          }
+        },
+        "auth": { "$ref": "#/$defs/auth" },
+        "settings": { "$ref": "#/$defs/settings" },
+        "description": { "type": "string", "description": "Markdown." },
+        "variables": { "$ref": "#/$defs/variables" },
+        "scripts": { "$ref": "#/$defs/scripts" }
+      }
+    },
+    "cookie": {
+      "type": "object",
+      "required": ["domain", "name"],
+      "properties": {
+        "domain": { "type": "string" },
+        "includeSubdomains": { "type": "boolean" },
+        "path": { "type": "string" },
+        "secure": { "type": "boolean" },
+        "httpOnly": { "type": "boolean" },
+        "expires": { "type": ["integer", "null"], "description": "Unix seconds; null for session cookies." },
+        "name": { "type": "string" },
+        "value": { "type": "string" }
+      }
+    },
+    "response": {
+      "type": "object",
+      "required": ["requestId", "record"],
+      "properties": {
+        "requestId": { "type": "string", "description": "`id` of the request item." },
+        "record": { "type": "object", "description": "Stored response: status, headers, timings, timeline…" },
+        "bodyBase64": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
