@@ -5,6 +5,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-10-17
+
+Stage 4: advanced authentication and network settings.
+
 ### Added
 
 - Authentication: Digest (MD5, SHA-256, `auth-int`), NTLMv2, OAuth 1.0
@@ -37,6 +41,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Linux desktop: with `HTTP_PROXY` set, the webview sent `localhost` (the dev
   server) through the proxy and showed a connection error. Local hosts are
   now added to `NO_PROXY`; `make dev` and `make dev-desktop` do the same.
+- Desktop builds on Windows and macOS (an unused Linux-only helper failed
+  the build).
 
 ## [0.3.0] — 2026-10-17
 
@@ -133,6 +139,7 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/hightemp/reqly/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hightemp/reqly/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hightemp/reqly/releases/tag/v0.2.0

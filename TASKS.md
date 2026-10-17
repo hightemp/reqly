@@ -349,7 +349,7 @@
 - [x] **T4.2.2** DNS-переопределения (`--resolve`), SNI-override, мин. и макс. версия TLS.
 - [x] **T4.2.3** Сжатие, keep-alive, максимальный размер ответа, задержка перед отправкой.
 - [x] **T4.2.4** Unix domain socket (Linux, macOS), network interface binding.
-- [ ] **T4.2.5** Релиз `v0.4.0`.
+- [x] **T4.2.5** Релиз `v0.4.0`.
 
 ---
 
