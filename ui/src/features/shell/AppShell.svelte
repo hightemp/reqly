@@ -12,6 +12,10 @@
   import OverlayHost from '$lib/ui/overlay/OverlayHost.svelte';
   import SplitPane from '$lib/ui/SplitPane.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
+  import CookieManager from '../modals/CookieManager.svelte';
+  import RequestLog from '../modals/RequestLog.svelte';
+  import TrashModal from '../modals/TrashModal.svelte';
+  import CommandPalette, { type PaletteCommand } from '../palette/CommandPalette.svelte';
   import SettingsModal from '../settings/SettingsModal.svelte';
   import RequestPanel from '../request/RequestPanel.svelte';
   import ResponsePanel from '../response/ResponsePanel.svelte';
@@ -38,6 +42,7 @@
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
+  let modal = $state<'palette' | 'cookies' | 'trash' | 'log' | null>(null);
 
   // Desktop: custom title bar or the OS frame.
   $effect(() => {
@@ -67,6 +72,49 @@
       : (themes.themes.find((x) => x.id === prefs.value.theme)?.name ?? prefs.value.theme),
   );
 
+  const paletteCommands = $derived<PaletteCommand[]>([
+    {
+      id: 'new-request',
+      label: t('actions.newRequest'),
+      run: () => void createRequest(services, selectedOne()),
+    },
+    {
+      id: 'new-folder',
+      label: t('actions.newFolder'),
+      run: () => void createFolder(services, selectedOne()),
+    },
+    { id: 'settings', label: t('settings.title'), run: () => (settingsOpen = true) },
+    { id: 'cookies', label: t('cookieManager.title'), run: () => (modal = 'cookies') },
+    { id: 'log', label: t('log.title'), run: () => (modal = 'log') },
+    { id: 'trash', label: t('trash.title'), run: () => (modal = 'trash') },
+    { id: 'sidebar', label: t('hotkeys.sidebar.toggle'), run: () => void toggleSidebar() },
+    { id: 'layout', label: t('settings.layout'), run: () => void toggleLayout() },
+    {
+      id: 'sidebar-mode',
+      label:
+        prefs.value.sidebarMode === 'tree' ? t('sidebar.modeCategories') : t('sidebar.modeTree'),
+      run: () =>
+        void prefs.update({
+          sidebarMode: prefs.value.sidebarMode === 'tree' ? 'categories' : 'tree',
+        }),
+    },
+    ...themes.themes.map((th) => ({
+      id: `theme-${th.id}`,
+      label: `${t('palette.theme')}: ${th.name}`,
+      run: () => void prefs.update({ theme: th.id }),
+    })),
+    ...workspace.collections.map((c) => ({
+      id: `col-${c.id}`,
+      label: `${t('palette.collection')}: ${c.name}`,
+      run: () => void workspace.selectCollection(c.id),
+    })),
+    ...workspace.workspaces.map((w) => ({
+      id: `ws-${w.id}`,
+      label: `${t('palette.workspace')}: ${w.name}`,
+      run: () => void workspace.selectWorkspace(w.id),
+    })),
+  ]);
+
   function cycleTheme() {
     const index = THEME_CYCLE.indexOf(prefs.value.theme);
     void prefs.update({ theme: THEME_CYCLE[(index + 1) % THEME_CYCLE.length]! });
@@ -86,6 +134,7 @@
       hotkeys.on('request.new', () => void createRequest(services, selectedOne())),
       hotkeys.on('folder.new', () => void createFolder(services, selectedOne())),
       hotkeys.on('settings.open', () => (settingsOpen = true)),
+      hotkeys.on('palette.open', () => (modal = 'palette')),
       transport.subscribe((e) => {
         if (e.topic === TRANSPORT_TOPICS.disconnected) offline = true;
         if (e.topic === TRANSPORT_TOPICS.reconnected) {
@@ -134,6 +183,7 @@
           {services}
           onFolderSettings={(id) => (folderSettings = id)}
           onCollapse={toggleSidebar}
+          onOpen={(m) => (modal = m)}
         />
       {/snippet}
       {#snippet second()}
@@ -164,6 +214,15 @@
   </main>
 
   <OverlayHost />
+  {#if modal === 'palette'}
+    <CommandPalette {services} commands={paletteCommands} onclose={() => (modal = null)} />
+  {:else if modal === 'cookies'}
+    <CookieManager {services} onclose={() => (modal = null)} />
+  {:else if modal === 'trash'}
+    <TrashModal {services} onclose={() => (modal = null)} />
+  {:else if modal === 'log'}
+    <RequestLog {services} onclose={() => (modal = null)} />
+  {/if}
   {#if settingsOpen}
     <SettingsModal {services} onclose={() => (settingsOpen = false)} />
   {/if}

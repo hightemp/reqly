@@ -17,9 +17,10 @@
     services: Services;
     onFolderSettings: (id: string) => void;
     onCollapse: () => void;
+    onOpen: (modal: 'cookies' | 'trash' | 'log') => void;
   }
 
-  let { services, onFolderSettings, onCollapse }: Props = $props();
+  let { services, onFolderSettings, onCollapse, onOpen }: Props = $props();
   const ws = $derived(services.workspace);
   const prefs = $derived(services.prefs);
 
@@ -55,6 +56,11 @@
         },
       },
     ];
+    entries.push(
+      { id: 'cookies', label: t('cookieManager.title'), onSelect: () => onOpen('cookies') },
+      { id: 'log', label: t('log.title'), onSelect: () => onOpen('log') },
+      { separator: true },
+    );
     if (current) {
       entries.push(
         {
@@ -98,6 +104,10 @@
         },
       },
     ];
+    entries.push(
+      { id: 'trash', label: t('trash.title'), onSelect: () => onOpen('trash') },
+      { separator: true },
+    );
     if (current) {
       entries.push(
         {

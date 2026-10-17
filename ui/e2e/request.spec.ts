@@ -69,3 +69,26 @@ test('folders, rename and delete with undo', async ({ page }) => {
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(page.getByRole('treeitem', { name: /Users API/ })).toBeVisible();
 });
+
+test('command palette opens requests and runs commands', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await page
+    .getByRole('tab', { name: /New Request/ })
+    .last()
+    .click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Close all' }).click();
+  await expect(page.getByRole('tablist', { name: 'Open requests' })).toBeHidden();
+
+  await page.keyboard.press('Control+k');
+  const input = page.getByRole('combobox', { name: 'Go to request or command' });
+  await input.fill('new req');
+  await input.press('Enter');
+  await expect(page.getByRole('tab', { name: /New Request/ })).toHaveCount(1);
+
+  await page.keyboard.press('Control+k');
+  await page.getByRole('combobox', { name: 'Go to request or command' }).fill('>cookies');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Cookies' })).toBeVisible();
+});
