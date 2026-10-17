@@ -9,9 +9,11 @@ fn main() {
 
 /// Hosts that must never go through a proxy: the dev server (`localhost:5173`)
 /// and other local services.
+#[cfg(any(target_os = "linux", test))]
 const LOCAL_HOSTS: [&str; 3] = ["localhost", "127.0.0.1", "::1"];
 
 /// `existing` (a `NO_PROXY` value) with the local hosts added.
+#[cfg(any(target_os = "linux", test))]
 fn with_local_hosts(existing: Option<&str>) -> String {
     let mut hosts: Vec<String> = existing
         .unwrap_or("")
