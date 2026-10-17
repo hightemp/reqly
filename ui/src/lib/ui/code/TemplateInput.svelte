@@ -89,8 +89,9 @@
               {
                 key: 'Enter',
                 run: (view) => {
-                  // Let completion accept the selected option first.
-                  if (completionStatus(view.state) === 'active') return false;
+                  // Let completion accept the selected option first, also while it
+                  // is still updating after the last keystroke.
+                  if (completionStatus(view.state) !== null) return false;
                   onenter?.();
                   return true;
                 },
