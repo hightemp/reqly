@@ -1,0 +1,25 @@
+[package]
+name = "reqly-interop"
+description = "Import and export of Reqly, Insomnia, Postman, OpenAPI, HAR, Bruno and cURL formats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+reqly-http.workspace = true
+base64 = "0.22"
+serde.workspace = true
+serde_json = { workspace = true, features = ["preserve_order"] }
+serde_yaml_ng = "0.10"
+ts-rs.workspace = true
+url = "2"
+
+[dev-dependencies]
+insta.workspace = true
+pretty_assertions = "1"
+uuid.workspace = true
+
+[lints]
+workspace = true

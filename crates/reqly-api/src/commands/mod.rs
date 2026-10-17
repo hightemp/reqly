@@ -1,6 +1,7 @@
 //! Built-in commands and the shared application context.
 
 pub mod http;
+pub mod interop;
 pub mod template;
 pub mod tree;
 
@@ -82,6 +83,7 @@ pub fn registry() -> Registry<AppContext> {
     tree::register(&mut r);
     http::register(&mut r);
     template::register(&mut r);
+    interop::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

@@ -1,0 +1,166 @@
+---
+source: crates/reqly-interop/tests/reqly.rs
+expression: text
+---
+{
+  "format": "reqly",
+  "formatVersion": "1.0.0",
+  "exportedAt": 1700000000000,
+  "source": "reqly 0.3.0",
+  "workspace": "Main",
+  "collections": [
+    {
+      "name": "Example API",
+      "description": "Sample",
+      "variables": {
+        "base_url": "https://api.example.com",
+        "key": "secret-key"
+      },
+      "variableSecrets": [
+        "key"
+      ],
+      "environments": [
+        {
+          "name": "prod",
+          "color": "#e5484d",
+          "data": {
+            "base_url": "https://prod.example.com",
+            "limits": {
+              "rps": 10
+            }
+          }
+        }
+      ],
+      "items": [
+        {
+          "kind": "request",
+          "id": "req-login",
+          "name": "Login",
+          "data": {
+            "method": "POST",
+            "url": "{{ base_url }}/auth/login",
+            "headers": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "kind": "json",
+              "text": "{\"user\": \"{{ user }}\"}"
+            },
+            "auth": {
+              "type": "inherit"
+            },
+            "description": "Logs in.",
+            "variables": {
+              "user": "admin"
+            }
+          }
+        },
+        {
+          "kind": "folder",
+          "id": "fld-users",
+          "name": "Users",
+          "data": {
+            "headers": [
+              {
+                "name": "X-Team",
+                "value": "core"
+              }
+            ],
+            "auth": {
+              "type": "basic",
+              "username": "u",
+              "password": "p"
+            },
+            "settings": {
+              "timeoutMs": 5000
+            },
+            "description": "User endpoints",
+            "variables": {
+              "version": "v2"
+            }
+          },
+          "children": [
+            {
+              "kind": "request",
+              "id": "req-list",
+              "name": "List users",
+              "data": {
+                "method": "GET",
+                "url": "{{ base_url }}/users",
+                "params": [
+                  {
+                    "name": "page",
+                    "value": "1"
+                  },
+                  {
+                    "enabled": false,
+                    "name": "debug",
+                    "value": "true"
+                  }
+                ],
+                "body": {
+                  "kind": "none"
+                },
+                "auth": {
+                  "type": "bearer",
+                  "token": "{% response 'body', 'req-login', '$.token', 'no-history' %}",
+                  "prefix": ""
+                }
+              }
+            },
+            {
+              "kind": "request",
+              "id": "req-upload",
+              "name": "Upload",
+              "data": {
+                "method": "POST",
+                "url": "{{ base_url }}/upload",
+                "body": {
+                  "kind": "formUrlencoded",
+                  "fields": [
+                    {
+                      "name": "a",
+                      "value": "1"
+                    },
+                    {
+                      "name": "b",
+                      "value": "{{ $uuid }}"
+                    }
+                  ]
+                },
+                "auth": {
+                  "type": "apiKey",
+                  "key": "X-Key",
+                  "value": "{{ key }}",
+                  "location": "header"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "environments": [
+    {
+      "name": "Shared",
+      "data": {
+        "user": "guest"
+      }
+    }
+  ],
+  "cookies": [
+    {
+      "domain": "example.com",
+      "includeSubdomains": false,
+      "path": "/",
+      "secure": false,
+      "httpOnly": false,
+      "name": "sid",
+      "value": "abc"
+    }
+  ]
+}

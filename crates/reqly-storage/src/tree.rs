@@ -24,6 +24,16 @@ pub enum Placement {
     After(Id),
 }
 
+/// A node with its children, for bulk inserts (imports).
+#[derive(Debug, Clone, PartialEq)]
+pub struct TreeInsert {
+    /// Preset id (imports keep cross-references stable); generated when `None`.
+    pub id: Option<Id>,
+    pub name: String,
+    pub data: NodeData,
+    pub children: Vec<TreeInsert>,
+}
+
 pub struct TreeRepo<'a> {
     storage: &'a Storage,
     clock: &'a dyn Clock,
@@ -472,6 +482,67 @@ impl<'a> TreeRepo<'a> {
     }
 
     /// Live nodes of a collection, ordered by `(sort_key, id)` within each parent.
+    /// Every live node of a collection with its data, ordered like [`Self::list_tree`].
+    pub async fn list_nodes(&self, collection_id: Id) -> CoreResult<Vec<Node>> {
+        let rows = sqlx::query(concat!(
+            "SELECT ",
+            node_columns!(),
+            " FROM nodes WHERE collection_id = ? AND deleted_at IS NULL ORDER BY sort_key, id"
+        ))
+        .bind(collection_id.to_string())
+        .fetch_all(self.storage.pool())
+        .await
+        .map_err(db_err)?;
+        rows.iter().map(node_from_row).collect()
+    }
+
+    /// Inserts `items` (with their children) at the end of `parent` in one
+    /// transaction. Returns the created nodes, parents before children.
+    pub async fn insert_tree(
+        &self,
+        collection_id: Id,
+        parent_id: Option<Id>,
+        items: &[TreeInsert],
+    ) -> CoreResult<Vec<Node>> {
+        let mut tx = self.begin().await?;
+        Self::check_parent(&mut tx, collection_id, parent_id).await?;
+        let existing = siblings(&mut tx, collection_id, parent_id).await?;
+        let keys = keys_for(&existing, Placement::End, items.len())?;
+        let mut created = Vec::new();
+        // Iterative walk: (parent, items, keys).
+        let mut stack: Vec<(Option<Id>, &[TreeInsert], Vec<SortKey>)> =
+            vec![(parent_id, items, keys)];
+        while let Some((parent, level, keys)) = stack.pop() {
+            for (item, key) in level.iter().zip(keys) {
+                let mut meta = Meta::new(self.clock, key);
+                if let Some(id) = item.id {
+                    meta.id = id;
+                }
+                let node = Node {
+                    meta,
+                    collection_id,
+                    parent_id: parent,
+                    name: item.name.clone(),
+                    data: item.data.clone(),
+                };
+                insert_node(&mut tx, &node).await?;
+                if !item.children.is_empty() {
+                    if node.data.kind() != NodeKind::Folder {
+                        return Err(CoreError::new(
+                            "tree.parent_not_folder",
+                            "only folders can have children",
+                        ));
+                    }
+                    let child_keys = SortKey::n_between(None, None, item.children.len())?;
+                    stack.push((Some(node.meta.id), &item.children, child_keys));
+                }
+                created.push(node);
+            }
+        }
+        tx.commit().await.map_err(db_err)?;
+        Ok(created)
+    }
+
     pub async fn list_tree(&self, collection_id: Id) -> CoreResult<Vec<NodeSummary>> {
         let rows = sqlx::query(concat!(
             "SELECT ",

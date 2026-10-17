@@ -23,9 +23,17 @@ import type { EnvironmentListOutput } from "./EnvironmentListOutput";
 import type { EnvironmentSetActiveGlobalInput } from "./EnvironmentSetActiveGlobalInput";
 import type { EnvironmentSetActiveInput } from "./EnvironmentSetActiveInput";
 import type { EnvironmentUpdateInput } from "./EnvironmentUpdateInput";
+import type { ExportRunInput } from "./ExportRunInput";
+import type { ExportRunOutput } from "./ExportRunOutput";
 import type { HistoryWorkspaceInput } from "./HistoryWorkspaceInput";
 import type { IdInput } from "./IdInput";
 import type { IdsInput } from "./IdsInput";
+import type { ImportApplyInput } from "./ImportApplyInput";
+import type { ImportApplyOutput } from "./ImportApplyOutput";
+import type { ImportBundle } from "./ImportBundle";
+import type { ImportFromUrlInput } from "./ImportFromUrlInput";
+import type { ImportFromUrlOutput } from "./ImportFromUrlOutput";
+import type { ImportPreviewInput } from "./ImportPreviewInput";
 import type { NameInput } from "./NameInput";
 import type { Node } from "./Node";
 import type { NodeCreateInput } from "./NodeCreateInput";
@@ -113,6 +121,10 @@ export type Commands = {
   "template.variables": { input: TemplateVariablesInput; output: Array<VariableInfo> };
   "template.functions": { input: Empty; output: TemplateFunctionsOutput };
   "template.prompts": { input: TemplatePromptsInput; output: Array<PromptInfo> };
+  "import.preview": { input: ImportPreviewInput; output: ImportBundle };
+  "import.fromUrl": { input: ImportFromUrlInput; output: ImportFromUrlOutput };
+  "import.apply": { input: ImportApplyInput; output: ImportApplyOutput };
+  "export.run": { input: ExportRunInput; output: ExportRunOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

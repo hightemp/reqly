@@ -119,15 +119,29 @@ pub fn call(name: &str, values: &[Value], locale: Locale) -> Option<CoreResult<V
         "random" => random(&a),
         "jsonpath" => jsonpath(&a),
         "jwt" => jwt(&a),
-        "faker" => faker::call(&a, locale),
+        "faker" => {
+            // Insomnia's faker tag uses Postman names: `{% faker 'randomFullName' %}`.
+            let path = a.str(0).unwrap_or_default();
+            if !path.contains('.') {
+                let (alias, args) = resolve_alias(&path, Vec::new());
+                if alias != path {
+                    return call(&alias, &args, locale);
+                }
+            }
+            faker::call(&a, locale)
+        }
         _ => return None,
     })
 }
 
 fn base64(a: &Args) -> CoreResult<Value> {
+    // Insomnia order: action, kind (`normal` / `url`), value; the kind may be omitted.
     let action = a.str(0)?;
-    let value = a.str(1)?;
-    let url = a.str_or(2, "normal") == "url";
+    let (url, value) = if a.values.len() >= 3 {
+        (a.str(1)? == "url", a.str(2)?)
+    } else {
+        (false, a.str(1)?)
+    };
     let out = match action.as_str() {
         "encode" if url => URL_SAFE_NO_PAD.encode(value),
         "encode" => STANDARD.encode(value),
@@ -396,9 +410,9 @@ pub fn catalog() -> Vec<FunctionInfo> {
         ),
         f(
             "base64",
-            &["action", "value", "variant?"],
+            &["action", "kind", "value"],
             &["encode", "decode"],
-            "{% base64 'encode', 'text' %}",
+            "{% base64 'encode', 'normal', 'text' %}",
         ),
         f(
             "urlencode",

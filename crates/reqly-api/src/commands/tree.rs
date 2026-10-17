@@ -70,14 +70,18 @@ fn workspaces_changed(ctx: &AppContext) {
         .publish(Event::new("workspaces.changed", WorkspacesChanged {}));
 }
 
-fn collections_changed(ctx: &AppContext, workspace_id: Id) {
+pub(crate) fn collections_changed(ctx: &AppContext, workspace_id: Id) {
     ctx.events.publish(Event::new(
         "collections.changed",
         CollectionsChanged { workspace_id },
     ));
 }
 
-fn tree_changed(ctx: &AppContext, collections: impl IntoIterator<Item = Id>, nodes: Vec<Id>) {
+pub(crate) fn tree_changed(
+    ctx: &AppContext,
+    collections: impl IntoIterator<Item = Id>,
+    nodes: Vec<Id>,
+) {
     let collection_ids: Vec<Id> = collections
         .into_iter()
         .collect::<BTreeSet<_>>()

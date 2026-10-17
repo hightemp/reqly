@@ -26,6 +26,23 @@ pub struct HttpRequest {
     /// Request-level variables (highest precedence below runtime values).
     #[ts(type = "Record<string, unknown>")]
     pub variables: serde_json::Map<String, serde_json::Value>,
+    /// Imported scripts; not executed until scripting lands (stage 6).
+    pub scripts: Scripts,
+}
+
+/// Pre-request and after-response scripts.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", default)]
+#[ts(export)]
+pub struct Scripts {
+    pub pre_request: String,
+    pub after_response: String,
+}
+
+impl Scripts {
+    pub fn is_empty(&self) -> bool {
+        self.pre_request.trim().is_empty() && self.after_response.trim().is_empty()
+    }
 }
 
 impl Default for HttpRequest {
@@ -41,6 +58,7 @@ impl Default for HttpRequest {
             settings: RequestSettings::default(),
             description: String::new(),
             variables: serde_json::Map::new(),
+            scripts: Scripts::default(),
         }
     }
 }

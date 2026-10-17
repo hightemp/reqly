@@ -2,6 +2,7 @@
 import type { Auth } from "./Auth";
 import type { KeyValue } from "./KeyValue";
 import type { RequestSettings } from "./RequestSettings";
+import type { Scripts } from "./Scripts";
 
 /**
  * Settings shared by everything inside a folder.
@@ -10,4 +11,8 @@ export type FolderData = { headers: Array<KeyValue>, auth: Auth, settings: Reque
 /**
  * Variables for everything inside this folder (override environments).
  */
-variables: Record<string, unknown>, };
+variables: Record<string, unknown>, 
+/**
+ * Imported scripts; not executed until scripting lands (stage 6).
+ */
+scripts: Scripts, };

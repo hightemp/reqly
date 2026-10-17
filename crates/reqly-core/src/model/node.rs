@@ -49,6 +49,8 @@ pub struct FolderData {
     /// Variables for everything inside this folder (override environments).
     #[ts(type = "Record<string, unknown>")]
     pub variables: serde_json::Map<String, serde_json::Value>,
+    /// Imported scripts; not executed until scripting lands (stage 6).
+    pub scripts: super::request::Scripts,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

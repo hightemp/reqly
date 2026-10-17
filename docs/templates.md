@@ -63,7 +63,7 @@
 | `uuid` | `v4` (по умолчанию), `v7` | `{% uuid 'v7' %}` |
 | `now` | `iso-8601`, `unix`, `millis`, `rfc-2822`, `custom` + формат strftime | `{% now 'custom', '%Y-%m-%d' %}` |
 | `random` | `int` min max, `float` min max, `string` длина [алфавит], `regex` шаблон | `{% random 'regex', '[A-Z]{3}-\d{4}' %}` |
-| `base64` | `encode`/`decode`, значение, [`url`] | `{% base64 'encode', 'user:pass' %}` |
+| `base64` | `encode`/`decode`, [`normal`/`url`], значение (порядок как в Insomnia) | `{% base64 'encode', 'normal', 'user:pass' %}` |
 | `urlencode` | `encode`/`decode`, значение | `{% urlencode 'encode', 'a b' %}` |
 | `hash` | `md5`/`sha1`/`sha256`/`sha384`/`sha512`, `hex`/`base64`/`base64url`, значение | `{% hash 'sha256', 'hex', body %}` |
 | `hmac` | алгоритм, кодировка, ключ, значение | `{% hmac 'sha256', 'hex', secret, payload %}` |

@@ -14,6 +14,6 @@ pub use body::{Body, BodyKind, FileRef};
 pub use environment::{Environment, EnvironmentKind};
 pub use kv::{KeyValue, KeyValueKind};
 pub use node::{Collection, FolderData, Node, NodeData, NodeKind, NodeSummary, Workspace};
-pub use request::HttpRequest;
+pub use request::{HttpRequest, Scripts};
 pub use response::{ResponseRecord, ResponseSummary};
 pub use settings::{ProxyMode, ProxySettings, RequestSettings};

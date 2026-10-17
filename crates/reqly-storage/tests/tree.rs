@@ -463,3 +463,92 @@ async fn lists_ten_thousand_nodes_quickly() {
     assert!(elapsed.as_millis() < 1500, "list_tree took {elapsed:?}");
     println!("list_tree(10k) = {elapsed:?}");
 }
+
+#[tokio::test]
+async fn insert_tree_and_list_nodes() {
+    use reqly_storage::tree::TreeInsert;
+    let fx = Fx::new().await;
+    let col = fx.collection().await;
+    let existing = fx
+        .repo()
+        .create_node(col, None, "first", request("GET", "/a"), Placement::End)
+        .await
+        .unwrap();
+    let items = vec![
+        TreeInsert {
+            id: None,
+            name: "api".into(),
+            data: folder(),
+            children: vec![
+                TreeInsert {
+                    id: None,
+                    name: "list".into(),
+                    data: request("GET", "/users"),
+                    children: vec![],
+                },
+                TreeInsert {
+                    id: None,
+                    name: "create".into(),
+                    data: request("POST", "/users"),
+                    children: vec![],
+                },
+            ],
+        },
+        TreeInsert {
+            id: None,
+            name: "health".into(),
+            data: request("GET", "/health"),
+            children: vec![],
+        },
+    ];
+    let created = fx.repo().insert_tree(col, None, &items).await.unwrap();
+    assert_eq!(created.len(), 4);
+
+    let nodes = fx.repo().list_nodes(col).await.unwrap();
+    let names: Vec<_> = nodes.iter().map(|n| n.name.as_str()).collect();
+    assert_eq!(names.len(), 5);
+    let roots: Vec<_> = nodes
+        .iter()
+        .filter(|n| n.parent_id.is_none())
+        .map(|n| n.name.as_str())
+        .collect();
+    assert_eq!(
+        roots,
+        ["first", "api", "health"],
+        "appended after existing nodes, in order"
+    );
+    let api = nodes.iter().find(|n| n.name == "api").unwrap();
+    let children: Vec<_> = nodes
+        .iter()
+        .filter(|n| n.parent_id == Some(api.meta.id))
+        .map(|n| n.name.as_str())
+        .collect();
+    assert_eq!(children, ["list", "create"]);
+    assert!(
+        nodes
+            .iter()
+            .all(|n| n.meta.id != existing.meta.id || n.name == "first")
+    );
+
+    // Into a folder.
+    fx.repo()
+        .insert_tree(
+            col,
+            Some(api.meta.id),
+            &[TreeInsert {
+                id: None,
+                name: "x".into(),
+                data: request("GET", "/x"),
+                children: vec![],
+            }],
+        )
+        .await
+        .unwrap();
+    let tree = fx.repo().list_tree(col).await.unwrap();
+    assert_eq!(
+        tree.iter()
+            .filter(|n| n.parent_id == Some(api.meta.id))
+            .count(),
+        3
+    );
+}

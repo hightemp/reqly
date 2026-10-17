@@ -3,6 +3,7 @@ import type { Auth } from "./Auth";
 import type { Body } from "./Body";
 import type { KeyValue } from "./KeyValue";
 import type { RequestSettings } from "./RequestSettings";
+import type { Scripts } from "./Scripts";
 
 /**
  * An HTTP request as stored. `url` holds no query string: query parameters
@@ -20,4 +21,8 @@ description: string,
 /**
  * Request-level variables (highest precedence below runtime values).
  */
-variables: Record<string, unknown>, };
+variables: Record<string, unknown>, 
+/**
+ * Imported scripts; not executed until scripting lands (stage 6).
+ */
+scripts: Scripts, };

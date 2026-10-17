@@ -106,7 +106,7 @@ async fn encoding_functions() {
         "hi there"
     );
     assert_eq!(
-        render("{{ $base64('encode', '??>', 'url') }}")
+        render("{{ $base64('encode', 'url', '??>') }}")
             .await
             .unwrap(),
         "Pz8-"

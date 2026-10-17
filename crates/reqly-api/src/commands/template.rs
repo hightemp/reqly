@@ -376,7 +376,7 @@ impl SendHost<'_> {
             CoreError::new("template.bad_argument", "invalid request id")
                 .with_param("function", "response")
         })?;
-        let path = arg(args, 2);
+        let path = decode_insomnia_filter(&arg(args, 2));
         let trigger = Some(arg(args, 3))
             .filter(|t| !t.is_empty())
             .unwrap_or_else(|| "never".into());
@@ -493,6 +493,28 @@ impl Host for SendHost<'_> {
             "response" => self.response(args).await,
             _ => return None,
         })
+    }
+}
+
+/// Insomnia stores response filters as `b64::<base64>::46b`.
+fn decode_insomnia_filter(path: &str) -> String {
+    use base64::Engine;
+    path.strip_prefix("b64::")
+        .and_then(|rest| rest.strip_suffix("::46b"))
+        .and_then(|b64| base64::engine::general_purpose::STANDARD.decode(b64).ok())
+        .and_then(|bytes| String::from_utf8(bytes).ok())
+        .unwrap_or_else(|| path.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn insomnia_filters_are_decoded() {
+        assert_eq!(
+            super::decode_insomnia_filter("b64::JC50b2tlbg==::46b"),
+            "$.token"
+        );
+        assert_eq!(super::decode_insomnia_filter("$.plain"), "$.plain");
     }
 }
 
