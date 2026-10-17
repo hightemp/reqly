@@ -25,6 +25,12 @@ test('preferences persist on the server across reloads', async ({ page }) => {
   await page.getByRole('button', { name: /^Язык/ }).click();
   await page.keyboard.press('Control+b');
   await expect(page.getByRole('complementary')).toBeVisible();
+  // Saving is asynchronous: make sure the server has the restored values.
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByRole('complementary')).toBeVisible({ timeout: 1000 });
+    await expect(page.getByRole('button', { name: 'Create' })).toBeVisible({ timeout: 1000 });
+  }).toPass();
 });
 
 test('settings changes propagate to other tabs over WebSocket', async ({ page, context }) => {
