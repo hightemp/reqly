@@ -1,0 +1,31 @@
+[package]
+name = "reqly-desktop"
+description = "Reqly desktop app (Tauri 2)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "reqly_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+reqly-api.workspace = true
+reqly-core.workspace = true
+reqly-storage.workspace = true
+serde_json.workspace = true
+tauri = { version = "2", features = [] }
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+reqly-api = { workspace = true, features = ["contract"] }
+tauri = { version = "2", features = ["test"] }
+
+[lints]
+workspace = true

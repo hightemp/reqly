@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Reqly — Exchange</title>
+  <desc id="desc">Two bold, opposing arrows represent a request and its response on a violet rounded square.</desc>
+  <rect width="1024" height="1024" rx="225" fill="#5b4bdb"/>
+  <path d="M200 288H600V208L824 344L600 480V400H200Z" fill="#ffffff"/>
+  <path d="M824 624H424V544L200 680L424 816V736H824Z" fill="#d4f8e9"/>
+</svg>

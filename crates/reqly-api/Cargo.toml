@@ -1,0 +1,25 @@
+[package]
+name = "reqly-api"
+description = "Typed command and event contract between the Reqly UI and core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+reqly-storage.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+ts-rs.workspace = true
+
+[features]
+# Shared transport contract suite, run by every shell (server, desktop).
+contract = []
+
+[dev-dependencies]
+
+[lints]
+workspace = true

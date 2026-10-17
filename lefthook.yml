@@ -1,0 +1,19 @@
+pre-commit:
+  parallel: true
+  commands:
+    rustfmt:
+      glob: '*.rs'
+      run: cargo fmt --all --check
+    prettier:
+      root: ui/
+      glob: '*.{ts,js,svelte,css,json,md}'
+      run: pnpm exec prettier --check {staged_files}
+    eslint:
+      root: ui/
+      glob: '*.{ts,js,svelte}'
+      run: pnpm exec eslint {staged_files}
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}

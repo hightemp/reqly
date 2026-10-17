@@ -1,0 +1,27 @@
+[package]
+name = "spike-http-engine"
+description = "Spike for ADR-002: libcurl vs reqwest as the HTTP engine"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[features]
+default = ["engine-curl", "engine-reqwest"]
+engine-curl = ["dep:curl"]
+engine-reqwest = ["dep:reqwest"]
+
+[[bin]]
+name = "curl_probe"
+required-features = ["engine-curl"]
+
+[[bin]]
+name = "reqwest_probe"
+required-features = ["engine-reqwest"]
+
+[dependencies]
+curl = { version = "0.4", optional = true, default-features = false, features = ["ssl", "static-curl", "static-ssl", "http2", "ntlm"] }
+reqwest = { version = "0.13", optional = true, default-features = false, features = ["rustls", "http2", "gzip", "brotli", "socks", "stream"] }
+tokio = { version = "1", features = ["full"] }
+
+[dev-dependencies]
+reqly-testserver = { path = "../../crates/reqly-testserver" }

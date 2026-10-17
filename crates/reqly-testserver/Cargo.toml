@@ -1,0 +1,27 @@
+[package]
+name = "reqly-testserver"
+description = "Local HTTP(S) server with fixtures for Reqly integration tests"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+axum.workspace = true
+axum-server = { version = "0.8", features = ["tls-rustls"] }
+base64 = "0.22"
+futures.workspace = true
+rcgen = "0.14"
+rustls = "0.23"
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tower-http = { workspace = true, features = ["compression-gzip", "compression-br"] }
+
+[dev-dependencies]
+reqwest = { version = "0.13", features = ["json", "gzip", "brotli", "cookies", "stream"] }
+
+[lints]
+workspace = true

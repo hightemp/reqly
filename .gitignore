@@ -1,0 +1,26 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Node
+node_modules/
+ui/dist/
+ui/coverage/
+ui/test-results/
+ui/playwright-report/
+*.tsbuildinfo
+
+# Tauri
+apps/desktop/gen/schemas/
+
+# Local data
+/.reqly-data/
+*.db
+*.db-shm
+*.db-wal
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store

@@ -1,0 +1,18 @@
+{
+  "name": "reqly-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev": "pnpm -C ui dev",
+    "build": "pnpm -C ui build",
+    "test": "pnpm -C ui test",
+    "lint": "pnpm -C ui lint",
+    "prepare": "lefthook install"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "lefthook": "^2.2.2"
+  }
+}

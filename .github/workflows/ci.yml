@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, test)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Test with coverage (≥ 85% lines)
+        run: cargo llvm-cov --workspace --exclude reqly-desktop --exclude spike-http-engine --fail-under-lines 85
+      - run: cargo test -p reqly-desktop
+      - name: Generated TypeScript bindings are up to date
+        run: git diff --exit-code -- ui/src/lib/api/generated
+
+  ui:
+    name: UI (lint, unit tests)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C ui lint
+      - run: pnpm -C ui coverage
+
+  e2e:
+    name: E2E (server + Playwright)
+    runs-on: ubuntu-24.04
+    needs: [rust, ui]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C ui exec playwright install --with-deps chromium
+      - run: pnpm -C ui e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: ui/playwright-report
+
+  desktop-e2e:
+    name: Desktop E2E (tauri-driver, Linux)
+    runs-on: ubuntu-24.04
+    needs: [rust, ui]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf webkit2gtk-driver xvfb
+      - run: cargo install tauri-driver --locked
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C ui build
+      - run: cargo build -p reqly-desktop --release --features tauri/custom-protocol
+      - run: xvfb-run pnpm -C apps/desktop e2e
+
+  desktop:
+    name: Desktop build (${{ matrix.os }})
+    needs: [rust, ui]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Tauri system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -C apps/desktop tauri build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reqly-desktop-${{ matrix.os }}
+          path: target/release/bundle/
+          if-no-files-found: error

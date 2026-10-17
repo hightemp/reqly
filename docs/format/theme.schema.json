@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hightemp/reqly/docs/format/theme.schema.json",
+  "title": "Reqly theme",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "kind",
+    "colors"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "enum": [
+        "light",
+        "dark"
+      ]
+    },
+    "extends": {
+      "type": "string",
+      "description": "Id of the theme to inherit missing colors from"
+    },
+    "colors": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bg": {
+          "type": "string",
+          "description": "CSS color for --c-bg"
+        },
+        "bg-elevated": {
+          "type": "string",
+          "description": "CSS color for --c-bg-elevated"
+        },
+        "bg-sunken": {
+          "type": "string",
+          "description": "CSS color for --c-bg-sunken"
+        },
+        "bg-hover": {
+          "type": "string",
+          "description": "CSS color for --c-bg-hover"
+        },
+        "bg-active": {
+          "type": "string",
+          "description": "CSS color for --c-bg-active"
+        },
+        "bg-selected": {
+          "type": "string",
+          "description": "CSS color for --c-bg-selected"
+        },
+        "overlay": {
+          "type": "string",
+          "description": "CSS color for --c-overlay"
+        },
+        "border": {
+          "type": "string",
+          "description": "CSS color for --c-border"
+        },
+        "border-strong": {
+          "type": "string",
+          "description": "CSS color for --c-border-strong"
+        },
+        "fg": {
+          "type": "string",
+          "description": "CSS color for --c-fg"
+        },
+        "fg-muted": {
+          "type": "string",
+          "description": "CSS color for --c-fg-muted"
+        },
+        "fg-subtle": {
+          "type": "string",
+          "description": "CSS color for --c-fg-subtle"
+        },
+        "fg-on-accent": {
+          "type": "string",
+          "description": "CSS color for --c-fg-on-accent"
+        },
+        "accent": {
+          "type": "string",
+          "description": "CSS color for --c-accent"
+        },
+        "accent-hover": {
+          "type": "string",
+          "description": "CSS color for --c-accent-hover"
+        },
+        "accent-subtle": {
+          "type": "string",
+          "description": "CSS color for --c-accent-subtle"
+        },
+        "focus-ring": {
+          "type": "string",
+          "description": "CSS color for --c-focus-ring"
+        },
+        "danger": {
+          "type": "string",
+          "description": "CSS color for --c-danger"
+        },
+        "danger-subtle": {
+          "type": "string",
+          "description": "CSS color for --c-danger-subtle"
+        },
+        "warning": {
+          "type": "string",
+          "description": "CSS color for --c-warning"
+        },
+        "warning-subtle": {
+          "type": "string",
+          "description": "CSS color for --c-warning-subtle"
+        },
+        "success": {
+          "type": "string",
+          "description": "CSS color for --c-success"
+        },
+        "success-subtle": {
+          "type": "string",
+          "description": "CSS color for --c-success-subtle"
+        },
+        "info": {
+          "type": "string",
+          "description": "CSS color for --c-info"
+        },
+        "info-subtle": {
+          "type": "string",
+          "description": "CSS color for --c-info-subtle"
+        },
+        "shadow": {
+          "type": "string",
+          "description": "CSS color for --c-shadow"
+        },
+        "scrollbar-thumb": {
+          "type": "string",
+          "description": "CSS color for --c-scrollbar-thumb"
+        },
+        "scrollbar-thumb-hover": {
+          "type": "string",
+          "description": "CSS color for --c-scrollbar-thumb-hover"
+        },
+        "method-get": {
+          "type": "string",
+          "description": "CSS color for --c-method-get"
+        },
+        "method-post": {
+          "type": "string",
+          "description": "CSS color for --c-method-post"
+        },
+        "method-put": {
+          "type": "string",
+          "description": "CSS color for --c-method-put"
+        },
+        "method-patch": {
+          "type": "string",
+          "description": "CSS color for --c-method-patch"
+        },
+        "method-delete": {
+          "type": "string",
+          "description": "CSS color for --c-method-delete"
+        },
+        "method-head": {
+          "type": "string",
+          "description": "CSS color for --c-method-head"
+        },
+        "method-options": {
+          "type": "string",
+          "description": "CSS color for --c-method-options"
+        },
+        "method-other": {
+          "type": "string",
+          "description": "CSS color for --c-method-other"
+        },
+        "status-1xx": {
+          "type": "string",
+          "description": "CSS color for --c-status-1xx"
+        },
+        "status-2xx": {
+          "type": "string",
+          "description": "CSS color for --c-status-2xx"
+        },
+        "status-3xx": {
+          "type": "string",
+          "description": "CSS color for --c-status-3xx"
+        },
+        "status-4xx": {
+          "type": "string",
+          "description": "CSS color for --c-status-4xx"
+        },
+        "status-5xx": {
+          "type": "string",
+          "description": "CSS color for --c-status-5xx"
+        },
+        "status-error": {
+          "type": "string",
+          "description": "CSS color for --c-status-error"
+        },
+        "syntax-keyword": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-keyword"
+        },
+        "syntax-string": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-string"
+        },
+        "syntax-number": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-number"
+        },
+        "syntax-boolean": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-boolean"
+        },
+        "syntax-null": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-null"
+        },
+        "syntax-property": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-property"
+        },
+        "syntax-comment": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-comment"
+        },
+        "syntax-punctuation": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-punctuation"
+        },
+        "syntax-variable": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-variable"
+        },
+        "syntax-variable-missing": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-variable-missing"
+        },
+        "syntax-tag": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-tag"
+        },
+        "syntax-attribute": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-attribute"
+        },
+        "syntax-function": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-function"
+        },
+        "syntax-error": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-error"
+        },
+        "syntax-selection": {
+          "type": "string",
+          "description": "CSS color for --c-syntax-selection"
+        }
+      },
+      "description": "Without \"extends\" every token is required."
+    }
+  }
+}

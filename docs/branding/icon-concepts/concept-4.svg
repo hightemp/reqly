@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Reqly — Live Pulse</title>
+  <desc id="desc">A bold white pulse ending at a mint connection point represents live traffic on a violet rounded square.</desc>
+  <rect width="1024" height="1024" rx="225" fill="#5b4bdb"/>
+  <path d="M192 552H328L440 304L568 720L680 456L748 552H816" fill="none" stroke="#ffffff" stroke-width="112" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="832" cy="552" r="72" fill="#d4f8e9"/>
+</svg>

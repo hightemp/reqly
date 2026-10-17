@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Reqly — Forward R</title>
+  <desc id="desc">A violet geometric R with an arrow-shaped leg sits on a warm white rounded square.</desc>
+  <rect width="1024" height="1024" rx="225" fill="#f6f4ff"/>
+  <path fill="#5b4bdb" fill-rule="evenodd" d="M252 200H514C680 200 768 282 768 416C768 502 721 561 650 582L728 660L804 584L824 824L584 804L660 728L560 628H396V824H252ZM396 336V484H510C584 484 624 460 624 410C624 360 584 336 510 336Z"/>
+</svg>

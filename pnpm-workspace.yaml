@@ -1,0 +1,7 @@
+packages:
+  - ui
+  - apps/desktop
+
+onlyBuiltDependencies:
+  - lefthook
+  - esbuild

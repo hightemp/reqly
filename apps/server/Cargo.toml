@@ -1,0 +1,38 @@
+[package]
+name = "reqly-server"
+description = "Reqly self-hosted server: serves the web UI and the core API"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "reqly-server"
+path = "src/main.rs"
+
+[dependencies]
+reqly-api.workspace = true
+reqly-core.workspace = true
+reqly-storage.workspace = true
+anyhow.workspace = true
+axum.workspace = true
+futures.workspace = true
+mime_guess = "2"
+rust-embed = { version = "8", features = ["include-exclude"] }
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+toml = "1"
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+reqly-api = { workspace = true, features = ["contract"] }
+reqwest = { version = "0.13", features = ["json"] }
+tempfile.workspace = true
+tokio-tungstenite = "0.29"
+tower = { version = "0.5", features = ["util"] }
+
+[lints]
+workspace = true
