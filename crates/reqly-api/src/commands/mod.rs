@@ -1,6 +1,7 @@
 //! Built-in commands and the shared application context.
 
 pub mod http;
+pub mod template;
 pub mod tree;
 
 use std::sync::Arc;
@@ -80,6 +81,7 @@ pub fn registry() -> Registry<AppContext> {
         .register::<SettingsSet>();
     tree::register(&mut r);
     http::register(&mut r);
+    template::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

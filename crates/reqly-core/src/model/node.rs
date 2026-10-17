@@ -46,6 +46,9 @@ pub struct FolderData {
     pub auth: Auth,
     pub settings: RequestSettings,
     pub description: String,
+    /// Variables for everything inside this folder (override environments).
+    #[ts(type = "Record<string, unknown>")]
+    pub variables: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

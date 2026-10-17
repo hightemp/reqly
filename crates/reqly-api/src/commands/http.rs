@@ -1,5 +1,6 @@
 //! Sending requests, response history, cookies and file uploads.
 
+use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -16,10 +17,12 @@ use reqly_storage::cookies::{Cookie, CookieRepo};
 use reqly_storage::history::{HistoryLimits, HistoryRepo, NewResponse};
 use reqly_storage::settings::SettingsRepo;
 use reqly_storage::tree::TreeRepo;
+use reqly_template::{RenderOptions, Renderer};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use ts_rs::TS;
 
+use super::template::{self, Scope, SendHost};
 use super::tree::{IdInput, IdsInput, WorkspaceIdInput};
 use super::{AppContext, Empty};
 use crate::events::Event;
@@ -262,8 +265,14 @@ pub async fn collect_garbage(ctx: &AppContext) -> CoreResult<usize> {
     ctx.blobs.gc(&live).await
 }
 
-/// Prepares a stored request with its folders, collection and global settings.
-async fn prepare_stored(ctx: &AppContext, request_id: Id) -> CoreResult<(PreparedRequest, Id)> {
+/// Renders templates and prepares a stored request with its folders,
+/// collection and global settings.
+async fn prepare_stored(
+    ctx: &AppContext,
+    request_id: Id,
+    prompts: &HashMap<String, String>,
+    chain: &[Id],
+) -> CoreResult<(PreparedRequest, Id)> {
     let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
     let node = tree.get_node(request_id).await?;
     let NodeData::Request(http) = &node.data else {
@@ -272,26 +281,54 @@ async fn prepare_stored(ctx: &AppContext, request_id: Id) -> CoreResult<(Prepare
                 .with_param("id", request_id.to_string()),
         );
     };
-    let ancestors = tree.ancestors(request_id).await?;
-    let folders: Vec<&FolderData> = ancestors
-        .iter()
-        .filter_map(|n| match &n.data {
-            NodeData::Folder(f) => Some(f),
-            NodeData::Request(_) => None,
-        })
-        .collect();
+    let scope = Scope::load(ctx, node.collection_id, Some(request_id)).await?;
+    let host = SendHost {
+        ctx,
+        scope: &scope,
+        prompt_values: prompts,
+        chain,
+    };
+    let options = RenderOptions {
+        stable: true,
+        locale: template::faker_locale(ctx, node.collection_id).await,
+        ..RenderOptions::default()
+    };
+    let renderer = Renderer::new(&scope.vars, &host, options);
+
+    let mut http = http.clone();
+    template::render_request(&renderer, &mut http).await?;
+    let mut folders: Vec<FolderData> = Vec::new();
+    for n in &scope.ancestors {
+        if let NodeData::Folder(f) = &n.data {
+            let mut f = f.clone();
+            template::render_folder(&renderer, &mut f).await?;
+            folders.push(f);
+        }
+    }
+    let folders: Vec<&FolderData> = folders.iter().collect();
     let collection = tree.get_collection(node.collection_id).await?;
     let global: RequestSettings = setting(ctx, HTTP_DEFAULTS_KEY).await?;
     let base = collection.settings.merge(&global);
 
     Ok((
-        prepare_with_base(http, &folders, &base)?,
+        prepare_with_base(&http, &folders, &base)?,
         collection.workspace_id,
     ))
 }
 
 pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<ResponseRecord> {
-    let (mut prepared, workspace_id) = prepare_stored(ctx, request_id).await?;
+    send_request_with(ctx, request_id, &HashMap::new(), &[request_id]).await
+}
+
+/// Sends a request; `chain` holds the requests already being sent because
+/// of `response` tags (including this one).
+pub async fn send_request_with(
+    ctx: &AppContext,
+    request_id: Id,
+    prompts: &HashMap<String, String>,
+    chain: &[Id],
+) -> CoreResult<ResponseRecord> {
+    let (mut prepared, workspace_id) = prepare_stored(ctx, request_id, prompts, chain).await?;
     let snapshot = serde_json::to_value(RequestSnapshot::from(&prepared)).unwrap_or_default();
     resolve_blobs(ctx, &mut prepared)?;
 
@@ -470,12 +507,30 @@ pub struct RequestIdInput {
     pub request_id: Id,
 }
 
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct RequestSendInput {
+    pub request_id: Id,
+    /// Values for `{% prompt %}` tags, by prompt key.
+    #[ts(optional)]
+    pub prompt_values: Option<HashMap<String, String>>,
+}
+
 command!(
     RequestSend,
     "request.send",
-    RequestIdInput,
+    RequestSendInput,
     ResponseRecord,
-    |ctx, input| { send_request(ctx, input.request_id).await }
+    |ctx, input| {
+        send_request_with(
+            ctx,
+            input.request_id,
+            &input.prompt_values.unwrap_or_default(),
+            &[input.request_id],
+        )
+        .await
+    }
 );
 
 command!(
@@ -907,7 +962,8 @@ command!(
     RequestIdInput,
     CurlOutput,
     |ctx, input| {
-        let (prepared, _) = prepare_stored(ctx, input.request_id).await?;
+        let (prepared, _) =
+            prepare_stored(ctx, input.request_id, &HashMap::new(), &[input.request_id]).await?;
         Ok(CurlOutput { command: reqly_http::curl::to_curl(&prepared) })
     }
 );

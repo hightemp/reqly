@@ -24,6 +24,7 @@ impl Default for OpenOptions {
 #[derive(Debug, Clone)]
 pub struct Storage {
     pool: SqlitePool,
+    secrets: crate::crypto::SecretBox,
 }
 
 pub(crate) fn db_err(e: impl std::fmt::Display) -> CoreError {
@@ -48,7 +49,8 @@ impl Storage {
             .connect_with(connect)
             .await
             .map_err(db_err)?;
-        let storage = Self { pool };
+        let secrets = crate::crypto::SecretBox::load_or_create(&path.with_file_name("secret.key"))?;
+        let storage = Self { pool, secrets };
 
         if existed && options.backup_before_migrate && storage.has_pending_migrations().await? {
             storage.backup(&backup_path(path)?).await?;
@@ -68,9 +70,16 @@ impl Storage {
             .connect_with(connect)
             .await
             .map_err(db_err)?;
-        let storage = Self { pool };
+        let storage = Self {
+            pool,
+            secrets: crate::crypto::SecretBox::random(),
+        };
         storage.migrate().await?;
         Ok(storage)
+    }
+
+    pub fn secrets(&self) -> &crate::crypto::SecretBox {
+        &self.secrets
     }
 
     async fn migrate(&self) -> CoreResult<()> {

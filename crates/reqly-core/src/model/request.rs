@@ -23,6 +23,9 @@ pub struct HttpRequest {
     pub settings: RequestSettings,
     /// Markdown.
     pub description: String,
+    /// Request-level variables (highest precedence below runtime values).
+    #[ts(type = "Record<string, unknown>")]
+    pub variables: serde_json::Map<String, serde_json::Value>,
 }
 
 impl Default for HttpRequest {
@@ -37,6 +40,7 @@ impl Default for HttpRequest {
             auth: Auth::Inherit,
             settings: RequestSettings::default(),
             description: String::new(),
+            variables: serde_json::Map::new(),
         }
     }
 }

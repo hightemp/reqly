@@ -16,4 +16,8 @@ pathParams: Array<KeyValue>, headers: Array<KeyValue>, body: Body, auth: Auth, s
 /**
  * Markdown.
  */
-description: string, };
+description: string, 
+/**
+ * Request-level variables (highest precedence below runtime values).
+ */
+variables: Record<string, unknown>, };

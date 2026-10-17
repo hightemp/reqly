@@ -2,7 +2,9 @@
 
 pub mod blobs;
 pub mod cookies;
+pub mod crypto;
 mod db;
+pub mod environments;
 pub mod history;
 pub mod search;
 pub mod sessions;

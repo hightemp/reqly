@@ -6,4 +6,8 @@ import type { RequestSettings } from "./RequestSettings";
 /**
  * Settings shared by everything inside a folder.
  */
-export type FolderData = { headers: Array<KeyValue>, auth: Auth, settings: RequestSettings, description: string, };
+export type FolderData = { headers: Array<KeyValue>, auth: Auth, settings: RequestSettings, description: string, 
+/**
+ * Variables for everything inside this folder (override environments).
+ */
+variables: Record<string, unknown>, };
