@@ -30,6 +30,15 @@ export const en = {
     chooseFile: 'Choose file…',
     inheritedFrom: 'Inherited from {source}',
   },
+  tree: {
+    delete: 'Delete',
+    deleteOneTitle: 'Delete “{name}”?',
+    deleteManyTitle: 'Delete {count} items?',
+    deleteMessage: 'Items go to the trash and can be restored.',
+    deleted: { one: 'Deleted {count} item', other: 'Deleted {count} items' },
+    undo: 'Undo',
+    curlCopied: { one: 'Copied {count} cURL command', other: 'Copied {count} cURL commands' },
+  },
   window: {
     minimize: 'Minimize',
     maximize: 'Maximize',

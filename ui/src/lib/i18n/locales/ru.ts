@@ -32,6 +32,25 @@ export const ru: Translation<Messages> = {
     chooseFile: 'Выбрать файл…',
     inheritedFrom: 'Унаследовано от {source}',
   },
+  tree: {
+    delete: 'Удалить',
+    deleteOneTitle: 'Удалить «{name}»?',
+    deleteManyTitle: 'Удалить элементов: {count}?',
+    deleteMessage: 'Элементы попадут в корзину, их можно будет восстановить.',
+    deleted: {
+      one: 'Удалён {count} элемент',
+      few: 'Удалено {count} элемента',
+      many: 'Удалено {count} элементов',
+      other: 'Удалено {count} элемента',
+    },
+    undo: 'Отменить',
+    curlCopied: {
+      one: 'Скопирована {count} команда cURL',
+      few: 'Скопировано {count} команды cURL',
+      many: 'Скопировано {count} команд cURL',
+      other: 'Скопировано {count} команды cURL',
+    },
+  },
   window: {
     minimize: 'Свернуть',
     maximize: 'Развернуть',

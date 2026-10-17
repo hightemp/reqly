@@ -16,6 +16,15 @@ export interface Preferences {
   /** Where the response panel sits relative to the request editor. */
   responseLayout: 'right' | 'bottom';
   requestPaneSize: number;
+  /** `tree` (folders and requests) or `categories` (folder tree + request list). */
+  sidebarMode: 'tree' | 'categories';
+  /** Height of the category tree in `categories` mode. */
+  categoriesHeight: number;
+  /** Request list in `categories` mode without subfolder groups. */
+  flatList: boolean;
+  autosave: boolean;
+  activeWorkspaceId: string | null;
+  activeCollectionId: string | null;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -25,6 +34,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
   sidebarCollapsed: false,
   responseLayout: 'right',
   requestPaneSize: 520,
+  sidebarMode: 'tree',
+  categoriesHeight: 240,
+  flatList: false,
+  autosave: true,
+  activeWorkspaceId: null,
+  activeCollectionId: null,
 };
 
 const validators: { [K in keyof Preferences]: (v: unknown) => boolean } = {
@@ -34,6 +49,12 @@ const validators: { [K in keyof Preferences]: (v: unknown) => boolean } = {
   sidebarCollapsed: (v) => typeof v === 'boolean',
   responseLayout: (v) => v === 'right' || v === 'bottom',
   requestPaneSize: (v) => typeof v === 'number' && v > 0,
+  sidebarMode: (v) => v === 'tree' || v === 'categories',
+  categoriesHeight: (v) => typeof v === 'number' && v > 0,
+  flatList: (v) => typeof v === 'boolean',
+  autosave: (v) => typeof v === 'boolean',
+  activeWorkspaceId: (v) => v === null || typeof v === 'string',
+  activeCollectionId: (v) => v === null || typeof v === 'string',
 };
 
 /** Keeps known, valid fields of untrusted stored data on top of defaults. */
