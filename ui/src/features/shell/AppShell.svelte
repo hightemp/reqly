@@ -11,6 +11,7 @@
   import IconButton from '$lib/ui/IconButton.svelte';
   import OverlayHost from '$lib/ui/overlay/OverlayHost.svelte';
   import SplitPane from '$lib/ui/SplitPane.svelte';
+  import EnvironmentEditor from '../environments/EnvironmentEditor.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
   import CookieManager from '../modals/CookieManager.svelte';
   import RequestLog from '../modals/RequestLog.svelte';
@@ -22,6 +23,12 @@
   import { createFolder, createRequest } from '../sidebar/actions';
   import Sidebar from '../sidebar/Sidebar.svelte';
   import RequestTabs from '../tabs/RequestTabs.svelte';
+  import { createTemplateHostFactory } from '../template/host';
+  import PromptDialog from '../template/PromptDialog.svelte';
+  import { promptState } from '../template/prompts.svelte';
+  import TagEditor from '../template/TagEditor.svelte';
+  import { tagEditor } from '../template/tagEditor.svelte';
+  import { provideTemplateHost } from '$lib/template/host';
   import Titlebar from './Titlebar.svelte';
 
   interface Props {
@@ -33,16 +40,20 @@
   let { services, windowController }: Props = $props();
   // Services are created once at startup and never replaced.
   // svelte-ignore state_referenced_locally
-  const { prefs, themes, hotkeys, transport, platform, workspace, tree, tabs } = services;
+  const { prefs, themes, hotkeys, transport, platform, workspace, tree, tabs, environments } =
+    services;
 
   // svelte-ignore state_referenced_locally
   bindPreferences(services);
+  provideTemplateHost(createTemplateHostFactory(environments));
+  // svelte-ignore state_referenced_locally
+  services.responses.askPrompts = (prompts) => promptState.ask(prompts);
 
   // i18n-dynamic: languages.
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
-  let modal = $state<'palette' | 'cookies' | 'trash' | 'log' | null>(null);
+  let modal = $state<'palette' | 'cookies' | 'trash' | 'log' | 'environments' | null>(null);
 
   // Desktop: custom title bar or the OS frame.
   $effect(() => {
@@ -53,6 +64,10 @@
   $effect(() => {
     const id = workspace.activeCollectionId;
     if (id && id !== tree.collectionId) void tree.load(id);
+  });
+  $effect(() => {
+    const id = workspace.activeCollectionId;
+    if (id && id !== environments.collectionId) void environments.load(id);
   });
   $effect(() => {
     // Tabs are loaded at startup; reload only when the workspace changes,
@@ -86,6 +101,16 @@
       run: () => void createFolder(services, selectedOne()),
     },
     { id: 'settings', label: t('settings.title'), run: () => (settingsOpen = true) },
+    {
+      id: 'environments',
+      label: t('environments.manage'),
+      run: () => (modal = 'environments'),
+    },
+    ...environments.subs.map((e) => ({
+      id: `env-${e.id}`,
+      label: `${t('environments.label')}: ${e.name}`,
+      run: () => void environments.setActive(e.id),
+    })),
     { id: 'cookies', label: t('cookieManager.title'), run: () => (modal = 'cookies') },
     { id: 'log', label: t('log.title'), run: () => (modal = 'log') },
     { id: 'trash', label: t('trash.title'), run: () => (modal = 'trash') },
@@ -137,6 +162,7 @@
       hotkeys.on('folder.new', () => void createFolder(services, selectedOne())),
       hotkeys.on('settings.open', () => (settingsOpen = true)),
       hotkeys.on('palette.open', () => (modal = 'palette')),
+      hotkeys.on('environments.open', () => (modal = 'environments')),
       transport.subscribe((e) => {
         if (e.topic === TRANSPORT_TOPICS.disconnected) offline = true;
         if (e.topic === TRANSPORT_TOPICS.reconnected) {
@@ -224,6 +250,14 @@
     <TrashModal {services} onclose={() => (modal = null)} />
   {:else if modal === 'log'}
     <RequestLog {services} onclose={() => (modal = null)} />
+  {:else if modal === 'environments'}
+    <EnvironmentEditor {services} onclose={() => (modal = null)} />
+  {/if}
+  {#if tagEditor.request}
+    <TagEditor {services} request={tagEditor.request} onclose={() => tagEditor.close()} />
+  {/if}
+  {#if promptState.request}
+    <PromptDialog request={promptState.request} />
   {/if}
   {#if settingsOpen}
     <SettingsModal {services} onclose={() => (settingsOpen = false)} />

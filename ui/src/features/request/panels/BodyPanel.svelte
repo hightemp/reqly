@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import type { Body } from '$lib/api/generated/Body';
+  import type { KeyValue } from '$lib/api/generated/KeyValue';
   import type { BodyKind } from '$lib/api/generated/BodyKind';
   import { i18n, t } from '$lib/i18n';
   import { pickFile } from '$lib/platform/files';
@@ -15,10 +16,14 @@
   interface Props {
     services: Services;
     body: Body;
+    /** Request whose variables apply to templates. */
+    nodeId?: string | null;
+    /** Template-aware value cell for form fields. */
+    valueCell?: Snippet<[KeyValue, (value: string) => void]>;
     onchange: (body: Body) => void;
   }
 
-  let { services, body, onchange }: Props = $props();
+  let { services, body, nodeId = null, valueCell, onchange }: Props = $props();
   let editor: CodeEditor | undefined = $state();
 
   const LANG: Partial<Record<BodyKind, CodeLanguage>> = {
@@ -74,6 +79,8 @@
       <div class="code">
         <CodeEditor
           bind:this={editor}
+          templates
+          {nodeId}
           label={t('body.label')}
           {language}
           value={body.text}
@@ -85,6 +92,7 @@
         label={t('body.fields')}
         rows={body.fields}
         separator="="
+        {valueCell}
         allowFiles={body.kind === 'multipart'}
         pickFile={async () => {
           const picked = await pickFile(services.transport);

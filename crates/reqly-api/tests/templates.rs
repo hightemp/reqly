@@ -533,3 +533,22 @@ async fn faker_locale_per_collection_overrides_global() {
         .await;
     assert!(out["value"].as_str().unwrap().starts_with("+7"), "{out}");
 }
+
+#[tokio::test]
+async fn proxy_settings_are_rendered() {
+    let proxy = TestServer::start_proxy().await;
+    let server = TestServer::start().await;
+    let fx = Fx::new().await;
+    let base = fx.envs().await["collection"][0]["id"].clone();
+    fx.set_data(
+        &base,
+        json!({ "proxy": format!("http://{}", proxy.addr()) }),
+    )
+    .await;
+    let req = fx
+        .node(Value::Null, "r", json!({ "kind": "request", "url": server.url("/echo"),
+            "settings": { "proxy": { "mode": "manual", "url": "{{ proxy }}", "username": "", "password": "", "noProxy": "" } } }))
+        .await;
+    let echo = fx.echo(&req, json!({})).await;
+    assert_eq!(echo["proxied"], true, "{echo}");
+}

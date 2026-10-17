@@ -11,12 +11,14 @@
   import History from './sections/History.svelte';
   import Http from './sections/Http.svelte';
   import Keybindings from './sections/Keybindings.svelte';
+  import Templates from './sections/Templates.svelte';
 
   type Section =
     | 'general'
     | 'appearance'
     | 'themes'
     | 'http'
+    | 'templates'
     | 'certificates'
     | 'history'
     | 'keybindings'
@@ -63,6 +65,11 @@
         t('requestSettings.timeout'),
         t('requestSettings.verifyTls'),
       ].join(' '),
+    },
+    {
+      id: 'templates',
+      label: t('settings.templates'),
+      keywords: t('settings.fakerLocale'),
     },
     {
       id: 'certificates',
@@ -118,6 +125,8 @@
         <CustomThemes {services} />
       {:else if section === 'http'}
         <Http {services} />
+      {:else if section === 'templates'}
+        <Templates {services} />
       {:else if section === 'certificates'}
         <Certificates {services} />
       {:else if section === 'history'}

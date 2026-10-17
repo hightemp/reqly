@@ -27,6 +27,8 @@
     placeholder as placeholderExt,
   } from '@codemirror/view';
   import { onMount } from 'svelte';
+  import { templateCompletions, templateExtension } from '$lib/template/codemirror';
+  import { templateHostFactory } from '$lib/template/host';
   import { formatJson, formatXml } from './format';
   import { reqlyHighlight, reqlyTheme } from './theme';
 
@@ -38,7 +40,11 @@
     lineNumbers?: boolean;
     placeholder?: string;
     label: string;
-    /** Extra extensions (e.g. template variable highlighting in stage 2). */
+    /** Highlight and complete `{{ }}` / `{% %}` templates. */
+    templates?: boolean;
+    /** Request or folder whose variables apply to templates. */
+    nodeId?: string | null;
+    /** Extra extensions. */
     extensions?: Extension[];
     onchange?: (value: string) => void;
   }
@@ -51,10 +57,13 @@
     lineNumbers: showLines = true,
     placeholder = '',
     label,
+    templates = false,
+    nodeId = null,
     extensions = [],
     onchange,
   }: Props = $props();
 
+  const factory = templateHostFactory();
   let host: HTMLDivElement | null = $state(null);
   let view: EditorView | null = null;
   const lang = new Compartment();
@@ -102,6 +111,7 @@
   }
 
   onMount(() => {
+    const templateHost = templates ? factory?.(nodeId) : undefined;
     view = new EditorView({
       parent: host!,
       state: EditorState.create({
@@ -113,7 +123,12 @@
           indentOnInput(),
           bracketMatching(),
           closeBrackets(),
-          autocompletion(),
+          templateHost
+            ? [
+                templateExtension(templateHost),
+                autocompletion({ override: [templateCompletions(templateHost)] }),
+              ]
+            : autocompletion(),
           highlightActiveLine(),
           highlightSelectionMatches(),
           search({ top: true }),

@@ -26,9 +26,7 @@ test('create a request, send it and see the response', async ({ page, baseURL })
   await page.waitForTimeout(800);
   await page.reload();
   await expect(page.getByRole('tab', { name: /New Request/ })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'URL' })).toHaveValue(
-    `${baseURL}/healthz?probe=1`,
-  );
+  await expect(page.getByRole('textbox', { name: 'URL' })).toHaveText(`${baseURL}/healthz?probe=1`);
   await expect(page.getByText('200 OK')).toBeVisible();
 });
 

@@ -1,14 +1,17 @@
 <!-- Folder settings: headers, auth, network settings and docs inherited by everything inside. -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { KeyValue } from '$lib/api/generated/KeyValue';
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
   import type { Draft } from '$lib/stores/editor.svelte';
   import Button from '$lib/ui/Button.svelte';
+  import TemplateInput from '$lib/ui/code/TemplateInput.svelte';
   import KeyValueEditor from '$lib/ui/kv/KeyValueEditor.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import Spinner from '$lib/ui/Spinner.svelte';
   import Tabs from '$lib/ui/Tabs.svelte';
+  import VariablesEditor from '../environments/VariablesEditor.svelte';
   import AuthPanel from '../request/panels/AuthPanel.svelte';
   import DocsPanel from '../request/panels/DocsPanel.svelte';
   import SettingsPanel from '../request/panels/SettingsPanel.svelte';
@@ -22,7 +25,7 @@
 
   let { services, folderId, onclose }: Props = $props();
   let draft = $state<Draft | null>(null);
-  let section = $state<'headers' | 'auth' | 'settings' | 'docs'>('headers');
+  let section = $state<'headers' | 'auth' | 'variables' | 'settings' | 'docs'>('headers');
   const folder = $derived(draft?.folder ?? null);
 
   onMount(() => {
@@ -38,6 +41,10 @@
     onclose();
   }
 </script>
+
+{#snippet valueCell(row: KeyValue, set: (value: string) => void)}
+  <TemplateInput value={row.value} label={t('kv.value')} nodeId={folderId} onchange={set} />
+{/snippet}
 
 <Modal
   title={t('folder.title', { name: draft?.node?.name ?? '' })}
@@ -59,6 +66,11 @@
           count: folder.headers.filter((h) => h.enabled && h.name).length,
         },
         { id: 'auth', label: t('request.auth'), dot: folder.auth.type !== 'inherit' },
+        {
+          id: 'variables',
+          label: t('request.variables'),
+          count: Object.keys(folder.variables).length,
+        },
         { id: 'settings', label: t('request.settings') },
         { id: 'docs', label: t('request.docs') },
       ]}
@@ -69,10 +81,22 @@
           label={t('request.headers')}
           rows={folder.headers}
           nameSuggestions={COMMON_HEADERS}
+          {valueCell}
           onchange={(headers) => edit((f) => ({ ...f, headers }))}
         />
       {:else if section === 'auth'}
-        <AuthPanel auth={folder.auth} onchange={(auth) => edit((f) => ({ ...f, auth }))} />
+        <AuthPanel
+          auth={folder.auth}
+          nodeId={folderId}
+          onchange={(auth) => edit((f) => ({ ...f, auth }))}
+        />
+      {:else if section === 'variables'}
+        <VariablesEditor
+          label={t('request.variables')}
+          data={folder.variables}
+          nodeId={folderId}
+          onchange={(variables) => edit((f) => ({ ...f, variables }))}
+        />
       {:else if section === 'settings'}
         <SettingsPanel
           settings={folder.settings}

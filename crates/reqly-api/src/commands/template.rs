@@ -9,7 +9,7 @@ use std::pin::Pin;
 
 use reqly_core::model::{
     Auth, Environment, EnvironmentKind, FolderData, HttpRequest, KeyValue, KeyValueKind, Node,
-    NodeData,
+    NodeData, RequestSettings,
 };
 use reqly_core::{CoreError, CoreResult, Id};
 use reqly_storage::cookies::CookieRepo;
@@ -558,6 +558,16 @@ async fn render_auth(r: &Renderer<'_>, auth: &mut Auth) -> CoreResult<()> {
     }
 }
 
+async fn render_settings(r: &Renderer<'_>, settings: &mut RequestSettings) -> CoreResult<()> {
+    if let Some(proxy) = &mut settings.proxy {
+        render_str(r, &mut proxy.url).await?;
+        render_str(r, &mut proxy.username).await?;
+        render_str(r, &mut proxy.password).await?;
+        render_str(r, &mut proxy.no_proxy).await?;
+    }
+    Ok(())
+}
+
 pub async fn render_request(r: &Renderer<'_>, req: &mut HttpRequest) -> CoreResult<()> {
     render_str(r, &mut req.url).await?;
     render_rows(r, &mut req.params).await?;
@@ -565,11 +575,13 @@ pub async fn render_request(r: &Renderer<'_>, req: &mut HttpRequest) -> CoreResu
     render_rows(r, &mut req.headers).await?;
     render_str(r, &mut req.body.text).await?;
     render_rows(r, &mut req.body.fields).await?;
+    render_settings(r, &mut req.settings).await?;
     render_auth(r, &mut req.auth).await
 }
 
 pub async fn render_folder(r: &Renderer<'_>, folder: &mut FolderData) -> CoreResult<()> {
     render_rows(r, &mut folder.headers).await?;
+    render_settings(r, &mut folder.settings).await?;
     render_auth(r, &mut folder.auth).await
 }
 

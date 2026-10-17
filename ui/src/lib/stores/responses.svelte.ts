@@ -1,6 +1,7 @@
 // Per-request execution state: in-flight flag and progress, the shown
 // response and the history list.
 
+import type { PromptInfo } from '$lib/api/generated/PromptInfo';
 import type { ResponseRecord } from '$lib/api/generated/ResponseRecord';
 import type { ResponseSummary } from '$lib/api/generated/ResponseSummary';
 import { ApiError, type Transport } from '$lib/api/transport';
@@ -20,6 +21,9 @@ export class ResponseStore {
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- runs are created lazily during rendering; each run is reactive itself
   private runs = new Map<string, RequestRun>();
   private unsubscribe: () => void;
+  /** Asks for `{% prompt %}` values; `null` cancels the send. Set by the shell. */
+  askPrompts: (prompts: PromptInfo[]) => Promise<Record<string, string> | null> = () =>
+    Promise.resolve(null);
 
   constructor(
     private readonly transport: Transport,
@@ -85,7 +89,16 @@ export class ResponseStore {
     run.progress = null;
     try {
       await this.flushDraft(requestId);
-      const record = await this.transport.call('request.send', { requestId });
+      const prompts = await this.transport
+        .call('template.prompts', { requestId })
+        .catch(() => [] as PromptInfo[]);
+      let promptValues: Record<string, string> | undefined;
+      if (prompts.length > 0) {
+        const values = await this.askPrompts(prompts);
+        if (!values) return;
+        promptValues = values;
+      }
+      const record = await this.transport.call('request.send', { requestId, promptValues });
       run.current = record;
       run.history = await this.transport.call('response.list', { requestId });
     } catch (e) {

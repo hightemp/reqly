@@ -8,6 +8,7 @@
   import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
   import { menus, type MenuEntry } from '$lib/ui/overlay/menus.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
+  import EnvironmentSwitcher from '../environments/EnvironmentSwitcher.svelte';
   import { bindTreeHotkeys, createFolder, createRequest, type TreeActionHooks } from './actions';
   import CategoriesView from './CategoriesView.svelte';
   import { makeFilter, parseQuery } from './filter';
@@ -17,7 +18,7 @@
     services: Services;
     onFolderSettings: (id: string) => void;
     onCollapse: () => void;
-    onOpen: (modal: 'cookies' | 'trash' | 'log') => void;
+    onOpen: (modal: 'cookies' | 'trash' | 'log' | 'environments') => void;
   }
 
   let { services, onFolderSettings, onCollapse, onOpen }: Props = $props();
@@ -194,6 +195,7 @@
         onclick={(e) => collectionMenu(e.currentTarget)}
       />
     </div>
+    <EnvironmentSwitcher {services} onmanage={() => onOpen('environments')} />
   </div>
 
   <div class="toolbar">

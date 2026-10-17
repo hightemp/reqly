@@ -1,16 +1,18 @@
 <script lang="ts">
   import type { Auth } from '$lib/api/generated/Auth';
   import { t } from '$lib/i18n';
-  import Input from '$lib/ui/Input.svelte';
+  import TemplateInput from '$lib/ui/code/TemplateInput.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
 
   interface Props {
     auth: Auth;
     allowInherit?: boolean;
+    /** Request or folder whose variables apply. */
+    nodeId?: string | null;
     onchange: (auth: Auth) => void;
   }
 
-  let { auth, allowInherit = true, onchange }: Props = $props();
+  let { auth, allowInherit = true, nodeId = null, onchange }: Props = $props();
   let reveal = $state(false);
   // Protocol tokens, not translatable text.
   const BEARER = 'Bearer';
@@ -51,68 +53,68 @@
   {:else if auth.type === 'none'}
     <p class="hint">{t('auth.noneHint')}</p>
   {:else if auth.type === 'basic'}
-    <label class="row">
+    <div class="row">
       <span class="label">{t('auth.username')}</span>
-      <Input
-        mono
+      <TemplateInput
         value={auth.username}
-        aria-label={t('auth.username')}
-        oninput={(e) => onchange({ ...auth, username: e.currentTarget.value })}
+        label={t('auth.username')}
+        {nodeId}
+        onchange={(v) => onchange({ ...auth, username: v })}
       />
-    </label>
-    <label class="row">
+    </div>
+    <div class="row">
       <span class="label">{t('auth.password')}</span>
-      <Input
-        mono
-        type={reveal ? 'text' : 'password'}
+      <TemplateInput
         value={auth.password}
-        aria-label={t('auth.password')}
-        oninput={(e) => onchange({ ...auth, password: e.currentTarget.value })}
+        label={t('auth.password')}
+        masked={!reveal}
+        {nodeId}
+        onchange={(v) => onchange({ ...auth, password: v })}
       />
-    </label>
+    </div>
     <button type="button" class="reveal" onclick={() => (reveal = !reveal)}
       >{reveal ? t('auth.hide') : t('auth.show')}</button
     >
   {:else if auth.type === 'bearer'}
-    <label class="row">
+    <div class="row">
       <span class="label">{t('auth.token')}</span>
-      <Input
-        mono
+      <TemplateInput
         value={auth.token}
-        aria-label={t('auth.token')}
-        oninput={(e) => onchange({ ...auth, token: e.currentTarget.value })}
+        label={t('auth.token')}
+        {nodeId}
+        onchange={(v) => onchange({ ...auth, token: v })}
       />
-    </label>
-    <label class="row">
+    </div>
+    <div class="row">
       <span class="label">{t('auth.prefix')}</span>
-      <Input
-        mono
+      <TemplateInput
         value={auth.prefix}
+        label={t('auth.prefix')}
         placeholder={BEARER}
-        aria-label={t('auth.prefix')}
-        oninput={(e) => onchange({ ...auth, prefix: e.currentTarget.value })}
+        {nodeId}
+        onchange={(v) => onchange({ ...auth, prefix: v })}
       />
-    </label>
+    </div>
   {:else if auth.type === 'apiKey'}
-    <label class="row">
+    <div class="row">
       <span class="label">{t('auth.key')}</span>
-      <Input
-        mono
+      <TemplateInput
         value={auth.key}
+        label={t('auth.key')}
         placeholder={API_KEY_HEADER}
-        aria-label={t('auth.key')}
-        oninput={(e) => onchange({ ...auth, key: e.currentTarget.value })}
+        {nodeId}
+        onchange={(v) => onchange({ ...auth, key: v })}
       />
-    </label>
-    <label class="row">
+    </div>
+    <div class="row">
       <span class="label">{t('auth.value')}</span>
-      <Input
-        mono
+      <TemplateInput
         value={auth.value}
-        aria-label={t('auth.value')}
-        oninput={(e) => onchange({ ...auth, value: e.currentTarget.value })}
+        label={t('auth.value')}
+        {nodeId}
+        onchange={(v) => onchange({ ...auth, value: v })}
       />
-    </label>
+    </div>
     <label class="row">
       <span class="label">{t('auth.addTo')}</span>
       <Select

@@ -32,6 +32,11 @@ self-hosted web version served by a single Rust binary.
   certificates (PEM/PKCS#12), cookies per workspace, cancel in flight
 - 10 built-in themes plus a theme editor (JSON import/export), density,
   fonts, zoom; custom window frame; remappable shortcuts; English and Russian
+- Variables and environments like Insomnia: global, base and switchable
+  environments, folder and request variables, encrypted secrets, highlighted
+  `{{ variables }}` with hover preview and completion, template tags
+  (`{% uuid %}`, `{% hash %}`, `{% jwt %}`, response chaining, prompts…) and
+  faker data in English and Russian — see [docs/templates.md](docs/templates.md)
 - Command palette (`Ctrl+K`), request log, cookie manager, copy as cURL
 - Server mode: token login, SSRF protection for requests sent by the server,
   Docker image

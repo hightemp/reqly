@@ -43,6 +43,27 @@ export class FakeTransport implements Transport {
       { id: 'c1', workspaceId: 'w1', name: 'My Collection', settings: {} as never, ...meta },
     ]);
     this.handle('tree.list', () => []);
+    this.handle('environment.list', () => ({
+      collection: [
+        {
+          id: 'e1',
+          workspaceId: 'w1',
+          collectionId: 'c1',
+          kind: 'base',
+          name: 'Base Environment',
+          color: null,
+          data: {},
+          secrets: [],
+          ...meta,
+        },
+      ],
+      global: [],
+      activeId: null,
+      activeGlobalId: null,
+    }));
+    this.handle('template.variables', () => []);
+    this.handle('template.functions', () => ({ functions: [], faker: [] }));
+    this.handle('template.prompts', () => []);
     return this;
   }
 

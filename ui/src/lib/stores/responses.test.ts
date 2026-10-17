@@ -61,6 +61,26 @@ describe('ResponseStore', () => {
     expect(store.run('r1').history[0]!.id).toBe('new');
   });
 
+  it('asks for prompt values before sending and cancels without them', async () => {
+    const { t, store } = setup();
+    const prompt = { key: 'otp', title: 'Code', label: '', defaultValue: '' };
+    t.handle('template.prompts', () => [prompt]);
+    const sent: unknown[] = [];
+    t.handle('request.send', async (input) => {
+      sent.push(input);
+      return record('new') as never;
+    });
+    store.askPrompts = vi.fn(async () => null);
+    await store.send('r1');
+    expect(store.askPrompts).toHaveBeenCalledWith([prompt]);
+    expect(sent).toEqual([]);
+    expect(store.run('r1').sending).toBe(false);
+
+    store.askPrompts = async () => ({ otp: '42' });
+    await store.send('r1');
+    expect(sent).toEqual([{ requestId: 'r1', promptValues: { otp: '42' } }]);
+  });
+
   it('tracks progress events', async () => {
     const { t, store } = setup();
     await store.load('r1');

@@ -3,6 +3,7 @@
   import type { KeyValue } from '$lib/api/generated/KeyValue';
   import { t } from '$lib/i18n';
   import Button from '$lib/ui/Button.svelte';
+  import TemplateInput from '$lib/ui/code/TemplateInput.svelte';
   import Combobox from '$lib/ui/overlay/Combobox.svelte';
   import { methodColorVar } from '$lib/ui/badges';
   import { COMMON_METHODS } from './headers';
@@ -18,7 +19,8 @@
     onsend: () => void;
     oncancel: () => void;
     oncurl: (command: string) => void;
-    input?: HTMLInputElement | null;
+    /** Request whose variables apply. */
+    nodeId?: string | null;
   }
 
   let {
@@ -31,8 +33,16 @@
     onsend,
     oncancel,
     oncurl,
-    input = $bindable(null),
+    nodeId = null,
   }: Props = $props();
+  let input: TemplateInput | undefined = $state();
+
+  /** Focuses the URL and selects it (Mod+L). */
+  export function focusUrl() {
+    input?.focus();
+    const view = input?.getView();
+    view?.dispatch({ selection: { anchor: 0, head: view.state.doc.length } });
+  }
 
   // Local text while focused so re-rendering from params does not move the caret.
   let text = $state('');
@@ -58,34 +68,29 @@
       onchange={onmethod}
     />
   </div>
-  <input
-    bind:this={input}
-    class="url"
-    value={text}
-    spellcheck="false"
-    autocomplete="off"
-    aria-label={t('request.url')}
-    placeholder={t('request.urlPlaceholder')}
-    onfocus={() => (focused = true)}
-    onblur={() => (focused = false)}
-    oninput={(e) => {
-      text = e.currentTarget.value;
-      commit(text);
-    }}
-    onpaste={(e) => {
-      const pasted = e.clipboardData?.getData('text') ?? '';
-      if (/^\s*curl(\.exe)?\s/i.test(pasted)) {
-        e.preventDefault();
-        oncurl(pasted);
-      }
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        onsend();
-      }
-    }}
-  />
+  <div class="url">
+    <TemplateInput
+      bind:this={input}
+      value={text}
+      label={t('request.url')}
+      placeholder={t('request.urlPlaceholder')}
+      {nodeId}
+      onfocus={() => (focused = true)}
+      onblur={() => (focused = false)}
+      onchange={(v) => {
+        text = v;
+        commit(v);
+      }}
+      onpaste={(pasted) => {
+        if (/^\s*curl(\.exe)?\s/i.test(pasted)) {
+          oncurl(pasted);
+          return true;
+        }
+        return false;
+      }}
+      onenter={onsend}
+    />
+  </div>
   {#if sending}
     <Button variant="default" onclick={oncancel}>{t('request.cancel')}</Button>
   {:else}
@@ -114,17 +119,6 @@
   .url {
     flex: 1;
     min-width: 0;
-    height: var(--control-height);
-    padding: 0 var(--space-2);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--c-border);
-    background: var(--c-bg-sunken);
-    color: var(--c-fg);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-sm);
-    outline: none;
-  }
-  .url:focus {
-    border-color: var(--c-accent);
+    display: flex;
   }
 </style>

@@ -7,12 +7,14 @@
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
   import type { Draft } from '$lib/stores/editor.svelte';
+  import TemplateInput from '$lib/ui/code/TemplateInput.svelte';
   import EmptyState from '$lib/ui/EmptyState.svelte';
   import KeyValueEditor, { type InheritedRow } from '$lib/ui/kv/KeyValueEditor.svelte';
   import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
   import Spinner from '$lib/ui/Spinner.svelte';
   import Tabs from '$lib/ui/Tabs.svelte';
+  import VariablesEditor from '../environments/VariablesEditor.svelte';
   import { COMMON_HEADERS } from './headers';
   import AuthPanel from './panels/AuthPanel.svelte';
   import BodyPanel from './panels/BodyPanel.svelte';
@@ -23,13 +25,13 @@
 
   let { services }: { services: Services } = $props();
 
-  type Section = 'params' | 'body' | 'auth' | 'headers' | 'settings' | 'docs';
+  type Section = 'params' | 'body' | 'auth' | 'headers' | 'variables' | 'settings' | 'docs';
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- remembered tab per request, not rendered state
   const sections = new Map<string, Section>();
 
   let draft = $state<Draft | null>(null);
   let section = $state<Section>('params');
-  let urlInput: HTMLInputElement | null = $state(null);
+  let urlBar: UrlBar | undefined = $state();
   let folderHeaders = $state<InheritedRow[]>([]);
 
   const activeId = $derived(services.tabs.activeId);
@@ -151,10 +153,7 @@
     const offs = [
       services.hotkeys.on('request.send', send),
       services.hotkeys.on('request.save', () => activeId && void services.editor.save(activeId)),
-      services.hotkeys.on('url.focus', () => {
-        urlInput?.focus();
-        urlInput?.select();
-      }),
+      services.hotkeys.on('url.focus', () => urlBar?.focusUrl()),
     ];
     return () => offs.forEach((off) => off());
   });
@@ -176,6 +175,11 @@
       label: t('request.headers'),
       count: req ? req.headers.filter((h) => h.enabled && h.name).length : 0,
     },
+    {
+      id: 'variables' as const,
+      label: t('request.variables'),
+      count: req ? Object.keys(req.variables).length : 0,
+    },
     { id: 'settings' as const, label: t('request.settings') },
     {
       id: 'docs' as const,
@@ -185,6 +189,10 @@
   ]);
 </script>
 
+{#snippet valueCell(row: KeyValue, set: (value: string) => void)}
+  <TemplateInput value={row.value} label={t('kv.value')} nodeId={activeId} onchange={set} />
+{/snippet}
+
 {#if !activeId}
   <EmptyState title={t('request.empty')} />
 {:else if !req || !run}
@@ -192,7 +200,8 @@
 {:else}
   <div class="request">
     <UrlBar
-      bind:input={urlInput}
+      bind:this={urlBar}
+      nodeId={activeId}
       method={req.method}
       url={req.url}
       params={req.params}
@@ -222,6 +231,7 @@
         <KeyValueEditor
           label={t('request.queryParams')}
           rows={req.params}
+          {valueCell}
           onchange={(params) => edit((r) => ({ ...r, params }))}
         />
         {#if req.pathParams.length}
@@ -229,20 +239,39 @@
           <KeyValueEditor
             label={t('request.pathParams')}
             rows={req.pathParams}
+            {valueCell}
             onchange={(pathParams) => edit((r) => ({ ...r, pathParams }))}
           />
         {/if}
       {:else if section === 'body'}
-        <BodyPanel {services} body={req.body} onchange={(body) => edit((r) => ({ ...r, body }))} />
+        <BodyPanel
+          {services}
+          nodeId={activeId}
+          body={req.body}
+          {valueCell}
+          onchange={(body) => edit((r) => ({ ...r, body }))}
+        />
       {:else if section === 'auth'}
-        <AuthPanel auth={req.auth} onchange={(auth) => edit((r) => ({ ...r, auth }))} />
+        <AuthPanel
+          auth={req.auth}
+          nodeId={activeId}
+          onchange={(auth) => edit((r) => ({ ...r, auth }))}
+        />
       {:else if section === 'headers'}
         <KeyValueEditor
           label={t('request.headers')}
           rows={req.headers}
           nameSuggestions={COMMON_HEADERS}
           {inherited}
+          {valueCell}
           onchange={(headers) => edit((r) => ({ ...r, headers }))}
+        />
+      {:else if section === 'variables'}
+        <VariablesEditor
+          label={t('request.variables')}
+          data={req.variables}
+          nodeId={activeId}
+          onchange={(variables) => edit((r) => ({ ...r, variables }))}
         />
       {:else if section === 'settings'}
         <SettingsPanel

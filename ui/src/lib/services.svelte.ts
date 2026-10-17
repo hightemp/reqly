@@ -6,6 +6,7 @@ import { HotkeyRegistry, detectPlatform, type Platform } from './hotkeys/hotkeys
 import { i18n } from './i18n';
 import { PreferencesStore } from './preferences.svelte';
 import { EditorStore } from './stores/editor.svelte';
+import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
 import { TabsStore } from './stores/tabs.svelte';
 import { TreeStore } from './stores/tree.svelte';
@@ -39,6 +40,7 @@ export interface Services {
   tabs: TabsStore;
   editor: EditorStore;
   responses: ResponseStore;
+  environments: EnvironmentStore;
   scopes: FocusScopes;
 }
 
@@ -67,9 +69,15 @@ export async function createServices(
   const tabs = new TabsStore(transport);
   const editor = new EditorStore(transport, () => prefs.value.autosave);
   const responses = new ResponseStore(transport, (id) => editor.flush(id));
+  const environments = new EnvironmentStore(transport);
   try {
     await workspace.load();
-    if (workspace.activeCollectionId) await tree.load(workspace.activeCollectionId);
+    if (workspace.activeCollectionId) {
+      await tree.load(workspace.activeCollectionId);
+      await environments
+        .load(workspace.activeCollectionId)
+        .catch((e: unknown) => console.warn('[environments] load failed', e));
+    }
     if (workspace.activeWorkspaceId) await tabs.load(workspace.activeWorkspaceId);
   } catch (e) {
     console.error('[workspace] load failed', e);
@@ -86,6 +94,7 @@ export async function createServices(
     tabs,
     editor,
     responses,
+    environments,
     scopes: new FocusScopes(),
   };
 }
