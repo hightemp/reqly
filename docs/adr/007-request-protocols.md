@@ -1,4 +1,4 @@
-# ADR-006: Request protocols
+# ADR-007: Request protocols
 
 - Status: accepted
 - Date: 2026-10-17

@@ -1,6 +1,6 @@
-# ADR-007: Socket.IO and MQTT
+# ADR-008: Socket.IO and MQTT
 
-- Status: proposed (PRD Q4 is open; this is the recommendation)
+- Status: accepted — both deferred to the backlog (TASKS B1, B2)
 - Date: 2026-10-17
 
 ## Context
@@ -34,7 +34,12 @@ MQTT.
 2. Do not build **MQTT** into the core now; revisit it with the plugin system
    (PRD backlog) or if users ask for it.
 
+## Decision
+
+Both are deferred to the backlog (PRD Q4): Socket.IO as TASKS B1, MQTT as
+TASKS B2. Nothing is built for them in stage 5.
+
 ## Consequences
 
-- Q4 stays open until the product decision; TASKS T5.5.2 is done when this
-  ADR is accepted or changed.
+- Socket.IO servers can still be reached with plain WebSocket requests to
+  `/socket.io/?EIO=4&transport=websocket`, framing messages by hand.

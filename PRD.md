@@ -408,7 +408,7 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 - **WebSocket:** connect и disconnect, заголовки и auth при handshake, отправка сообщений (text, JSON, binary), лог сообщений с фильтром и временем, сохранённые шаблоны сообщений, авто-reconnect (опция).
 - **SSE:** подключение, поток событий (id, event, data), фильтр по типу события, reconnect с `Last-Event-ID`.
 - **gRPC:** загрузка `.proto` (файлы и import paths) или server reflection, выбор сервиса и метода. Unary, server streaming, client streaming и bidi. Metadata, TLS, deadline. Тело сообщения задаётся в JSON с автодополнением по схеме.
-- **Дополнительно (опционально, по решению после Э5):** Socket.IO, MQTT.
+- **Дополнительно:** Socket.IO, MQTT — отложены в бэклог (ADR-008, TASKS B1, B2).
 - Все протоколы используют общие механизмы: переменные, auth (где применимо), настройки, история.
 
 ### 7.15. Скрипты [Э6]
@@ -598,7 +598,7 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 | Q1 | HTTP-движок: libcurl или hyper/reqwest (ADR-002) | Э0 |
 | Q2 | JS-движок: rquickjs (рекомендуется), Boa или deno_core (ADR-006) | начало Э6 |
 | Q3 | Наличие ru-локали в crate `fake`, объём собственных датасетов | начало Э2 |
-| Q4 | Нужны ли Socket.IO и MQTT | после Э5 |
+| Q4 | Нужны ли Socket.IO и MQTT — решено: отложены в бэклог (ADR-008, TASKS B1, B2) | после Э5 |
 | Q5 | PostgreSQL для сервера в режиме `multi` при большом числе пользователей | Э7 |
 | Q6 | Хранение секретов в OS keychain (когда доступен) | бэклог |
 
