@@ -1,0 +1,135 @@
+---
+source: crates/reqly-interop/tests/other.rs
+expression: bundle.report
+---
+{
+  "format": "openApi",
+  "entries": [
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "PUT /pet",
+      "message": "`petstore_auth` (oauth2) security is not supported yet",
+      "raw": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "scopes": {
+              "write:pets": "modify pets in your account",
+              "read:pets": "read your pets"
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "POST /pet",
+      "message": "`petstore_auth` (oauth2) security is not supported yet",
+      "raw": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "scopes": {
+              "write:pets": "modify pets in your account",
+              "read:pets": "read your pets"
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "GET /pet/findByStatus",
+      "message": "`petstore_auth` (oauth2) security is not supported yet",
+      "raw": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "scopes": {
+              "write:pets": "modify pets in your account",
+              "read:pets": "read your pets"
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "GET /pet/findByTags",
+      "message": "`petstore_auth` (oauth2) security is not supported yet",
+      "raw": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "scopes": {
+              "write:pets": "modify pets in your account",
+              "read:pets": "read your pets"
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "POST /pet/{petId}",
+      "message": "`petstore_auth` (oauth2) security is not supported yet",
+      "raw": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "scopes": {
+              "write:pets": "modify pets in your account",
+              "read:pets": "read your pets"
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "DELETE /pet/{petId}",
+      "message": "`petstore_auth` (oauth2) security is not supported yet",
+      "raw": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "scopes": {
+              "write:pets": "modify pets in your account",
+              "read:pets": "read your pets"
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "POST /pet/{petId}/uploadImage",
+      "message": "`petstore_auth` (oauth2) security is not supported yet",
+      "raw": {
+        "type": "oauth2",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "http://petstore.swagger.io/oauth/dialog",
+            "scopes": {
+              "write:pets": "modify pets in your account",
+              "read:pets": "read your pets"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -5,10 +5,14 @@
 //! [`ImportReport`] listing everything that was converted approximately or
 //! could not be imported. Nothing is dropped silently.
 
+pub mod bruno;
+pub mod curl;
 pub mod detect;
+pub mod har;
 pub mod insomnia;
 pub mod insomnia_export;
 pub mod model;
+pub mod openapi;
 pub mod postman;
 pub mod report;
 pub mod reqly;
@@ -36,6 +40,29 @@ impl Source {
     }
 }
 
+/// Text files of a zip archive (e.g. a zipped Bruno collection), as sources.
+pub fn unzip(bytes: &[u8]) -> CoreResult<Vec<Source>> {
+    use std::io::Read;
+    let err = |e: String| CoreError::new("import.zip", e);
+    let mut archive =
+        zip::ZipArchive::new(std::io::Cursor::new(bytes)).map_err(|e| err(e.to_string()))?;
+    let mut out = Vec::new();
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).map_err(|e| err(e.to_string()))?;
+        if file.is_dir() || file.size() > 16 * 1024 * 1024 {
+            continue;
+        }
+        let name = file.name().map_err(|e| err(e.to_string()))?.into_owned();
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes)
+            .map_err(|e| err(e.to_string()))?;
+        if let Ok(text) = String::from_utf8(bytes) {
+            out.push(Source::new(name, text));
+        }
+    }
+    Ok(out)
+}
+
 /// Formats Reqly can write.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
 #[serde(rename_all = "camelCase")]
@@ -46,6 +73,8 @@ pub enum ExportFormat {
     Insomnia4,
     Insomnia5,
     Postman,
+    Har,
+    Curl,
 }
 
 impl ExportFormat {
@@ -56,12 +85,15 @@ impl ExportFormat {
             Self::Insomnia4 => "insomnia.json",
             Self::Insomnia5 => "insomnia.yaml",
             Self::Postman => "postman_collection.json",
+            Self::Har => "har",
+            Self::Curl => "sh",
         }
     }
 
     pub fn mime(self) -> &'static str {
         match self {
-            Self::ReqlyJson | Self::Insomnia4 | Self::Postman => "application/json",
+            Self::ReqlyJson | Self::Insomnia4 | Self::Postman | Self::Har => "application/json",
+            Self::Curl => "text/x-shellscript",
             Self::ReqlyYaml | Self::Insomnia5 => "application/yaml",
         }
     }
@@ -129,6 +161,11 @@ pub fn export(
         ExportFormat::ReqlyYaml => one(reqly::export(data, &options(reqly::Syntax::Yaml))?),
         ExportFormat::Insomnia4 => one(insomnia_export::export_v4(data, exported_at)?),
         ExportFormat::Insomnia5 => one(insomnia_export::export_v5(data)?),
+        ExportFormat::Har => one(har::export(
+            data,
+            &insomnia_export::rfc3339(exported_at.div_euclid(1000)),
+        )?),
+        ExportFormat::Curl => one(curl::export(data)),
         ExportFormat::Postman => postman::export(data)?
             .into_iter()
             .map(|(suffix, content)| ExportFile {
@@ -159,6 +196,10 @@ pub fn import(sources: &[Source], format: Option<Format>) -> CoreResult<ImportBu
     let mut bundle = match format {
         Format::Reqly => reqly::import(&first.content)?,
         Format::Insomnia => insomnia::import(&first.content)?,
+        Format::Curl => curl::import(&first.name, &first.content)?,
+        Format::Har => har::import(&first.content)?,
+        Format::OpenApi => openapi::import(&first.content)?,
+        Format::Bruno => bruno::import(sources)?,
         Format::Postman => {
             // Several Postman files (collection + environments) can be imported together.
             let mut bundle = ImportBundle {

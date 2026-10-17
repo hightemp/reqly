@@ -51,9 +51,13 @@ macro_rules! command {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct ImportSource {
-    /// File name (or URL), used for detection and messages.
+    /// File name or relative path (directory imports), used for detection and messages.
     pub name: String,
     pub content: String,
+    /// `content` is base64 (binary files such as zip archives).
+    #[serde(default)]
+    #[ts(optional)]
+    pub base64: Option<bool>,
 }
 
 fn sources(input: &[ImportSource]) -> CoreResult<Vec<Source>> {

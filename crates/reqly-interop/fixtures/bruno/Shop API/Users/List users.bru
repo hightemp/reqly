@@ -1,0 +1,25 @@
+meta {
+  name: List users
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/{{apiVersion}}/users?page=1&size=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  size: 20
+  ~debug: true
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("ok", function() { expect(res.status).to.equal(200); });
+}

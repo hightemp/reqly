@@ -1,0 +1,22 @@
+meta {
+  name: Upload
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/files
+  body: multipartForm
+  auth: apikey
+}
+
+auth:apikey {
+  key: X-Key
+  value: {{process.env.API_KEY}}
+  placement: header
+}
+
+body:multipart-form {
+  title: hello
+  file: @file(/tmp/a.png)
+}

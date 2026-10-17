@@ -14,6 +14,10 @@ pub enum Format {
     Reqly,
     Insomnia,
     Postman,
+    Curl,
+    Har,
+    OpenApi,
+    Bruno,
 }
 
 impl Format {
@@ -22,6 +26,10 @@ impl Format {
             Self::Reqly => "reqly",
             Self::Insomnia => "insomnia",
             Self::Postman => "postman",
+            Self::Curl => "curl",
+            Self::Har => "har",
+            Self::OpenApi => "openapi",
+            Self::Bruno => "bruno",
         }
     }
 
@@ -30,6 +38,10 @@ impl Format {
             Self::Reqly => "Reqly",
             Self::Insomnia => "Insomnia",
             Self::Postman => "Postman",
+            Self::Curl => "cURL",
+            Self::Har => "HAR",
+            Self::OpenApi => "OpenAPI / Swagger",
+            Self::Bruno => "Bruno",
         }
     }
 }
@@ -47,6 +59,12 @@ pub fn parse_structured(text: &str) -> Option<Value> {
 
 pub fn detect(sources: &[Source]) -> Option<Format> {
     let first = sources.first()?;
+    if crate::bruno::is_bruno(sources) {
+        return Some(Format::Bruno);
+    }
+    if crate::curl::looks_like_curl(&first.content) {
+        return Some(Format::Curl);
+    }
     let value = parse_structured(&first.content)?;
     let obj = value.as_object()?;
     if obj.get("format").and_then(Value::as_str) == Some("reqly") {
@@ -57,6 +75,12 @@ pub fn detect(sources: &[Source]) -> Option<Format> {
     }
     if crate::postman::is_collection(&value) || crate::postman::is_environment(&value) {
         return Some(Format::Postman);
+    }
+    if crate::openapi::is_openapi(&value) {
+        return Some(Format::OpenApi);
+    }
+    if crate::har::is_har(&value) {
+        return Some(Format::Har);
     }
     None
 }

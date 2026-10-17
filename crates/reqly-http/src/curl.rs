@@ -322,6 +322,23 @@ pub fn parse_curl_many(input: &str) -> CoreResult<Vec<ParsedCurl>> {
         .collect()
 }
 
+/// Like [`parse_curl_many`], but each command is parsed separately so one
+/// bad command (or a non-curl line such as `echo`) does not fail the rest.
+pub fn parse_curl_each(input: &str) -> CoreResult<Vec<CoreResult<ParsedCurl>>> {
+    let mut commands: Vec<Vec<String>> = vec![Vec::new()];
+    for token in lex(input)? {
+        match token {
+            Token::Word(w) => commands.last_mut().expect("non-empty").push(w),
+            Token::Separator => commands.push(Vec::new()),
+        }
+    }
+    Ok(commands
+        .into_iter()
+        .filter(|c| !c.is_empty())
+        .map(|c| parse_words(&c))
+        .collect())
+}
+
 fn parse_words(words: &[String]) -> CoreResult<ParsedCurl> {
     // Skip leading words before "curl" (e.g. `$ curl …`).
     let start = words

@@ -338,7 +338,7 @@ fn cookies(data: &ExportData) -> Vec<Value> {
 }
 
 /// Unix seconds → `YYYY-MM-DDTHH:MM:SS.000Z`.
-fn rfc3339(secs: i64) -> String {
+pub(crate) fn rfc3339(secs: i64) -> String {
     let days = secs.div_euclid(86_400);
     let rem = secs.rem_euclid(86_400);
     // Civil from days (Howard Hinnant).

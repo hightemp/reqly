@@ -1,0 +1,38 @@
+meta {
+  name: Create user
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/users/:org
+  body: json
+  auth: none
+}
+
+params:path {
+  org: acme
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "{{name}}",
+    "email": "a@b.c"
+  }
+}
+
+vars:pre-request {
+  name: Alice
+}
+
+script:pre-request {
+  req.setHeader("X-Time", Date.now());
+}
+
+docs {
+  Creates a **user**.
+}

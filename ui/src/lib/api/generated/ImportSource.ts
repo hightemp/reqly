@@ -2,6 +2,10 @@
 
 export type ImportSource = { 
 /**
- * File name (or URL), used for detection and messages.
+ * File name or relative path (directory imports), used for detection and messages.
  */
-name: string, content: string, };
+name: string, content: string, 
+/**
+ * `content` is base64 (binary files such as zip archives).
+ */
+base64?: boolean, };
