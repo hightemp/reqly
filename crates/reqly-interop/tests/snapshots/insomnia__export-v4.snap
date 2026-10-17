@@ -1,0 +1,228 @@
+---
+source: crates/reqly-interop/tests/insomnia.rs
+expression: text
+---
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2023-11-14T22:13:20.000Z",
+  "__export_source": "reqly:0.1.0",
+  "resources": [
+    {
+      "_id": "wrk_0",
+      "parentId": null,
+      "name": "Example API",
+      "description": "Sample",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_0",
+      "parentId": "wrk_0",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "https://api.example.com",
+        "key": "secret-key"
+      },
+      "dataPropertyOrder": null,
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 0,
+      "_type": "environment"
+    },
+    {
+      "_id": "env_0_0",
+      "parentId": "env_0",
+      "name": "prod",
+      "data": {
+        "base_url": "https://prod.example.com",
+        "limits": {
+          "rps": 10
+        }
+      },
+      "dataPropertyOrder": null,
+      "color": "#e5484d",
+      "isPrivate": false,
+      "metaSortKey": 1,
+      "_type": "environment"
+    },
+    {
+      "_id": "jar_0",
+      "parentId": "wrk_0",
+      "name": "Default Jar",
+      "cookies": [
+        {
+          "key": "sid",
+          "value": "abc",
+          "domain": "example.com",
+          "path": "/",
+          "secure": false,
+          "httpOnly": false,
+          "hostOnly": true,
+          "id": "cookie_0"
+        }
+      ],
+      "_type": "cookie_jar"
+    },
+    {
+      "_id": "req_reqlogin",
+      "parentId": "wrk_0",
+      "url": "{{ base_url }}/auth/login",
+      "name": "Login",
+      "description": "Logs in.",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\"user\": \"{{ user }}\"}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 1000,
+      "isPrivate": false,
+      "pathParameters": [],
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_fldusers",
+      "parentId": "wrk_0",
+      "name": "Users",
+      "description": "User endpoints",
+      "environment": {
+        "version": "v2"
+      },
+      "environmentPropertyOrder": null,
+      "metaSortKey": 2000,
+      "headers": [
+        {
+          "name": "X-Team",
+          "value": "core"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "username": "u",
+        "password": "p",
+        "useISO88591": false,
+        "disabled": false
+      },
+      "preRequestScript": "",
+      "afterResponseScript": "",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_reqlist",
+      "parentId": "fld_fldusers",
+      "url": "{{ base_url }}/users",
+      "name": "List users",
+      "description": "",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1"
+        },
+        {
+          "name": "debug",
+          "value": "true",
+          "disabled": true
+        }
+      ],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{% response 'body', 'req_reqlogin', '$.token', 'no-history' %}",
+        "prefix": "",
+        "disabled": false
+      },
+      "metaSortKey": 1000,
+      "isPrivate": false,
+      "pathParameters": [],
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "",
+      "_type": "request"
+    },
+    {
+      "_id": "req_requpload",
+      "parentId": "fld_fldusers",
+      "url": "{{ base_url }}/upload",
+      "name": "Upload",
+      "description": "",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/x-www-form-urlencoded",
+        "params": [
+          {
+            "name": "a",
+            "value": "1"
+          },
+          {
+            "name": "b",
+            "value": "{% uuid %}"
+          }
+        ]
+      },
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "apikey",
+        "key": "X-Key",
+        "value": "{{ key }}",
+        "disabled": false,
+        "addTo": "header"
+      },
+      "metaSortKey": 2000,
+      "isPrivate": false,
+      "pathParameters": [],
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "",
+      "_type": "request"
+    },
+    {
+      "_id": "wrk_globals",
+      "parentId": null,
+      "name": "Main globals",
+      "scope": "environment",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_globals",
+      "parentId": "wrk_globals",
+      "name": "Shared",
+      "data": {
+        "user": "guest"
+      },
+      "dataPropertyOrder": null,
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 0,
+      "_type": "environment"
+    }
+  ]
+}

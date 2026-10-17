@@ -6,6 +6,8 @@
 //! could not be imported. Nothing is dropped silently.
 
 pub mod detect;
+pub mod insomnia;
+pub mod insomnia_export;
 pub mod model;
 pub mod report;
 pub mod reqly;
@@ -40,6 +42,8 @@ impl Source {
 pub enum ExportFormat {
     ReqlyJson,
     ReqlyYaml,
+    Insomnia4,
+    Insomnia5,
 }
 
 impl ExportFormat {
@@ -47,13 +51,15 @@ impl ExportFormat {
         match self {
             Self::ReqlyJson => "reqly.json",
             Self::ReqlyYaml => "reqly.yaml",
+            Self::Insomnia4 => "insomnia.json",
+            Self::Insomnia5 => "insomnia.yaml",
         }
     }
 
     pub fn mime(self) -> &'static str {
         match self {
-            Self::ReqlyJson => "application/json",
-            Self::ReqlyYaml => "application/yaml",
+            Self::ReqlyJson | Self::Insomnia4 => "application/json",
+            Self::ReqlyYaml | Self::Insomnia5 => "application/yaml",
         }
     }
 }
@@ -73,6 +79,8 @@ pub fn export(
     match format {
         ExportFormat::ReqlyJson => reqly::export(data, &options(reqly::Syntax::Json)),
         ExportFormat::ReqlyYaml => reqly::export(data, &options(reqly::Syntax::Yaml)),
+        ExportFormat::Insomnia4 => insomnia_export::export_v4(data, exported_at),
+        ExportFormat::Insomnia5 => insomnia_export::export_v5(data),
     }
 }
 
@@ -94,6 +102,7 @@ pub fn import(sources: &[Source], format: Option<Format>) -> CoreResult<ImportBu
     };
     let mut bundle = match format {
         Format::Reqly => reqly::import(&first.content)?,
+        Format::Insomnia => insomnia::import(&first.content)?,
     };
     bundle.format = format;
     bundle.report.format = format;

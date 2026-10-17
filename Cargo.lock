@@ -4244,6 +4244,7 @@ dependencies = [
  "pretty_assertions",
  "reqly-core",
  "reqly-http",
+ "reqly-template",
  "serde",
  "serde_json",
  "serde_yaml_ng",

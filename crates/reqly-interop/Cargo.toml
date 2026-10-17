@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 reqly-core.workspace = true
 reqly-http.workspace = true
+reqly-template.workspace = true
 base64 = "0.22"
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }

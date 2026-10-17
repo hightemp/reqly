@@ -1,0 +1,145 @@
+---
+source: crates/reqly-interop/tests/insomnia.rs
+expression: text
+---
+type: collection.insomnia.rest/5.0
+schema_version: '5.1'
+name: Example API
+meta:
+  id: wrk_0
+  description: Sample
+collection:
+- url: '{{ base_url }}/auth/login'
+  name: Login
+  meta:
+    id: req_reqlogin
+    isPrivate: false
+    sortKey: 1000
+    description: Logs in.
+  method: POST
+  body:
+    mimeType: application/json
+    text: '{"user": "{{ user }}"}'
+  parameters: []
+  headers:
+  - name: Content-Type
+    value: application/json
+  authentication: {}
+  settings:
+    renderRequestBody: true
+    encodeUrl: true
+    followRedirects: global
+    cookies:
+      send: true
+      store: true
+    rebuildPath: true
+  pathParameters: []
+- name: Users
+  meta:
+    id: fld_fldusers
+    sortKey: 2000
+    description: User endpoints
+  children:
+  - url: '{{ base_url }}/users'
+    name: List users
+    meta:
+      id: req_reqlist
+      isPrivate: false
+      sortKey: 1000
+    method: GET
+    body: {}
+    parameters:
+    - name: page
+      value: '1'
+    - name: debug
+      value: 'true'
+      disabled: true
+    headers: []
+    authentication:
+      type: bearer
+      token: '{% response ''body'', ''req_reqlogin'', ''$.token'', ''no-history'' %}'
+      prefix: ''
+      disabled: false
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+    pathParameters: []
+  - url: '{{ base_url }}/upload'
+    name: Upload
+    meta:
+      id: req_requpload
+      isPrivate: false
+      sortKey: 2000
+    method: POST
+    body:
+      mimeType: application/x-www-form-urlencoded
+      params:
+      - name: a
+        value: '1'
+      - name: b
+        value: '{% uuid %}'
+    parameters: []
+    headers: []
+    authentication:
+      type: apikey
+      key: X-Key
+      value: '{{ key }}'
+      disabled: false
+      addTo: header
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+    pathParameters: []
+  authentication:
+    type: basic
+    username: u
+    password: p
+    useISO88591: false
+    disabled: false
+  environment:
+    version: v2
+  headers:
+  - name: X-Team
+    value: core
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_0
+  cookies:
+  - key: sid
+    value: abc
+    domain: example.com
+    path: /
+    secure: false
+    httpOnly: false
+    hostOnly: true
+    id: cookie_0
+environments:
+  name: Base Environment
+  meta:
+    id: env_0
+    isPrivate: false
+  data:
+    base_url: https://api.example.com
+    key: secret-key
+  subEnvironments:
+  - name: prod
+    meta:
+      id: env_0_0
+      isPrivate: false
+      sortKey: 1
+    data:
+      base_url: https://prod.example.com
+      limits:
+        rps: 10
+    color: '#e5484d'

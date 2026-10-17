@@ -1,0 +1,97 @@
+---
+source: crates/reqly-interop/tests/insomnia.rs
+expression: bundle.report
+---
+{
+  "format": "insomnia",
+  "entries": [
+    {
+      "kind": "unsupported",
+      "code": "script_kept",
+      "path": "Example API / Auth / Login",
+      "message": "scripts were kept but are not executed (scripting is not available yet)",
+      "raw": null
+    },
+    {
+      "kind": "unsupported",
+      "code": "script_kept",
+      "path": "Example API / Users",
+      "message": "scripts were kept but are not executed (scripting is not available yet)",
+      "raw": null
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "Example API / Search form",
+      "message": "`digest` authentication is not supported yet; the request was imported without it",
+      "raw": {
+        "type": "digest",
+        "disabled": false,
+        "username": "u",
+        "password": "p"
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "auth_unsupported",
+      "path": "Example API / GraphQL viewer",
+      "message": "`oauth2` authentication is not supported yet; the request was imported without it",
+      "raw": {
+        "type": "oauth2",
+        "grantType": "client_credentials",
+        "accessTokenUrl": "https://auth.example.com/token",
+        "clientId": "abc",
+        "clientSecret": "xyz"
+      }
+    },
+    {
+      "kind": "converted",
+      "code": "graphql_as_json",
+      "path": "Example API / GraphQL viewer",
+      "message": "GraphQL body was imported as JSON (GraphQL requests arrive in stage 5)",
+      "raw": null
+    },
+    {
+      "kind": "unsupported",
+      "code": "protocol_unsupported",
+      "path": "Example API / Live events",
+      "message": "WebSocket requests are not supported yet",
+      "raw": {
+        "_id": "ws-req_events",
+        "parentId": "wrk_main",
+        "modified": 1730542900000,
+        "created": 1730542900000,
+        "name": "Live events",
+        "url": "wss://events.example.com/socket",
+        "metaSortKey": -1730490000000,
+        "headers": [],
+        "authentication": {},
+        "parameters": [],
+        "_type": "websocket_request"
+      }
+    },
+    {
+      "kind": "unsupported",
+      "code": "protocol_unsupported",
+      "path": "Example API / Ping",
+      "message": "gRPC requests are not supported yet",
+      "raw": {
+        "_id": "greq_ping",
+        "parentId": "wrk_main",
+        "modified": 1730543000000,
+        "created": 1730543000000,
+        "url": "grpc.example.com:443",
+        "name": "Ping",
+        "description": "",
+        "protoFileId": "pf_1",
+        "protoMethodName": "/ping.Ping/Ping",
+        "metadata": [],
+        "body": {
+          "text": "{}"
+        },
+        "metaSortKey": -1730480000000,
+        "_type": "grpc_request"
+      }
+    }
+  ]
+}

@@ -3,4 +3,4 @@
 /**
  * Formats Reqly can write.
  */
-export type ExportFormat = "reqlyJson" | "reqlyYaml";
+export type ExportFormat = "reqlyJson" | "reqlyYaml" | "insomnia4" | "insomnia5";

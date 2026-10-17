@@ -1,0 +1,354 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Example API
+meta:
+  id: wrk_main
+  created: 1730540000000
+  modified: 1730540000000
+  description: Sample workspace
+collection:
+  - name: Auth
+    meta:
+      id: fld_auth
+      created: 1730541000000
+      modified: 1730541000000
+      sortKey: -1730541000000
+    children:
+      - url: "{{ _.base_url }}/auth/login"
+        name: Login
+        meta:
+          id: req_login
+          created: 1730541000000
+          modified: 1730542000000
+          isPrivate: false
+          description: Returns a **token**.
+          sortKey: -1730541000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "user": "{{ _.user }}",
+              "password": "{{ _.password }}",
+              "device": "{% uuid 'v4' %}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: X-Request-Time
+            value: "{% now 'iso-8601', '' %}"
+        scripts:
+          afterResponse: insomnia.environment.set('token', insomnia.response.json().token);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+    environment:
+      scope: auth
+  - name: Users
+    meta:
+      id: fld_users
+      created: 1730542100000
+      modified: 1730542100000
+      sortKey: -1730540000000
+      description: User management
+    children:
+      - url: "{{ _.base_url }}/users"
+        name: List users
+        meta:
+          id: req_list
+          created: 1730542200000
+          modified: 1730542200000
+          isPrivate: false
+          sortKey: -1730542200000
+        method: GET
+        parameters:
+          - name: page
+            value: "1"
+          - name: size
+            value: "{{ _.page_size }}"
+          - name: debug
+            value: "true"
+            disabled: true
+        headers:
+          - name: Accept
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/users/:id"
+        name: Get user
+        meta:
+          id: req_get
+          created: 1730542300000
+          modified: 1730542300000
+          isPrivate: false
+          sortKey: -1730542100000
+        method: GET
+        authentication:
+          type: basic
+          useISO88591: false
+          disabled: false
+          username: admin
+          password: "{{ _.password }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: false
+          followRedirects: "off"
+          cookies:
+            send: false
+            store: true
+          rebuildPath: true
+        pathParameters:
+          - name: id
+            value: "42"
+      - url: "{{ _.base_url }}/users/42/avatar"
+        name: Upload avatar
+        meta:
+          id: req_avatar
+          created: 1730542400000
+          modified: 1730542400000
+          isPrivate: false
+          sortKey: -1730542000000
+        method: PUT
+        body:
+          mimeType: multipart/form-data
+          params:
+            - name: title
+              value: "{% faker 'randomFullName' %}"
+            - name: file
+              value: ""
+              type: file
+              fileName: /home/me/avatar.png
+            - name: note
+              value: x
+              disabled: true
+        headers:
+          - name: Content-Type
+            value: multipart/form-data
+        authentication:
+          type: apikey
+          disabled: false
+          key: X-Api-Key
+          value: "{{ _.api_key }}"
+          addTo: header
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+    scripts:
+      preRequest: console.log('folder');
+    authentication:
+      type: bearer
+      token: "{% response 'body', 'req_login', 'b64::JC50b2tlbg==::46b', 'never', 60 %}"
+      prefix: ""
+      disabled: false
+    environment:
+      page_size: 20
+    headers:
+      - name: X-Team
+        value: core
+  - url: https://search.example.com/q
+    name: Search form
+    meta:
+      id: req_search
+      created: 1730542500000
+      modified: 1730542500000
+      isPrivate: false
+      sortKey: -1730530000000
+    method: POST
+    body:
+      mimeType: application/x-www-form-urlencoded
+      params:
+        - name: q
+          value: "{% base64 'encode', 'normal', 'hello' %}"
+        - name: sig
+          value: "{% hash 'sha256', 'hex', 'secret' %}"
+    headers:
+      - name: Content-Type
+        value: application/x-www-form-urlencoded
+    authentication:
+      type: digest
+      disabled: false
+      username: u
+      password: p
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{ _.base_url }}/graphql"
+    name: GraphQL viewer
+    meta:
+      id: req_graphql
+      created: 1730542600000
+      modified: 1730542600000
+      isPrivate: false
+      sortKey: -1730520000000
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"query { viewer { id } }","variables":{}}'
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: oauth2
+      grantType: client_credentials
+      accessTokenUrl: https://auth.example.com/token
+      clientId: abc
+      clientSecret: xyz
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{ _.base_url }}/files"
+    name: Upload binary
+    meta:
+      id: req_binary
+      created: 1730542700000
+      modified: 1730542700000
+      isPrivate: false
+      sortKey: -1730510000000
+    method: POST
+    body:
+      mimeType: application/octet-stream
+      fileName: /tmp/data.bin
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{ _.base_url }}/soap"
+    name: SOAP call
+    meta:
+      id: req_xml
+      created: 1730542800000
+      modified: 1730542800000
+      isPrivate: false
+      sortKey: -1730500000000
+    method: POST
+    body:
+      mimeType: application/xml
+      text: <Envelope><Body><Ping/></Body></Envelope>
+    headers:
+      - name: Content-Type
+        value: application/xml
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: wss://events.example.com/socket
+    name: Live events
+    meta:
+      id: ws-req_events
+      created: 1730542900000
+      modified: 1730542900000
+      sortKey: -1730490000000
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      useProxy: false
+  - url: grpc.example.com:443
+    name: Ping
+    meta:
+      id: greq_ping
+      created: 1730543000000
+      modified: 1730543000000
+      sortKey: -1730480000000
+    body:
+      text: "{}"
+    protoFileId: pf_1
+    protoMethodName: /ping.Ping/Ping
+    reflectionApi:
+      enabled: false
+      url: ""
+      apiKey: ""
+      module: ""
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_main
+    created: 1730540000000
+    modified: 1730540000000
+  cookies:
+    - key: sid
+      value: abc123
+      expires: 2030-01-01T00:00:00.000Z
+      domain: api.example.com
+      path: /
+      secure: true
+      httpOnly: true
+      hostOnly: true
+      id: cookie_1
+    - key: theme
+      value: dark
+      domain: example.com
+      path: /
+      hostOnly: false
+      id: cookie_2
+environments:
+  name: Base Environment
+  meta:
+    id: env_base
+    created: 1730540000000
+    modified: 1730540000000
+    isPrivate: false
+  data:
+    base_url: https://api.example.com
+    user: admin
+    password: s3cret
+    api_key: k-1
+  subEnvironments:
+    - name: Production
+      meta:
+        id: env_prod
+        created: 1730540100000
+        modified: 1730540100000
+        isPrivate: false
+        sortKey: 1730540100000
+      data:
+        base_url: https://prod.example.com
+        limits:
+          rps: 10
+      color: "#ff0000"
+    - name: Local
+      meta:
+        id: env_local
+        created: 1730540200000
+        modified: 1730540200000
+        isPrivate: true
+        sortKey: 1730540200000
+      data:
+        base_url: http://localhost:8080
+      color: "#00ff00"

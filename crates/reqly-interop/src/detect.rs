@@ -12,18 +12,21 @@ use crate::Source;
 pub enum Format {
     #[default]
     Reqly,
+    Insomnia,
 }
 
 impl Format {
     pub fn id(self) -> &'static str {
         match self {
             Self::Reqly => "reqly",
+            Self::Insomnia => "insomnia",
         }
     }
 
     pub fn label(self) -> &'static str {
         match self {
             Self::Reqly => "Reqly",
+            Self::Insomnia => "Insomnia",
         }
     }
 }
@@ -45,6 +48,9 @@ pub fn detect(sources: &[Source]) -> Option<Format> {
     let obj = value.as_object()?;
     if obj.get("format").and_then(Value::as_str) == Some("reqly") {
         return Some(Format::Reqly);
+    }
+    if crate::insomnia::is_v4(&value) || crate::insomnia::is_v5(&value) {
+        return Some(Format::Insomnia);
     }
     None
 }
