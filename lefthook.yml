@@ -11,7 +11,7 @@ pre-commit:
     eslint:
       root: ui/
       glob: '*.{ts,js,svelte}'
-      run: pnpm exec eslint {staged_files}
+      run: pnpm exec eslint --no-warn-ignored {staged_files}
 
 commit-msg:
   commands:
