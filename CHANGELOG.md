@@ -5,6 +5,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-17
+
+Stage 5: GraphQL, WebSocket, server-sent events and gRPC.
+
 ### Added
 
 - GraphQL requests: query editor with schema-aware completion and
@@ -164,7 +168,8 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/hightemp/reqly/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/hightemp/reqly/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hightemp/reqly/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hightemp/reqly/releases/tag/v0.2.0
