@@ -5,7 +5,7 @@
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
-    "e2e": "node --test e2e/"
+    "e2e": "node --test \"e2e/*.test.mjs\""
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.3",
