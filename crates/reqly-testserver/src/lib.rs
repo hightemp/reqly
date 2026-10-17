@@ -5,7 +5,9 @@
 //! let url = server.url("/echo");
 //! ```
 
+mod auth;
 mod certs;
+mod oauth;
 mod routes;
 
 use std::net::SocketAddr;

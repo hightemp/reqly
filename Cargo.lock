@@ -3076,12 +3076,31 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
 name = "md-5"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
+dependencies = [
+ "cfg-if",
+ "digest 0.10.7",
+]
+
+[[package]]
+name = "md-5"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69b6441f590336821bb897fb28fc622898ccceb1d6cea3fde5ea86b090c4de98"
 dependencies = [
  "cfg-if",
  "digest 0.11.3",
+]
+
+[[package]]
+name = "md4"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7da5ac363534dce5fabf69949225e174fbf111a498bf0ff794c8ea1fba9f3dda"
+dependencies = [
+ "digest 0.10.7",
 ]
 
 [[package]]
@@ -4370,7 +4389,9 @@ version = "0.3.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
+ "getrandom 0.3.4",
  "hostname",
+ "percent-encoding",
  "reqly-core",
  "reqly-http",
  "reqly-interop",
@@ -4379,6 +4400,7 @@ dependencies = [
  "reqly-testserver",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "tempfile",
  "tokio",
  "tracing",
@@ -4421,18 +4443,26 @@ version = "0.3.0"
 dependencies = [
  "base64 0.22.1",
  "curl",
+ "getrandom 0.3.4",
+ "hmac 0.12.1",
  "http",
  "jaq-core",
  "jaq-json",
  "jaq-std",
+ "jsonwebtoken",
+ "md-5 0.10.6",
+ "md4",
  "percent-encoding",
  "proptest",
  "reqly-core",
  "reqly-testserver",
+ "rsa",
  "rustls-native-certs",
  "serde",
  "serde_json",
  "serde_json_path",
+ "sha1 0.10.7",
+ "sha2 0.10.9",
  "sxd-document",
  "sxd-xpath",
  "tempfile",
@@ -4522,7 +4552,7 @@ dependencies = [
  "hex",
  "hmac 0.13.0",
  "jsonwebtoken",
- "md-5",
+ "md-5 0.11.0",
  "percent-encoding",
  "proptest",
  "rand 0.10.3",
@@ -4548,11 +4578,15 @@ dependencies = [
  "axum-server",
  "base64 0.22.1",
  "futures",
+ "hmac 0.12.1",
+ "md-5 0.10.6",
+ "md4",
  "rcgen",
  "reqwest",
  "rustls",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "tokio",
  "tower-http 0.7.1",
 ]
@@ -4664,6 +4698,8 @@ dependencies = [
  "pkcs1",
  "pkcs8",
  "rand_core 0.6.4",
+ "sha1 0.10.7",
+ "sha2 0.10.9",
  "signature",
  "spki",
  "subtle",
@@ -5595,7 +5631,7 @@ dependencies = [
  "hmac 0.13.0",
  "itoa",
  "log",
- "md-5",
+ "md-5 0.11.0",
  "memchr",
  "rand 0.10.3",
  "serde",

@@ -294,6 +294,76 @@ fn map_curl_error(e: &curl::Error, collector: &Collector) -> CoreError {
     CoreError::new(code, message.clone()).with_param("detail", message)
 }
 
+fn set_header(headers: &mut Vec<(String, String)>, name: &str, value: String) {
+    headers.retain(|(k, _)| !k.eq_ignore_ascii_case(name));
+    headers.push((name.to_string(), value));
+}
+
+fn perform(easy: &mut Easy2<Collector>) -> CoreResult<()> {
+    if let Err(err) = easy.perform() {
+        let collector = easy.get_ref();
+        // Keep what happened so far: the UI shows it next to the error.
+        let timeline = serde_json::to_value(&collector.timeline).unwrap_or_default();
+        return Err(map_curl_error(&err, collector).with_param("timeline", timeline));
+    }
+    Ok(())
+}
+
+/// The `Authorization` answering a Digest or NTLM challenge, if one was offered.
+fn answer_challenge(
+    auth: &crate::prepare::EngineAuth,
+    request: &PreparedRequest,
+    challenges: &[String],
+) -> CoreResult<Option<String>> {
+    let fail = |m: String| CoreError::new("auth.failed", m);
+    let mut random = [0u8; 8];
+    getrandom::fill(&mut random).expect("OS randomness");
+    Ok(match auth {
+        crate::prepare::EngineAuth::Digest { username, password } => {
+            let Some(challenge) = crate::auth::digest::parse(challenges) else {
+                return Ok(None);
+            };
+            let url = url::Url::parse(&request.url).map_err(|e| fail(e.to_string()))?;
+            let uri = match url.query() {
+                Some(q) => format!("{}?{q}", url.path()),
+                None => url.path().to_string(),
+            };
+            let body = match &request.body {
+                PreparedBody::None => Some(Vec::new()),
+                PreparedBody::Bytes(b) => Some(b.clone()),
+                PreparedBody::File(p) => std::fs::read(p).ok(),
+                _ => None,
+            };
+            let cnonce: String = random.iter().map(|b| format!("{b:02x}")).collect();
+            Some(
+                crate::auth::digest::authorization(
+                    &challenge,
+                    username,
+                    password,
+                    &request.method,
+                    &uri,
+                    body.as_deref(),
+                    &cnonce,
+                    1,
+                )
+                .map_err(fail)?,
+            )
+        }
+        crate::prepare::EngineAuth::Ntlm { username, password } => {
+            let Some(challenge) = crate::auth::ntlm::parse(challenges) else {
+                return Ok(None);
+            };
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0);
+            Some(crate::auth::ntlm::authenticate(
+                username, password, &challenge, &random, now,
+            ))
+        }
+    })
+}
+
 /// Runs `request` on the blocking pool.
 pub async fn execute(
     request: PreparedRequest,
@@ -633,7 +703,16 @@ pub fn execute_blocking(
         max_bytes: request.settings.max_response_bytes.unwrap_or(0),
         too_large: false,
     });
-    configure(&mut easy, request, options)?;
+    // Challenge-response auth starts with its first message (NTLM negotiate).
+    let mut current = request.clone();
+    if let Some(crate::prepare::EngineAuth::Ntlm { .. }) = &request.engine_auth {
+        set_header(
+            &mut current.headers,
+            "Authorization",
+            crate::auth::ntlm::negotiate(),
+        );
+    }
+    configure(&mut easy, &current, options)?;
 
     // Delay before sending, in small steps so cancelling stays responsive.
     let delay = Duration::from_millis(request.settings.delay_ms.unwrap_or(0));
@@ -648,11 +727,34 @@ pub fn execute_blocking(
         std::thread::sleep((delay - started.elapsed()).min(Duration::from_millis(25)));
     }
 
-    if let Err(err) = easy.perform() {
-        let collector = easy.get_ref();
-        // Keep what happened so far: the UI shows it next to the error.
-        let timeline = serde_json::to_value(&collector.timeline).unwrap_or_default();
-        return Err(map_curl_error(&err, collector).with_param("timeline", timeline));
+    perform(&mut easy)?;
+
+    // Digest / NTLM: answer the 401 challenge on the same handle (and so the
+    // same connection, which NTLM requires).
+    if let Some(auth) = &request.engine_auth
+        && easy.response_code().unwrap_or(0) == 401
+    {
+        let challenges: Vec<String> = easy
+            .get_ref()
+            .headers
+            .iter()
+            .filter_map(|line| {
+                let (k, v) = line.split_once(':')?;
+                k.trim()
+                    .eq_ignore_ascii_case("www-authenticate")
+                    .then(|| v.trim().to_string())
+            })
+            .collect();
+        if let Some(value) = answer_challenge(auth, &current, &challenges)? {
+            set_header(&mut current.headers, "Authorization", value);
+            let collector = easy.get_mut();
+            collector.memory.clear();
+            collector.file = None;
+            collector.body_size = 0;
+            collector.too_large = false;
+            configure(&mut easy, &current, options)?;
+            perform(&mut easy)?;
+        }
     }
 
     let info = |r: Result<Duration, curl::Error>| r.map(ms).unwrap_or(0.0);

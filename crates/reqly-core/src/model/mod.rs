@@ -9,7 +9,10 @@ mod request;
 mod response;
 mod settings;
 
-pub use auth::{ApiKeyLocation, Auth};
+pub use auth::{
+    ApiKeyLocation, Auth, HawkAlgorithm, JwtLocation, OAuth1Location, OAuth1Method,
+    OAuth2ClientAuth, OAuth2Config, OAuth2Grant,
+};
 pub use body::{Body, BodyKind, FileRef};
 pub use environment::{Environment, EnvironmentKind};
 pub use kv::{KeyValue, KeyValueKind};

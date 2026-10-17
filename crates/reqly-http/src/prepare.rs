@@ -43,8 +43,9 @@ pub struct MultipartPart {
     pub blob: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum PreparedBody {
+    #[default]
     None,
     Bytes(Vec<u8>),
     File(PathBuf),
@@ -52,7 +53,14 @@ pub enum PreparedBody {
     Multipart(Vec<MultipartPart>),
 }
 
+/// Challenge-response schemes the engine negotiates itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EngineAuth {
+    Digest { username: String, password: String },
+    Ntlm { username: String, password: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PreparedRequest {
     pub method: String,
     pub url: String,
@@ -60,6 +68,9 @@ pub struct PreparedRequest {
     pub body: PreparedBody,
     /// Fully resolved: every field is `Some`.
     pub settings: RequestSettings,
+    /// Auth that needs signing or I/O; applied by [`crate::auth::finalize`].
+    pub auth: Option<Auth>,
+    pub engine_auth: Option<EngineAuth>,
 }
 
 /// Prepares `request` inside `folders` (outermost first) with built-in defaults.
@@ -97,7 +108,7 @@ pub fn prepare_with_base(
         .map(|kv| (kv.name.clone(), kv.value.clone()))
         .collect();
 
-    apply_auth(effective_auth(request, folders), &mut headers, &mut query);
+    let pending = apply_auth(effective_auth(request, folders), &mut headers, &mut query);
 
     let url = build_url(&request.url, &request.path_params, &query, encode)?;
 
@@ -109,6 +120,8 @@ pub fn prepare_with_base(
         headers,
         body,
         settings,
+        auth: pending,
+        engine_auth: None,
     })
 }
 
@@ -144,7 +157,12 @@ fn effective_auth<'a>(request: &'a HttpRequest, folders: &[&'a FolderData]) -> &
         .unwrap_or(&Auth::None)
 }
 
-fn apply_auth(auth: &Auth, headers: &mut Vec<(String, String)>, query: &mut Vec<(String, String)>) {
+/// Applies static schemes; returns the ones that need [`crate::auth::finalize`].
+fn apply_auth(
+    auth: &Auth,
+    headers: &mut Vec<(String, String)>,
+    query: &mut Vec<(String, String)>,
+) -> Option<Auth> {
     let mut set_header = |name: &str, value: String| {
         if !has_header(headers, name) {
             headers.push((name.to_string(), value));
@@ -178,7 +196,9 @@ fn apply_auth(auth: &Auth, headers: &mut Vec<(String, String)>, query: &mut Vec<
             ApiKeyLocation::Query => query.push((key.clone(), value.clone())),
         },
         Auth::ApiKey { .. } => {}
+        other => return Some(other.clone()),
     }
+    None
 }
 
 /// Percent-encodes with `set`, keeping valid `%XX` escapes untouched so

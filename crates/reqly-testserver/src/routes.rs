@@ -38,6 +38,16 @@ pub fn router() -> Router {
         .route("/stream/{n}", get(stream_lines))
         .route("/basic-auth/{user}/{pass}", get(basic_auth))
         .route("/bearer/{token}", get(bearer))
+        .route(
+            "/digest/{qop}/{algorithm}/{user}/{pass}",
+            any(crate::auth::digest),
+        )
+        .route("/ntlm/{user}/{pass}", any(crate::auth::ntlm))
+        .route("/oauth/authorize", get(crate::oauth::authorize))
+        .route("/oauth/token", axum::routing::post(crate::oauth::token))
+        .route("/oauth/device", axum::routing::post(crate::oauth::device))
+        .route("/oauth/device/approve", get(crate::oauth::approve))
+        .route("/oauth/resource", get(crate::oauth::resource))
         .merge(compressed)
 }
 
