@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 test.use({ locale: 'en-US', colorScheme: 'dark' });
 
@@ -32,8 +32,21 @@ test('create a request, send it and see the response', async ({ page, baseURL })
   await expect(page.getByText('200 OK')).toBeVisible();
 });
 
+/** Closes every open tab so the next request's editor is the only one. */
+async function closeAllTabs(page: Page) {
+  // Wait until the app (and restored tabs) are rendered.
+  await expect(page.getByRole('combobox', { name: 'Workspace' })).toBeVisible();
+  const tab = page.getByRole('tablist', { name: 'Open requests' }).getByRole('tab').first();
+  if (await tab.isVisible().catch(() => false)) {
+    await tab.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Close all' }).click();
+  }
+  await expect(page.getByRole('tablist', { name: 'Open requests' })).toBeHidden();
+}
+
 test('pasting a cURL command imports it', async ({ page, baseURL }) => {
   await page.goto('/');
+  await closeAllTabs(page);
   await page.getByRole('button', { name: 'Create' }).click();
   await page.getByRole('menuitem', { name: 'New request' }).click();
   const url = page.getByRole('textbox', { name: 'URL' });

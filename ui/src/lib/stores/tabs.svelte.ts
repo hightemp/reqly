@@ -21,14 +21,19 @@ export class TabsStore {
   tabs = $state<Tab[]>([]);
   activeId = $state<string | null>(null);
   private closed: string[] = [];
-  private workspaceId: string | null = null;
+  private loadedFor: string | null = null;
   private saveTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private readonly transport: Transport) {}
 
+  /** Workspace whose tabs are loaded. */
+  get workspaceId(): string | null {
+    return this.loadedFor;
+  }
+
   async load(workspaceId: string) {
-    if (this.workspaceId && this.workspaceId !== workspaceId) await this.flush();
-    this.workspaceId = workspaceId;
+    if (this.loadedFor && this.loadedFor !== workspaceId) await this.flush();
+    this.loadedFor = workspaceId;
     this.closed = [];
     const { value } = await this.transport.call('settings.get', { key: `ui.tabs.${workspaceId}` });
     const state = (value ?? {}) as Partial<Persisted>;
@@ -47,9 +52,9 @@ export class TabsStore {
 
   async flush() {
     clearTimeout(this.saveTimer);
-    if (!this.workspaceId) return;
+    if (!this.loadedFor) return;
     const value: Persisted = { tabs: this.tabs, activeId: this.activeId };
-    await this.transport.call('settings.set', { key: `ui.tabs.${this.workspaceId}`, value });
+    await this.transport.call('settings.set', { key: `ui.tabs.${this.loadedFor}`, value });
   }
 
   private index(id: string) {

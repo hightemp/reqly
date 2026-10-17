@@ -55,8 +55,10 @@
     if (id && id !== tree.collectionId) void tree.load(id);
   });
   $effect(() => {
+    // Tabs are loaded at startup; reload only when the workspace changes,
+    // or a late load would overwrite tabs the user already changed.
     const id = workspace.activeWorkspaceId;
-    if (id) void tabs.load(id);
+    if (id && id !== tabs.workspaceId) void tabs.load(id);
   });
 
   const toggleSidebar = () => prefs.update({ sidebarCollapsed: !prefs.value.sidebarCollapsed });

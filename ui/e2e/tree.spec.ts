@@ -23,6 +23,15 @@ async function create(page: Page, kind: 'New request' | 'New folder', name: stri
 test('organize requests: cut/paste, drag & drop, search and the list view', async ({ page }) => {
   await page.goto('/');
   const suffix = Date.now().toString(36);
+  // A fresh collection keeps the tree small (no autoscroll while dragging).
+  await page.getByRole('button', { name: 'Collection actions' }).click();
+  await page.getByRole('menuitem', { name: 'New collection' }).click();
+  const dialog = page.getByRole('dialog', { name: 'New collection' });
+  await dialog.getByRole('textbox', { name: 'Name' }).fill(`Tree ${suffix}`);
+  await dialog.getByRole('button', { name: 'OK' }).click();
+  await expect(page.getByRole('combobox', { name: 'Collection' })).toHaveText(
+    new RegExp(`Tree ${suffix}`),
+  );
   const folder = `Billing ${suffix}`;
   const other = `Archive ${suffix}`;
   const req = `Invoice ${suffix}`;
@@ -64,10 +73,19 @@ test('organize requests: cut/paste, drag & drop, search and the list view', asyn
     'aria-level',
     String(targetLevel + 1),
   );
-  const order = await page.getByRole('treeitem').allTextContents();
-  expect(order.findIndex((t) => t.includes(req))).toBe(
-    order.findIndex((t) => t.includes(other)) + 1,
-  );
+  // Its parent is the closest row above with a lower level.
+  const rows = await page
+    .getByRole('tree', { name: 'Collections' })
+    .getByRole('treeitem')
+    .evaluateAll((els) =>
+      els.map((e) => ({ text: e.textContent ?? '', level: Number(e.getAttribute('aria-level')) })),
+    );
+  const at = rows.findIndex((r) => r.text.includes(req));
+  const parent = rows
+    .slice(0, at)
+    .reverse()
+    .find((r) => r.level === rows[at]!.level - 1);
+  expect(parent?.text).toContain(other);
 
   // Search narrows the tree to matches and their folders.
   await page.getByRole('textbox', { name: 'Search requests' }).fill(`invoice ${suffix}`);
