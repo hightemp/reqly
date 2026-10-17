@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use reqly_api::Registry;
 use reqly_api::commands::{AppContext, Platform};
+use reqly_storage::blobs::BlobStore;
 use reqly_storage::{OpenOptions, Storage};
 
 pub use config::Config;
@@ -28,12 +29,12 @@ impl AppState {
 
     pub async fn from_config(config: &Config) -> anyhow::Result<Self> {
         let storage = Storage::open(&config.database_path(), OpenOptions::default()).await?;
-        Ok(Self::new(AppContext::new(Platform::Server, storage)))
+        let blobs = BlobStore::new(config.data_dir.join("blobs"));
+        Ok(Self::new(AppContext::new(Platform::Server, storage, blobs)))
     }
 
     pub async fn for_tests() -> Self {
-        let storage = Storage::in_memory().await.expect("in-memory storage");
-        Self::new(AppContext::new(Platform::Server, storage))
+        Self::new(AppContext::for_tests_on(Platform::Server).await)
     }
 }
 

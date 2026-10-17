@@ -4,6 +4,7 @@
 use reqly_api::Registry;
 use reqly_api::commands::{AppContext, Platform};
 use reqly_core::CoreError;
+use reqly_storage::blobs::BlobStore;
 use reqly_storage::{OpenOptions, Storage};
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, Runtime, State};
@@ -34,7 +35,12 @@ async fn open_core<R: Runtime>(app: &AppHandle<R>) -> Result<Core, Box<dyn std::
     let data_dir = app.path().app_data_dir()?;
     let storage = Storage::open(&data_dir.join("reqly.db"), OpenOptions::default()).await?;
     tracing::info!(data_dir = %data_dir.display(), "storage opened");
-    Ok(Core::new(AppContext::new(Platform::Desktop, storage)))
+    let blobs = BlobStore::new(data_dir.join("blobs"));
+    Ok(Core::new(AppContext::new(
+        Platform::Desktop,
+        storage,
+        blobs,
+    )))
 }
 
 /// Forwards core events to every webview until the bus closes.

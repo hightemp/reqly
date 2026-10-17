@@ -4,6 +4,7 @@ pub mod clock;
 pub mod error;
 pub mod id;
 pub mod meta;
+pub mod model;
 pub mod sort_key;
 
 pub use clock::{Clock, FixedClock, SystemClock, Timestamp};

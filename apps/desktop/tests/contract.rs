@@ -4,7 +4,6 @@ use reqly_api::commands::{AppContext, Platform};
 use reqly_api::contract::{Client, run_all};
 use reqly_core::CoreError;
 use reqly_desktop_lib::{Core, configure};
-use reqly_storage::Storage;
 use serde_json::{Value, json};
 use tauri::ipc::{CallbackFn, InvokeBody};
 use tauri::test::{INVOKE_KEY, MockRuntime, mock_builder, mock_context, noop_assets};
@@ -33,8 +32,9 @@ impl Client for IpcClient {
 
 #[test]
 fn ipc_transport_satisfies_contract() {
-    let storage = tauri::async_runtime::block_on(Storage::in_memory()).unwrap();
-    let core = Core::new(AppContext::new(Platform::Desktop, storage));
+    let core = Core::new(tauri::async_runtime::block_on(AppContext::for_tests_on(
+        Platform::Desktop,
+    )));
     let app = configure(mock_builder(), Some(core))
         .build(mock_context(noop_assets()))
         .unwrap();

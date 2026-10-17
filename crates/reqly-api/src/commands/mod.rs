@@ -1,9 +1,12 @@
 //! Built-in commands and the shared application context.
 
+pub mod tree;
+
 use std::sync::Arc;
 
 use reqly_core::{Clock, CoreResult, SystemClock};
 use reqly_storage::Storage;
+use reqly_storage::blobs::BlobStore;
 use reqly_storage::settings::SettingsRepo;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -26,24 +29,32 @@ pub struct AppContext {
     pub platform: Platform,
     pub events: EventBus,
     pub storage: Storage,
+    pub blobs: BlobStore,
     pub clock: Arc<dyn Clock>,
 }
 
 impl AppContext {
-    pub fn new(platform: Platform, storage: Storage) -> Self {
+    pub fn new(platform: Platform, storage: Storage, blobs: BlobStore) -> Self {
         Self {
             platform,
             events: EventBus::default(),
             storage,
+            blobs,
             clock: Arc::new(SystemClock),
         }
     }
 
-    /// In-memory context for tests.
+    /// In-memory database and a throwaway blob dir, for tests.
     pub async fn for_tests() -> Self {
+        Self::for_tests_on(Platform::Test).await
+    }
+
+    pub async fn for_tests_on(platform: Platform) -> Self {
+        let dir = std::env::temp_dir().join(format!("reqly-test-{}", reqly_core::Id::new()));
         Self::new(
-            Platform::Test,
+            platform,
             Storage::in_memory().await.expect("in-memory storage"),
+            BlobStore::new(dir.join("blobs")),
         )
     }
 }
@@ -55,6 +66,8 @@ pub fn registry() -> Registry<AppContext> {
         .register::<AppPing>()
         .register::<SettingsGet>()
         .register::<SettingsSet>();
+    tree::register(&mut r);
+    r.register::<SearchNodes>();
     r
 }
 
@@ -179,6 +192,31 @@ impl Command<AppContext> for SettingsSet {
             },
         ));
         Ok(Empty {})
+    }
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SearchInput {
+    pub workspace_id: reqly_core::Id,
+    pub query: String,
+    #[ts(optional)]
+    pub limit: Option<u32>,
+}
+
+/// Full-text search across a workspace (name, URL, method, description).
+pub struct SearchNodes;
+
+impl Command<AppContext> for SearchNodes {
+    const NAME: &'static str = "search.nodes";
+    type Input = SearchInput;
+    type Output = Vec<reqly_core::model::NodeSummary>;
+
+    async fn run(ctx: &AppContext, input: SearchInput) -> CoreResult<Self::Output> {
+        let limit = input.limit.unwrap_or(50).min(500);
+        reqly_storage::search::search_nodes(&ctx.storage, input.workspace_id, &input.query, limit)
+            .await
     }
 }
 
