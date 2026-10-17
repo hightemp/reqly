@@ -22,6 +22,8 @@ impl Ids {
             let prefix = match item {
                 ImportedItem::Folder { .. } => "fld_",
                 ImportedItem::Request { .. } => "req_",
+                ImportedItem::WebSocket { .. } => "ws-req_",
+                ImportedItem::Grpc { .. } => "greq_",
             };
             if let Some(id) = item.id() {
                 let new = if id.starts_with(prefix) {
@@ -52,6 +54,8 @@ impl Ids {
         match item {
             ImportedItem::Folder { .. } => format!("fld_{fallback}"),
             ImportedItem::Request { .. } => format!("req_{fallback}"),
+            ImportedItem::WebSocket { .. } => format!("ws-req_{fallback}"),
+            ImportedItem::Grpc { .. } => format!("greq_{fallback}"),
         }
     }
 }
@@ -173,6 +177,10 @@ fn body(body: &Body, ids: &Ids) -> Value {
         BodyKind::Yaml => text("text/yaml"),
         BodyKind::Text => text("text/plain"),
         BodyKind::Html => text("text/html"),
+        BodyKind::Graphql => json!({
+            "mimeType": "application/graphql",
+            "text": template(&serde_json::to_string(&crate::graphql_json(body)).unwrap_or_default(), ids),
+        }),
         BodyKind::FormUrlencoded => json!({
             "mimeType": "application/x-www-form-urlencoded",
             "params": rows(&body.fields, ids),
@@ -303,6 +311,12 @@ fn items_v4(
             }
             ImportedItem::Request { name, data, .. } => {
                 out.push(request_v4(&id, parent, name, data, sort, ids));
+            }
+            ImportedItem::WebSocket { name, data, .. } => {
+                out.push(websocket_v4(&id, parent, name, data, sort, ids));
+            }
+            ImportedItem::Grpc { name, data, .. } => {
+                out.push(grpc_v4(&id, parent, name, data, sort, ids));
             }
         }
     }
@@ -503,6 +517,24 @@ fn items_v5(items: &[ImportedItem], ids: &Ids, fallback: &mut usize) -> Vec<Valu
                     out.insert("settings".into(), settings_v5(&r.settings));
                     out.insert("pathParameters".into(), json!(rows(&r.path_params, ids)));
                 }
+                // Insomnia tells request types apart by the id prefix.
+                ImportedItem::WebSocket { name, data: r, .. } => {
+                    out.insert("url".into(), json!(template(&r.url, ids)));
+                    out.insert("name".into(), json!(name));
+                    out.insert("meta".into(), json!({ "id": id, "sortKey": (i as i64 + 1) * 1000, "description": r.description }));
+                    out.insert("parameters".into(), json!(rows(&r.params, ids)));
+                    out.insert("headers".into(), json!(rows(&r.headers, ids)));
+                    out.insert("authentication".into(), auth(&r.auth, ids));
+                }
+                ImportedItem::Grpc { name, data: r, .. } => {
+                    out.insert("url".into(), json!(template(&r.url, ids)));
+                    out.insert("name".into(), json!(name));
+                    out.insert("meta".into(), json!({ "id": id, "sortKey": (i as i64 + 1) * 1000, "description": r.description }));
+                    let method = if r.service.is_empty() { String::new() } else { format!("/{}/{}", r.service, r.method) };
+                    out.insert("protoMethodName".into(), json!(method));
+                    out.insert("metadata".into(), json!(rows(&r.metadata, ids)));
+                    out.insert("body".into(), json!({ "text": template(&r.message, ids) }));
+                }
             }
             Value::Object(out)
         })
@@ -568,6 +600,45 @@ pub fn export_v5(data: &ExportData) -> CoreResult<String> {
     );
     serde_yaml_ng::to_string(&Value::Object(doc))
         .map_err(|e| CoreError::new("export.failed", e.to_string()))
+}
+
+fn websocket_v4(
+    id: &str,
+    parent: &str,
+    name: &str,
+    r: &reqly_core::model::WebSocketRequest,
+    sort: i64,
+    ids: &Ids,
+) -> Value {
+    json!({
+        "_id": id, "parentId": parent, "name": name, "url": template(&r.url, ids),
+        "metaSortKey": sort, "headers": rows(&r.headers, ids), "parameters": rows(&r.params, ids),
+        "authentication": auth(&r.auth, ids), "description": r.description,
+        "settingEncodeUrl": true, "settingStoreCookies": true, "settingSendCookies": true,
+        "settingFollowRedirects": "global", "_type": "websocket_request"
+    })
+}
+
+fn grpc_v4(
+    id: &str,
+    parent: &str,
+    name: &str,
+    r: &reqly_core::model::GrpcRequest,
+    sort: i64,
+    ids: &Ids,
+) -> Value {
+    let method = if r.service.is_empty() {
+        String::new()
+    } else {
+        format!("/{}/{}", r.service, r.method)
+    };
+    json!({
+        "_id": id, "parentId": parent, "name": name, "url": template(&r.url, ids),
+        "description": r.description, "protoFileId": null, "protoMethodName": method,
+        "metadata": rows(&r.metadata, ids), "body": { "text": template(&r.message, ids) },
+        "reflectionApi": { "enabled": r.proto.reflection, "url": "", "apiKey": "", "module": "" },
+        "metaSortKey": sort, "_type": "grpc_request"
+    })
 }
 
 #[cfg(test)]

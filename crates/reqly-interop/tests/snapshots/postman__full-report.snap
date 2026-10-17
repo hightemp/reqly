@@ -35,13 +35,6 @@ expression: bundle.report
     },
     {
       "kind": "converted",
-      "code": "graphql_as_json",
-      "path": "Shop API / GraphQL search",
-      "message": "GraphQL body was imported as JSON (GraphQL requests arrive in stage 5)",
-      "raw": null
-    },
-    {
-      "kind": "converted",
       "code": "collection_auth",
       "path": "Shop API",
       "message": "collection authentication was applied to the top-level folders and requests",

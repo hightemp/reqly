@@ -185,6 +185,18 @@ impl Scope {
                     r.variables.clone(),
                     Vec::new(),
                 )),
+                NodeData::WebSocket(w) => layers.push((
+                    VariableSource::Request,
+                    n.name.clone(),
+                    w.variables.clone(),
+                    Vec::new(),
+                )),
+                NodeData::Grpc(g) => layers.push((
+                    VariableSource::Request,
+                    n.name.clone(),
+                    g.variables.clone(),
+                    Vec::new(),
+                )),
             }
         }
 
@@ -275,7 +287,7 @@ impl SendHost<'_> {
         let node = self.scope.node.as_ref();
         let http = node.and_then(|n| match &n.data {
             NodeData::Request(r) => Some(r),
-            NodeData::Folder(_) => None,
+            _ => None,
         });
         let field = arg(args, 0);
         Ok(Value::String(match field.as_str() {
@@ -616,6 +628,11 @@ pub async fn render_request(r: &Renderer<'_>, req: &mut HttpRequest) -> CoreResu
     render_rows(r, &mut req.headers).await?;
     render_str(r, &mut req.body.text).await?;
     render_rows(r, &mut req.body.fields).await?;
+    if req.body.kind == reqly_core::model::BodyKind::Graphql {
+        render_str(r, &mut req.body.graphql.query).await?;
+        render_str(r, &mut req.body.graphql.variables).await?;
+        render_str(r, &mut req.body.graphql.operation_name).await?;
+    }
     render_settings(r, &mut req.settings).await?;
     render_auth(r, &mut req.auth).await
 }
@@ -1047,6 +1064,8 @@ pub async fn prompts_for(ctx: &AppContext, request_id: Id) -> CoreResult<Vec<Pro
         texts.extend(rows_text(&r.path_params));
         texts.extend(rows_text(&r.headers));
         texts.push(&r.body.text);
+        texts.push(&r.body.graphql.query);
+        texts.push(&r.body.graphql.variables);
         texts.extend(rows_text(&r.body.fields));
         auth_texts.extend(auth_text(&r.auth));
     }

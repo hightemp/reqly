@@ -7,6 +7,7 @@
   import Button from '$lib/ui/Button.svelte';
   import EmptyState from '$lib/ui/EmptyState.svelte';
   import Icon from '$lib/ui/Icon.svelte';
+  import { methodOf, protocolOf } from '$lib/ui/badges';
   import MethodBadge from '$lib/ui/MethodBadge.svelte';
   import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
@@ -49,7 +50,7 @@
           {#if n.data.kind === 'folder'}
             <span class="icon"><Icon name="folder" size={14} /></span>
           {:else}
-            <MethodBadge method={n.data.method} />
+            <MethodBadge method={methodOf(n.data)} protocol={protocolOf(n.data)} />
           {/if}
           <span class="name">{n.name}</span>
           <span class="when"

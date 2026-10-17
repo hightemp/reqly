@@ -351,6 +351,37 @@ pub(crate) async fn prepare_stored_with(
     Ok((prepared, collection.workspace_id))
 }
 
+/// TLS settings and the workspace cookies for a request to `url`.
+pub(crate) async fn exec_options(
+    ctx: &AppContext,
+    workspace_id: Id,
+    url: &str,
+) -> CoreResult<ExecOptions> {
+    let tls: TlsSettings = setting(ctx, HTTP_TLS_KEY).await?;
+    let cookies_repo = CookieRepo::new(&ctx.storage, ctx.clock.as_ref());
+    Ok(ExecOptions {
+        ca_pems: tls.ca_pems.clone(),
+        client_identity: client_identity(&tls, url)?,
+        cookies: cookies_repo.netscape_lines(workspace_id).await?,
+        ..ExecOptions::default()
+    })
+}
+
+/// Sends through the network policy when the server has one.
+pub(crate) async fn execute(
+    ctx: &AppContext,
+    prepared: PreparedRequest,
+    options: ExecOptions,
+    cancel: CancelToken,
+) -> CoreResult<HttpResponse> {
+    match &ctx.network_policy {
+        Some(policy) => {
+            reqly_http::policy::send_checked(prepared, options, cancel, None, policy).await
+        }
+        None => reqly_http::engine::execute(prepared, options, cancel, None).await,
+    }
+}
+
 pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<ResponseRecord> {
     send_request_with(ctx, request_id, &HashMap::new(), &[request_id]).await
 }
@@ -367,14 +398,8 @@ pub async fn send_request_with(
     let snapshot = serde_json::to_value(RequestSnapshot::from(&prepared)).unwrap_or_default();
     resolve_blobs(ctx, &mut prepared)?;
 
-    let tls: TlsSettings = setting(ctx, HTTP_TLS_KEY).await?;
     let cookies_repo = CookieRepo::new(&ctx.storage, ctx.clock.as_ref());
-    let options = ExecOptions {
-        ca_pems: tls.ca_pems.clone(),
-        client_identity: client_identity(&tls, &prepared.url)?,
-        cookies: cookies_repo.netscape_lines(workspace_id).await?,
-        ..ExecOptions::default()
-    };
+    let options = exec_options(ctx, workspace_id, &prepared.url).await?;
     let store_cookies = prepared.settings.store_cookies.unwrap_or(true);
 
     let cancel = CancelToken::new();

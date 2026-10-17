@@ -6,8 +6,9 @@ use std::collections::HashSet;
 
 use reqly_core::CoreResult;
 use reqly_core::model::{
-    ApiKeyLocation, Auth, Body, BodyKind, FileRef, FolderData, HttpRequest, KeyValue, KeyValueKind,
-    RequestSettings, Scripts,
+    ApiKeyLocation, Auth, Body, BodyKind, FileRef, FolderData, GrpcRequest, HttpRequest,
+    InlineProto, KeyValue, KeyValueKind, MessageFormat, ProtoSource, RequestSettings, Scripts,
+    WebSocketRequest,
 };
 use serde_json::{Map, Value, json};
 
@@ -292,6 +293,16 @@ fn body_kind(mime: &str) -> Option<BodyKind> {
 }
 
 impl<'a> Converter<'a> {
+    fn find(&self, id: &str) -> Option<&'a Value> {
+        let resources: &'a [Value] = self.resources;
+        resources.iter().find(|r| s(r, "_id") == id)
+    }
+
+    fn all_of_type(&self, ty: &str) -> Vec<&'a Value> {
+        let resources: &'a [Value] = self.resources;
+        resources.iter().filter(|r| s(r, "_type") == ty).collect()
+    }
+
     fn children(&self, parent: &str) -> Vec<&'a Value> {
         let resources: &'a [Value] = self.resources;
         let mut out: Vec<&'a Value> = resources
@@ -452,7 +463,7 @@ impl<'a> Converter<'a> {
         settings
     }
 
-    fn body(&mut self, path: &str, raw: Option<&Value>) -> Body {
+    fn body(&mut self, _path: &str, raw: Option<&Value>) -> Body {
         let Some(raw) = raw else {
             return Body::default();
         };
@@ -464,11 +475,12 @@ impl<'a> Converter<'a> {
             None => return Body::default(),
         };
         if mime == "application/graphql" {
-            self.report.push(
-                ReportKind::Converted,
-                "graphql_as_json",
-                path,
-                "GraphQL body was imported as JSON (GraphQL requests arrive in stage 5)",
+            // Insomnia keeps `{"query", "variables", "operationName"}` as text.
+            let v: Value = serde_json::from_str(text).unwrap_or(Value::Null);
+            return crate::graphql_body(
+                v.get("query").and_then(Value::as_str).unwrap_or(text),
+                v.get("variables").unwrap_or(&Value::Null),
+                v.get("operationName").and_then(Value::as_str).unwrap_or(""),
             );
         }
         let mut body = Body {
@@ -532,6 +544,114 @@ impl<'a> Converter<'a> {
         ImportedItem::request(name, request).with_id(s(r, "_id"))
     }
 
+    fn websocket(&mut self, parent_path: &str, r: &Value) -> ImportedItem {
+        let name = s(r, "name");
+        let path = join_path(parent_path, name);
+        self.check_all_tags(&path, r);
+        let mut headers = rows(arr(r, "headers"));
+        let auth = self.auth(&path, r.get("authentication"), &mut headers);
+        let id = s(r, "_id").to_string();
+        // The message composer is a `websocket_payload` child.
+        let payload = self
+            .children(&id)
+            .into_iter()
+            .find(|p| s(p, "_type") == "websocket_payload")
+            .cloned();
+        let mut data = WebSocketRequest {
+            url: s(r, "url").into(),
+            params: rows(arr(r, "parameters")),
+            headers,
+            auth,
+            settings: self.settings(&path, r),
+            description: s(r, "description").into(),
+            ..WebSocketRequest::default()
+        };
+        if let Some(p) = payload {
+            data.draft.body = s(&p, "value").into();
+            data.draft.format = if s(&p, "mode").ends_with("json") {
+                MessageFormat::Json
+            } else {
+                MessageFormat::Text
+            };
+        }
+        ImportedItem::WebSocket {
+            id: Some(id),
+            name: name.into(),
+            data,
+        }
+    }
+
+    fn grpc(&mut self, parent_path: &str, r: &Value) -> ImportedItem {
+        let name = s(r, "name");
+        let path = join_path(parent_path, name);
+        self.check_all_tags(&path, r);
+        // `/package.Service/Method`
+        let full = s(r, "protoMethodName").trim_start_matches('/');
+        let (service, method) = full.split_once('/').unwrap_or(("", ""));
+        let mut proto = ProtoSource {
+            reflection: r
+                .get("reflectionApi")
+                .and_then(|v| v.get("enabled"))
+                .and_then(Value::as_bool)
+                == Some(true),
+            ..ProtoSource::default()
+        };
+        let file_id = s(r, "protoFileId");
+        if !file_id.is_empty() {
+            if let Some(file) = self.find(file_id) {
+                proto.inline.push(InlineProto {
+                    name: s(file, "name").into(),
+                    text: s(file, "protoText").into(),
+                });
+                // Files of the same proto directory may be imported by it.
+                let dir = s(file, "parentId").to_string();
+                for sibling in self.all_of_type("proto_file") {
+                    if s(sibling, "_id") != file_id
+                        && s(sibling, "parentId") == dir
+                        && dir.starts_with("pd_")
+                    {
+                        proto.inline.push(InlineProto {
+                            name: s(sibling, "name").into(),
+                            text: s(sibling, "protoText").into(),
+                        });
+                    }
+                }
+            } else {
+                self.report.push(
+                    ReportKind::Converted,
+                    "proto_missing",
+                    &path,
+                    "the .proto file of this gRPC request is not in the export; add it in the request",
+                );
+            }
+        }
+        let mut auth_headers = Vec::new();
+        let auth = self.auth(&path, r.get("authentication"), &mut auth_headers);
+        let mut metadata = rows(arr(r, "metadata"));
+        metadata.extend(auth_headers);
+        let data = GrpcRequest {
+            url: s(r, "url").into(),
+            proto,
+            service: service.into(),
+            method: method.into(),
+            message: r
+                .get("body")
+                .and_then(|b| b.get("text"))
+                .and_then(Value::as_str)
+                .unwrap_or("{}")
+                .into(),
+            metadata,
+            auth,
+            description: s(r, "description").into(),
+            ..GrpcRequest::default()
+        };
+        ImportedItem::Grpc {
+            id: Some(s(r, "_id").into()),
+            name: name.into(),
+            data,
+        }
+    }
+
     fn folder(&mut self, parent_path: &str, r: &Value) -> ImportedItem {
         let name = s(r, "name");
         let path = join_path(parent_path, name);
@@ -562,12 +682,13 @@ impl<'a> Converter<'a> {
             match s(r, "_type") {
                 "request" => out.push(self.request(parent_path, r)),
                 "request_group" => out.push(self.folder(parent_path, r)),
-                "websocket_request" | "grpc_request" | "socketio_request" | "mcp_request" => {
-                    let protocol = match s(r, "_type") {
-                        "websocket_request" => "WebSocket",
-                        "grpc_request" => "gRPC",
-                        "socketio_request" => "Socket.IO",
-                        _ => "MCP",
+                "websocket_request" => out.push(self.websocket(parent_path, r)),
+                "grpc_request" => out.push(self.grpc(parent_path, r)),
+                "socketio_request" | "mcp_request" => {
+                    let protocol = if s(r, "_type") == "socketio_request" {
+                        "Socket.IO"
+                    } else {
+                        "MCP"
                     };
                     self.report.push_raw(
                         ReportKind::Unsupported,
@@ -577,6 +698,7 @@ impl<'a> Converter<'a> {
                         r.clone(),
                     );
                 }
+                "websocket_payload" => {}
                 "environment" | "cookie_jar" | "api_spec" | "proto_file" | "proto_directory" => {}
                 other => self.report.push(
                     ReportKind::Unsupported,

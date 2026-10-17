@@ -693,7 +693,7 @@ fn build_items(
                     f.clone(),
                     build_items(nodes, Some(n.meta.id), None),
                 ),
-                NodeData::Request(r) => ImportedItem::request(n.name.clone(), r.clone()),
+                other => ImportedItem::from_node_data(n.name.clone(), other).expect("not a folder"),
             }
             .with_id(n.meta.id.to_string())
         })

@@ -14,6 +14,7 @@ fn requests(items: &[ImportedItem]) -> Vec<&reqly_core::model::HttpRequest> {
         match i {
             ImportedItem::Request { data, .. } => out.push(data),
             ImportedItem::Folder { children, .. } => out.extend(requests(children)),
+            _ => {}
         }
     }
     out

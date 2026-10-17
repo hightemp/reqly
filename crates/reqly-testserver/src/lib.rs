@@ -7,8 +7,10 @@
 
 mod auth;
 mod certs;
+mod graphql;
 mod oauth;
 mod routes;
+mod streams;
 
 use std::net::SocketAddr;
 use std::sync::Arc;

@@ -28,6 +28,10 @@ import type { EnvironmentUpdateInput } from "./EnvironmentUpdateInput";
 import type { ExportRunInput } from "./ExportRunInput";
 import type { ExportRunOutput } from "./ExportRunOutput";
 import type { FileWriteTextInput } from "./FileWriteTextInput";
+import type { GraphqlRequestInput } from "./GraphqlRequestInput";
+import type { GraphqlSchema } from "./GraphqlSchema";
+import type { GraphqlSchemaOutput } from "./GraphqlSchemaOutput";
+import type { GraphqlSchemaSetInput } from "./GraphqlSchemaSetInput";
 import type { HistoryWorkspaceInput } from "./HistoryWorkspaceInput";
 import type { IdInput } from "./IdInput";
 import type { IdsInput } from "./IdsInput";
@@ -147,6 +151,10 @@ export type Commands = {
   "oauth2.complete": { input: OAuth2CompleteInput; output: OAuth2TokenInfo };
   "oauth2.deviceStart": { input: OAuth2NodeInput; output: OAuth2DeviceOutput };
   "oauth2.devicePoll": { input: OAuth2DevicePollInput; output: OAuth2DevicePollOutput };
+  "graphql.introspect": { input: GraphqlRequestInput; output: GraphqlSchema };
+  "graphql.schemaGet": { input: GraphqlRequestInput; output: GraphqlSchemaOutput };
+  "graphql.schemaSet": { input: GraphqlSchemaSetInput; output: GraphqlSchema };
+  "graphql.schemaClear": { input: GraphqlRequestInput; output: Empty };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

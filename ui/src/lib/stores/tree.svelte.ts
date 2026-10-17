@@ -1,3 +1,4 @@
+import type { Protocol } from '$lib/api/generated/Protocol';
 // The tree of the active collection: data, UI state (expanded, selection,
 // rename, clipboard, sort modes) and tree operations.
 
@@ -13,6 +14,7 @@ import { normalizeSelection } from '$lib/ui/tree/model';
 
 export interface RequestTreeItem extends TreeItem {
   method: string | null;
+  protocol?: Protocol | null;
   url: string | null;
   createdAt: number;
   updatedAt: number;
@@ -64,6 +66,7 @@ export class TreeStore {
       isFolder: n.kind === 'folder',
       label: n.name,
       method: n.method,
+      protocol: n.protocol,
       url: n.url,
       createdAt: n.createdAt,
       updatedAt: n.updatedAt,

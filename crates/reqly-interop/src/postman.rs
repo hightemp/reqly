@@ -419,19 +419,11 @@ impl Importer {
             "graphql" => {
                 let gql = body.get("graphql").cloned().unwrap_or(Value::Null);
                 let variables = match gql.get("variables") {
-                    Some(Value::String(v)) => serde_json::from_str(v).unwrap_or(Value::Object(Map::new())),
-                    Some(v) => v.clone(),
-                    None => Value::Object(Map::new()),
+                    Some(Value::String(v)) => Value::String(vars_to_reqly(v)),
+                    Some(v) => Value::String(vars_to_reqly(&serde_json::to_string_pretty(v).unwrap_or_default())),
+                    None => Value::Null,
                 };
-                self.report.push(
-                    ReportKind::Converted,
-                    "graphql_as_json",
-                    path,
-                    "GraphQL body was imported as JSON (GraphQL requests arrive in stage 5)",
-                );
-                let text = serde_json::to_string_pretty(&json!({ "query": s(&gql, "query"), "variables": variables }))
-                    .unwrap_or_default();
-                Body { kind: BodyKind::Json, text: vars_to_reqly(&text), ..Body::default() }
+                crate::graphql_body(&vars_to_reqly(s(&gql, "query")), &variables, "")
             }
             other => {
                 self.report.push_raw(
@@ -542,6 +534,7 @@ impl Importer {
             variables,
             scripts: self.scripts(&path, arr(item, "event")),
             headers,
+            event_stream: false,
         };
         let mut out = ImportedItem::request(name, data);
         if let Some(id) = item.get("id").and_then(Value::as_str) {
@@ -756,6 +749,10 @@ fn body_out(body: &Body) -> Option<Value> {
         BodyKind::Json => raw("json"),
         BodyKind::Xml => raw("xml"),
         BodyKind::Html => raw("html"),
+        BodyKind::Graphql => {
+            let g = &body.graphql;
+            json!({ "mode": "graphql", "graphql": { "query": vars_to_postman(&g.query), "variables": vars_to_postman(&g.variables) } })
+        }
         BodyKind::Text | BodyKind::Yaml => raw("text"),
         BodyKind::FormUrlencoded => {
             json!({ "mode": "urlencoded", "urlencoded": kv_out(&body.fields) })
@@ -822,16 +819,16 @@ fn url_out(r: &HttpRequest) -> Value {
     url
 }
 
-fn item_out(item: &ImportedItem) -> Value {
-    match item {
+/// `None` for WebSocket and gRPC requests: Postman collections cannot hold them.
+fn item_out(item: &ImportedItem) -> Option<Value> {
+    Some(match item {
         ImportedItem::Folder {
             name,
             data,
             children,
             ..
         } => {
-            let mut v =
-                json!({ "name": name, "item": children.iter().map(item_out).collect::<Vec<_>>() });
+            let mut v = json!({ "name": name, "item": children.iter().filter_map(item_out).collect::<Vec<_>>() });
             if !data.description.is_empty() {
                 v["description"] = json!(data.description);
             }
@@ -885,7 +882,8 @@ fn item_out(item: &ImportedItem) -> Value {
             }
             v
         }
-    }
+        ImportedItem::WebSocket { .. } | ImportedItem::Grpc { .. } => return None,
+    })
 }
 
 fn vars_out(data: &Map<String, Value>, secrets: &[String]) -> Vec<Value> {
@@ -921,7 +919,7 @@ pub fn collection_out(c: &ImportedCollection) -> Value {
             "name": c.name,
             "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
         },
-        "item": c.items.iter().map(item_out).collect::<Vec<_>>(),
+        "item": c.items.iter().filter_map(item_out).collect::<Vec<_>>(),
     });
     if !c.description.is_empty() {
         v["info"]["description"] = json!(c.description);

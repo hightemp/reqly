@@ -344,3 +344,37 @@ async fn head_requests_do_not_wait_for_a_body() {
     assert_eq!(res.status, 200);
     assert_eq!(res.body_size, 0);
 }
+
+#[tokio::test]
+async fn graphql_against_a_real_server() {
+    use reqly_core::model::{Body, BodyKind, GraphqlBody, HttpRequest};
+    let server = reqly_testserver::TestServer::start().await;
+    for method in ["POST", "GET"] {
+        let r = HttpRequest {
+            method: method.into(),
+            url: server.url("/graphql"),
+            body: Body {
+                kind: BodyKind::Graphql,
+                graphql: GraphqlBody {
+                    query: "query($id: Int!) { user(id: $id) { name } hello }".into(),
+                    variables: "{\"id\": 2}".into(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let p = reqly_http::prepare::prepare(&r, &[]).unwrap();
+        let res = reqly_http::engine::execute(
+            p,
+            Default::default(),
+            reqly_http::engine::CancelToken::new(),
+            None,
+        )
+        .await
+        .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&res.body.to_vec().unwrap()).unwrap();
+        assert_eq!(json["data"]["user"]["name"], "Bob", "{method}: {json}");
+        assert_eq!(json["data"]["hello"], "Hello, world!");
+    }
+}

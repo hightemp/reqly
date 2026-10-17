@@ -8,8 +8,8 @@ use std::time::Duration;
 use base64::Engine;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use reqly_core::model::{
-    Auth, Body, BodyKind, HttpRequest, KeyValue, NodeData, OAuth2ClientAuth, OAuth2Config,
-    OAuth2Grant, RequestSettings,
+    Auth, Body, BodyKind, HttpRequest, KeyValue, OAuth2ClientAuth, OAuth2Config, OAuth2Grant,
+    RequestSettings,
 };
 use reqly_core::{CoreError, CoreResult, Id};
 use reqly_http::engine::{CancelToken, ExecOptions};
@@ -78,10 +78,7 @@ fn config_hash(c: &OAuth2Config) -> String {
 async fn node_config(ctx: &AppContext, node_id: Id) -> CoreResult<OAuth2Config> {
     let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
     let node = tree.get_node(node_id).await?;
-    let auth = match &node.data {
-        NodeData::Request(r) => r.auth.clone(),
-        NodeData::Folder(f) => f.auth.clone(),
-    };
+    let auth = node.data.auth().clone();
     let Auth::OAuth2(config) = auth else {
         return Err(oauth_error(
             "auth.oauth2_not_configured",

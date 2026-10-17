@@ -22,7 +22,7 @@
   {#if item.isFolder}
     <span class="folder"><Icon name={expanded ? 'folder-open' : 'folder'} size={14} /></span>
   {:else}
-    <MethodBadge method={item.method ?? 'GET'} />
+    <MethodBadge method={item.method ?? 'GET'} protocol={item.protocol} />
   {/if}
   <span class="name">
     {#each segments as seg, i (i)}{#if seg.match}<mark>{seg.text}</mark

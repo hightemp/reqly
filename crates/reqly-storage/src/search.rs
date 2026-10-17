@@ -52,7 +52,7 @@ pub async fn search_nodes(
     }
 
     let mut qb: QueryBuilder<Sqlite> = QueryBuilder::new(
-        "SELECT n.id, n.collection_id, n.parent_id, n.kind, n.name, n.method, n.url, n.data, \
+        "SELECT n.id, n.collection_id, n.parent_id, n.kind, n.protocol, n.name, n.method, n.url, n.data, \
          n.sort_key, n.created_at, n.updated_at, n.version, n.deleted_at \
          FROM nodes n JOIN collections c ON c.id = n.collection_id ",
     );

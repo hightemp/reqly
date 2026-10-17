@@ -17,6 +17,8 @@ pub enum BodyKind {
     FormUrlencoded,
     Multipart,
     Binary,
+    /// `graphql` holds the operation; sent as JSON (or query parameters for GET).
+    Graphql,
 }
 
 impl BodyKind {
@@ -24,7 +26,7 @@ impl BodyKind {
     pub fn default_content_type(self) -> Option<&'static str> {
         match self {
             Self::None | Self::Multipart | Self::Binary => None,
-            Self::Json => Some("application/json"),
+            Self::Json | Self::Graphql => Some("application/json"),
             Self::Xml => Some("application/xml"),
             Self::Yaml => Some("application/yaml"),
             Self::Text => Some("text/plain"),
@@ -72,4 +74,5 @@ pub struct Body {
     pub fields: Vec<KeyValue>,
     /// File for binary bodies.
     pub file: Option<FileRef>,
+    pub graphql: super::protocols::GraphqlBody,
 }

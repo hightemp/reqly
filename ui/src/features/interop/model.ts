@@ -3,12 +3,15 @@
 import type { ImportBundle } from '$lib/api/generated/ImportBundle';
 import type { ImportedItem } from '$lib/api/generated/ImportedItem';
 import type { ImportReport } from '$lib/api/generated/ImportReport';
+import type { Protocol } from '$lib/api/generated/Protocol';
+import { methodOf, protocolOf } from '$lib/ui/badges';
 
 export interface PreviewRow {
   depth: number;
   kind: 'collection' | 'folder' | 'request';
   name: string;
   method?: string;
+  protocol?: Protocol | null;
 }
 
 export interface BundleSummary {
@@ -62,7 +65,15 @@ export function previewRows(
       rows.push(
         item.kind === 'folder'
           ? { depth, kind: 'folder', name: item.name }
-          : { depth, kind: 'request', name: item.name, method: item.data.method || 'GET' },
+          : {
+              depth,
+              kind: 'request',
+              name: item.name,
+              method: methodOf(item.data as unknown as { kind: string }),
+              protocol: protocolOf({ ...item.data, kind: item.kind } as unknown as {
+                kind: string;
+              }),
+            },
       );
     });
   }

@@ -1,6 +1,8 @@
 //! Format-independent result of an import.
 
-use reqly_core::model::{FolderData, HttpRequest, NodeData, RequestSettings};
+use reqly_core::model::{
+    FolderData, GrpcRequest, HttpRequest, NodeData, RequestSettings, WebSocketRequest,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use ts_rs::TS;
@@ -31,6 +33,22 @@ pub enum ImportedItem {
         #[serde(default)]
         data: HttpRequest,
     },
+    WebSocket {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        id: Option<String>,
+        name: String,
+        #[serde(default)]
+        data: WebSocketRequest,
+    },
+    Grpc {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        id: Option<String>,
+        name: String,
+        #[serde(default)]
+        data: GrpcRequest,
+    },
 }
 
 impl ImportedItem {
@@ -51,22 +69,54 @@ impl ImportedItem {
         }
     }
 
+    /// An item for any request node (`None` for folders).
+    pub fn from_node_data(name: impl Into<String>, data: &NodeData) -> Option<Self> {
+        let name = name.into();
+        Some(match data {
+            NodeData::Folder(_) => return None,
+            NodeData::Request(r) => Self::Request {
+                id: None,
+                name,
+                data: r.clone(),
+            },
+            NodeData::WebSocket(w) => Self::WebSocket {
+                id: None,
+                name,
+                data: w.clone(),
+            },
+            NodeData::Grpc(g) => Self::Grpc {
+                id: None,
+                name,
+                data: g.clone(),
+            },
+        })
+    }
+
     pub fn with_id(mut self, source_id: impl Into<String>) -> Self {
         match &mut self {
-            Self::Folder { id, .. } | Self::Request { id, .. } => *id = Some(source_id.into()),
+            Self::Folder { id, .. }
+            | Self::Request { id, .. }
+            | Self::WebSocket { id, .. }
+            | Self::Grpc { id, .. } => *id = Some(source_id.into()),
         }
         self
     }
 
     pub fn id(&self) -> Option<&str> {
         match self {
-            Self::Folder { id, .. } | Self::Request { id, .. } => id.as_deref(),
+            Self::Folder { id, .. }
+            | Self::Request { id, .. }
+            | Self::WebSocket { id, .. }
+            | Self::Grpc { id, .. } => id.as_deref(),
         }
     }
 
     pub fn name(&self) -> &str {
         match self {
-            Self::Folder { name, .. } | Self::Request { name, .. } => name,
+            Self::Folder { name, .. }
+            | Self::Request { name, .. }
+            | Self::WebSocket { name, .. }
+            | Self::Grpc { name, .. } => name,
         }
     }
 
@@ -74,13 +124,15 @@ impl ImportedItem {
         match self {
             Self::Folder { data, .. } => NodeData::Folder(data.clone()),
             Self::Request { data, .. } => NodeData::Request(data.clone()),
+            Self::WebSocket { data, .. } => NodeData::WebSocket(data.clone()),
+            Self::Grpc { data, .. } => NodeData::Grpc(data.clone()),
         }
     }
 
     pub fn children(&self) -> &[ImportedItem] {
         match self {
             Self::Folder { children, .. } => children,
-            Self::Request { .. } => &[],
+            _ => &[],
         }
     }
 
@@ -88,7 +140,7 @@ impl ImportedItem {
     pub fn request_count(&self) -> usize {
         match self {
             Self::Folder { children, .. } => children.iter().map(Self::request_count).sum(),
-            Self::Request { .. } => 1,
+            _ => 1,
         }
     }
 }

@@ -110,9 +110,34 @@ pub fn prepare_with_base(
 
     let pending = apply_auth(effective_auth(request, folders), &mut headers, &mut query);
 
+    // GraphQL: a JSON body, or query parameters for GET.
+    let graphql = if request.body.kind == BodyKind::Graphql {
+        Some(graphql_payload(&request.body.graphql)?)
+    } else {
+        None
+    };
+    if let Some(payload) = graphql.as_ref().filter(|_| method == "GET") {
+        for (k, v) in payload.as_object().into_iter().flatten() {
+            let v = match v {
+                serde_json::Value::String(s) => s.clone(),
+                other => other.to_string(),
+            };
+            query.push((k.clone(), v));
+        }
+    }
+
     let url = build_url(&request.url, &request.path_params, &query, encode)?;
 
-    let body = build_body(request, &mut headers);
+    let body = match graphql {
+        Some(_) if method == "GET" => PreparedBody::None,
+        Some(payload) => {
+            if !has_header(&headers, "Content-Type") {
+                headers.push(("Content-Type".into(), "application/json".into()));
+            }
+            PreparedBody::Bytes(payload.to_string().into_bytes())
+        }
+        None => build_body(request, &mut headers),
+    };
 
     Ok(PreparedRequest {
         method,
@@ -123,6 +148,32 @@ pub fn prepare_with_base(
         auth: pending,
         engine_auth: None,
     })
+}
+
+/// `{"query", "variables"?, "operationName"?}` of a GraphQL operation.
+pub fn graphql_payload(g: &reqly_core::model::GraphqlBody) -> CoreResult<serde_json::Value> {
+    let mut payload = serde_json::json!({ "query": g.query });
+    if !g.variables.trim().is_empty() {
+        let variables: serde_json::Value = serde_json::from_str(&g.variables).map_err(|e| {
+            CoreError::new(
+                "graphql.invalid_variables",
+                format!("variables are not valid JSON: {e}"),
+            )
+            .with_param("message", e.to_string())
+        })?;
+        if !variables.is_object() && !variables.is_null() {
+            return Err(CoreError::new(
+                "graphql.invalid_variables",
+                "variables must be a JSON object",
+            )
+            .with_param("message", "not an object"));
+        }
+        payload["variables"] = variables;
+    }
+    if !g.operation_name.trim().is_empty() {
+        payload["operationName"] = serde_json::json!(g.operation_name.trim());
+    }
+    Ok(payload)
 }
 
 fn enabled(rows: &[KeyValue]) -> impl Iterator<Item = &KeyValue> {

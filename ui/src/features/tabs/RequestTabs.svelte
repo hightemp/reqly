@@ -6,6 +6,7 @@
   import type { Tab } from '$lib/stores/tabs.svelte';
   import Icon from '$lib/ui/Icon.svelte';
   import IconButton from '$lib/ui/IconButton.svelte';
+  import { protocolOf } from '$lib/ui/badges';
   import MethodBadge from '$lib/ui/MethodBadge.svelte';
   import { contextMenu, menus, type MenuEntry } from '$lib/ui/overlay/menus.svelte';
   import Spinner from '$lib/ui/Spinner.svelte';
@@ -34,6 +35,7 @@
     return {
       name: draft?.node?.name ?? item?.label ?? '…',
       method: draft?.request?.method ?? item?.method ?? 'GET',
+      protocol: draft?.node ? protocolOf(draft.node.data) : (item?.protocol ?? null),
       dirty: draft?.dirty ?? false,
       running: services.responses.run(tab.id).sending,
     };
@@ -164,7 +166,7 @@
           onpointerdown={(e) => startDrag(e, i)}
         >
           {#if tab.pinned}<span class="pin"><Icon name="pin" size={11} /></span>{/if}
-          <MethodBadge method={meta.method} />
+          <MethodBadge method={meta.method} protocol={meta.protocol} />
           <span class="name">{meta.name}</span>
           <span class="state">
             {#if meta.running}

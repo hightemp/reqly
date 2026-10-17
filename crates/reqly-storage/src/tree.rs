@@ -7,7 +7,9 @@
 use std::collections::{HashMap, HashSet};
 
 use reqly_core::model::Node;
-use reqly_core::model::{Collection, NodeData, NodeKind, NodeSummary, RequestSettings, Workspace};
+use reqly_core::model::{
+    Collection, NodeData, NodeKind, NodeSummary, Protocol, RequestSettings, Workspace,
+};
 use reqly_core::{Clock, CoreError, CoreResult, Id, Meta, SortKey, Timestamp, Version};
 use sqlx::sqlite::SqliteRow;
 use sqlx::{Row, SqliteConnection};
@@ -42,7 +44,7 @@ pub struct TreeRepo<'a> {
 /// Columns needed for `NodeSummary` (no `data` JSON).
 macro_rules! summary_columns {
     () => {
-        "id, collection_id, parent_id, kind, name, method, url, \
+        "id, collection_id, parent_id, kind, protocol, name, method, url, \
          sort_key, created_at, updated_at, version, deleted_at"
     };
 }
@@ -95,6 +97,7 @@ pub(crate) fn summary_from_row(row: &SqliteRow) -> CoreResult<NodeSummary> {
             "folder" => NodeKind::Folder,
             _ => NodeKind::Request,
         },
+        protocol: row.get::<Option<&str>, _>("protocol").map(Protocol::parse),
         name: row.get("name"),
         sort_key: meta.sort_key,
         method: row.get("method"),
@@ -113,23 +116,21 @@ fn kind_str(kind: NodeKind) -> &'static str {
 }
 
 fn request_columns(data: &NodeData) -> (Option<&str>, Option<&str>) {
-    match data {
-        NodeData::Request(r) => (Some(r.method.as_str()), Some(r.url.as_str())),
-        NodeData::Folder(_) => (None, None),
-    }
+    data.method_and_url()
 }
 
 async fn insert_node(conn: &mut SqliteConnection, node: &Node) -> CoreResult<()> {
     let (method, url) = request_columns(&node.data);
     sqlx::query(
-        "INSERT INTO nodes (id, collection_id, parent_id, kind, name, method, url, data, \
-         sort_key, created_at, updated_at, version, deleted_at) \
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO nodes (id, collection_id, parent_id, kind, protocol, name, method, url, \
+         data, sort_key, created_at, updated_at, version, deleted_at) \
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(node.meta.id.to_string())
     .bind(node.collection_id.to_string())
     .bind(node.parent_id.map(|p| p.to_string()))
     .bind(kind_str(node.data.kind()))
+    .bind(node.data.protocol().map(Protocol::as_str))
     .bind(&node.name)
     .bind(method)
     .bind(url)
@@ -646,10 +647,11 @@ impl<'a> TreeRepo<'a> {
         node.meta.touch(self.clock);
         let (method, url) = request_columns(&node.data);
         sqlx::query(
-            "UPDATE nodes SET name = ?, method = ?, url = ?, data = ?, updated_at = ?, version = ? \
-             WHERE id = ?",
+            "UPDATE nodes SET name = ?, protocol = ?, method = ?, url = ?, data = ?, \
+             updated_at = ?, version = ? WHERE id = ?",
         )
         .bind(&node.name)
+        .bind(node.data.protocol().map(Protocol::as_str))
         .bind(method)
         .bind(url)
         .bind(serde_json::to_string(&node.data).map_err(db_err)?)

@@ -221,3 +221,42 @@ pub fn import(sources: &[Source], format: Option<Format>) -> CoreResult<ImportBu
     bundle.report.format = format;
     Ok(bundle)
 }
+
+/// A GraphQL body; `variables` are pretty-printed JSON (empty when none).
+pub(crate) fn graphql_body(
+    query: &str,
+    variables: &serde_json::Value,
+    operation_name: &str,
+) -> reqly_core::model::Body {
+    let variables = match variables {
+        serde_json::Value::Null => String::new(),
+        serde_json::Value::Object(o) if o.is_empty() => String::new(),
+        serde_json::Value::String(s) => s.clone(),
+        v => serde_json::to_string_pretty(v).unwrap_or_default(),
+    };
+    reqly_core::model::Body {
+        kind: reqly_core::model::BodyKind::Graphql,
+        graphql: reqly_core::model::GraphqlBody {
+            query: query.to_string(),
+            variables,
+            operation_name: operation_name.to_string(),
+        },
+        ..Default::default()
+    }
+}
+
+/// `{"query", "variables", "operationName"}` of a GraphQL body.
+pub(crate) fn graphql_json(body: &reqly_core::model::Body) -> serde_json::Value {
+    let g = &body.graphql;
+    let variables: serde_json::Value = if g.variables.trim().is_empty() {
+        serde_json::json!({})
+    } else {
+        serde_json::from_str(&g.variables)
+            .unwrap_or_else(|_| serde_json::Value::String(g.variables.clone()))
+    };
+    let mut v = serde_json::json!({ "query": g.query, "variables": variables });
+    if !g.operation_name.is_empty() {
+        v["operationName"] = serde_json::json!(g.operation_name);
+    }
+    v
+}

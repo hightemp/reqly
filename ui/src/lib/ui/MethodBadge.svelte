@@ -1,11 +1,17 @@
 <script lang="ts">
-  import { methodColorVar, methodLabel } from './badges';
+  import type { Protocol } from '$lib/api/generated/Protocol';
+  import { requestBadge } from './badges';
 
-  let { method, full = false }: { method: string; full?: boolean } = $props();
+  let {
+    method,
+    protocol = null,
+    full = false,
+  }: { method: string; protocol?: Protocol | null; full?: boolean } = $props();
+  const badge = $derived(requestBadge(method, protocol));
 </script>
 
-<span class="method" style:color={methodColorVar(method)} title={method.toUpperCase()}>
-  {full ? method.toUpperCase() : methodLabel(method)}
+<span class="method" style:color={badge.color} title={badge.title}>
+  {full && (!protocol || protocol === 'http') ? method.toUpperCase() : badge.label}
 </span>
 
 <style>

@@ -139,6 +139,7 @@ fn walk(
                     Err(e) => out.push(format!("# {}: {}", title.join(" / "), e.message)),
                 }
             }
+            _ => {}
         }
     }
 }

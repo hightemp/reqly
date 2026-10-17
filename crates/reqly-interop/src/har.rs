@@ -319,6 +319,8 @@ fn walk(
                 let chain: Vec<&FolderData> = folders.iter().collect();
                 out.push(entry(data, &chain, started));
             }
+            // HAR has no WebSocket or gRPC entries.
+            _ => {}
         }
     }
 }

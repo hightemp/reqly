@@ -117,9 +117,16 @@ fn compact(value: &mut Value) {
                         && (is_row
                             || matches!(
                                 key.as_str(),
-                                "description" | "text" | "preRequest" | "afterResponse"
+                                "description"
+                                    | "text"
+                                    | "preRequest"
+                                    | "afterResponse"
+                                    | "query"
+                                    | "variables"
+                                    | "operationName"
                             )))
                 }
+                Value::Bool(false) => key != "eventStream",
                 _ => true,
             });
         }

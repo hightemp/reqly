@@ -141,6 +141,15 @@ pub fn without_row_ids(mut collections: Vec<ImportedCollection>) -> Vec<Imported
                 rows(&mut data.headers);
                 rows(&mut data.body.fields);
             }
+            ImportedItem::WebSocket { data, .. } => {
+                rows(&mut data.params);
+                rows(&mut data.headers);
+                data.draft.id = reqly_core::Id::from(uuid_nil());
+                data.templates
+                    .iter_mut()
+                    .for_each(|t| t.id = reqly_core::Id::from(uuid_nil()));
+            }
+            ImportedItem::Grpc { data, .. } => rows(&mut data.metadata),
         }
     }
     for c in &mut collections {

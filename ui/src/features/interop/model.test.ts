@@ -60,9 +60,9 @@ describe('import model', () => {
     expect(previewRows(bundle).rows).toEqual([
       { depth: 0, kind: 'collection', name: 'Shop' },
       { depth: 1, kind: 'folder', name: 'Users' },
-      { depth: 2, kind: 'request', name: 'List', method: 'GET' },
-      { depth: 2, kind: 'request', name: 'Create', method: 'POST' },
-      { depth: 1, kind: 'request', name: 'Health', method: 'GET' },
+      { depth: 2, kind: 'request', name: 'List', method: 'GET', protocol: 'http' },
+      { depth: 2, kind: 'request', name: 'Create', method: 'POST', protocol: 'http' },
+      { depth: 1, kind: 'request', name: 'Health', method: 'GET', protocol: 'http' },
     ]);
     expect(previewRows(bundle, 2)).toMatchObject({ truncated: true });
   });

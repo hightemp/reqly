@@ -61,13 +61,45 @@ pub struct FolderData {
 pub enum NodeData {
     Folder(FolderData),
     Request(HttpRequest),
+    WebSocket(super::WebSocketRequest),
+    Grpc(super::GrpcRequest),
 }
 
 impl NodeData {
     pub fn kind(&self) -> NodeKind {
         match self {
             Self::Folder(_) => NodeKind::Folder,
-            Self::Request(_) => NodeKind::Request,
+            _ => NodeKind::Request,
+        }
+    }
+
+    /// `None` for folders.
+    pub fn protocol(&self) -> Option<super::Protocol> {
+        match self {
+            Self::Folder(_) => None,
+            Self::Request(r) => Some(r.protocol()),
+            Self::WebSocket(_) => Some(super::Protocol::WebSocket),
+            Self::Grpc(_) => Some(super::Protocol::Grpc),
+        }
+    }
+
+    /// (method, url) shown in the tree: the HTTP method, or a protocol label.
+    pub fn method_and_url(&self) -> (Option<&str>, Option<&str>) {
+        match self {
+            Self::Folder(_) => (None, None),
+            Self::Request(r) => (Some(r.method.as_str()), Some(r.url.as_str())),
+            Self::WebSocket(w) => (Some("WS"), Some(w.url.as_str())),
+            Self::Grpc(g) => (Some("GRPC"), Some(g.url.as_str())),
+        }
+    }
+
+    /// Auth of a request or folder.
+    pub fn auth(&self) -> &Auth {
+        match self {
+            Self::Folder(f) => &f.auth,
+            Self::Request(r) => &r.auth,
+            Self::WebSocket(w) => &w.auth,
+            Self::Grpc(g) => &g.auth,
         }
     }
 
@@ -75,6 +107,12 @@ impl NodeData {
         match self {
             Self::Folder(f) => KeyValue::regenerate_ids(&mut f.headers),
             Self::Request(r) => r.regenerate_row_ids(),
+            Self::WebSocket(w) => {
+                KeyValue::regenerate_ids(&mut w.params);
+                KeyValue::regenerate_ids(&mut w.headers);
+                w.templates.iter_mut().for_each(|t| t.id = crate::Id::new());
+            }
+            Self::Grpc(g) => KeyValue::regenerate_ids(&mut g.metadata),
         }
     }
 }
@@ -105,6 +143,8 @@ pub struct NodeSummary {
     pub name: String,
     pub sort_key: crate::SortKey,
     /// Requests only.
+    pub protocol: Option<super::Protocol>,
+    /// Requests only: the HTTP method, `WS` or `GRPC`.
     pub method: Option<String>,
     pub url: Option<String>,
     pub created_at: crate::Timestamp,
@@ -114,15 +154,14 @@ pub struct NodeSummary {
 
 impl From<&Node> for NodeSummary {
     fn from(n: &Node) -> Self {
-        let (method, url) = match &n.data {
-            NodeData::Request(r) => (Some(r.method.clone()), Some(r.url.clone())),
-            NodeData::Folder(_) => (None, None),
-        };
+        let (method, url) = n.data.method_and_url();
+        let (method, url) = (method.map(str::to_string), url.map(str::to_string));
         Self {
             id: n.meta.id,
             collection_id: n.collection_id,
             parent_id: n.parent_id,
             kind: n.data.kind(),
+            protocol: n.data.protocol(),
             name: n.name.clone(),
             sort_key: n.meta.sort_key.clone(),
             method,

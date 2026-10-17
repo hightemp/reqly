@@ -81,8 +81,12 @@ fn full_collection() {
     assert!(order.scripts.pre_request.contains("pm.variables.set"));
 
     let gql = request(&c.items, "GraphQL search");
-    assert_eq!(gql.body.kind, BodyKind::Json);
-    assert!(gql.body.text.contains("\"query\""));
+    assert_eq!(gql.body.kind, BodyKind::Graphql);
+    assert!(
+        gql.body.graphql.query.contains("search"),
+        "{:?}",
+        gql.body.graphql
+    );
     assert_eq!(gql.url, "https://shop.example.com/graphql");
 
     let upload = request(&c.items, "Upload image");
@@ -106,11 +110,6 @@ fn full_collection() {
     for expected in [
         (ReportKind::Unsupported, "collection_scripts", "Shop API"),
         (ReportKind::Converted, "collection_auth", "Shop API"),
-        (
-            ReportKind::Converted,
-            "graphql_as_json",
-            "Shop API / GraphQL search",
-        ),
         (
             ReportKind::Info,
             "examples_skipped",

@@ -25,4 +25,8 @@ variables: Record<string, unknown>,
 /**
  * Imported scripts; not executed until scripting lands (stage 6).
  */
-scripts: Scripts, };
+scripts: Scripts, 
+/**
+ * Server-sent events: keep the connection open and parse the stream.
+ */
+eventStream: boolean, };

@@ -27,6 +27,11 @@ pub fn router() -> Router {
 
     Router::new()
         .route("/echo", any(echo))
+        .route("/ws/echo", get(crate::streams::ws_echo))
+        .route("/ws/ticker", get(crate::streams::ws_ticker))
+        .route("/sse/events", get(crate::streams::sse_events))
+        .route("/sse/resume", get(crate::streams::sse_resume))
+        .route("/sse/slow", get(crate::streams::sse_slow))
         .route("/status/{code}", any(status))
         .route("/redirect/{n}", any(redirect))
         .route("/redirect-to", any(redirect_to))
@@ -49,6 +54,7 @@ pub fn router() -> Router {
         .route("/oauth/device/approve", get(crate::oauth::approve))
         .route("/oauth/resource", get(crate::oauth::resource))
         .merge(compressed)
+        .merge(crate::graphql::router())
 }
 
 async fn echo(method: Method, uri: Uri, headers: HeaderMap, body: Bytes) -> axum::Json<Value> {

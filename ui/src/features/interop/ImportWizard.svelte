@@ -266,7 +266,7 @@
         {#each preview.rows as row, i (i)}
           <li style:padding-left="{row.depth * 16 + 4}px" class={row.kind}>
             {#if row.kind === 'request'}
-              <MethodBadge method={row.method ?? 'GET'} />
+              <MethodBadge method={row.method ?? 'GET'} protocol={row.protocol} />
             {:else}
               <Icon name={row.kind === 'folder' ? 'folder' : 'layers'} size={14} />
             {/if}

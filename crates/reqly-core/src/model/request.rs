@@ -28,6 +28,8 @@ pub struct HttpRequest {
     pub variables: serde_json::Map<String, serde_json::Value>,
     /// Imported scripts; not executed until scripting lands (stage 6).
     pub scripts: Scripts,
+    /// Server-sent events: keep the connection open and parse the stream.
+    pub event_stream: bool,
 }
 
 /// Pre-request and after-response scripts.
@@ -59,11 +61,22 @@ impl Default for HttpRequest {
             description: String::new(),
             variables: serde_json::Map::new(),
             scripts: Scripts::default(),
+            event_stream: false,
         }
     }
 }
 
 impl HttpRequest {
+    pub fn protocol(&self) -> super::Protocol {
+        if self.body.kind == super::BodyKind::Graphql {
+            super::Protocol::Graphql
+        } else if self.event_stream {
+            super::Protocol::Sse
+        } else {
+            super::Protocol::Http
+        }
+    }
+
     pub fn regenerate_row_ids(&mut self) {
         KeyValue::regenerate_ids(&mut self.params);
         KeyValue::regenerate_ids(&mut self.path_params);

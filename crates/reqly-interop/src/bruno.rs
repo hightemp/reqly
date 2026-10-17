@@ -353,21 +353,12 @@ impl Importer {
                 }
             }
             "graphql" => {
-                let vars: Value = serde_json::from_str(text(blocks, "body:graphql:vars"))
-                    .unwrap_or(Value::Object(Map::new()));
-                self.report.push(
-                    ReportKind::Converted,
-                    "graphql_as_json",
-                    path,
-                    "GraphQL body was imported as JSON (GraphQL requests arrive in stage 5)",
-                );
-                let json =
-                    serde_json::json!({ "query": text(blocks, "body:graphql"), "variables": vars });
-                Body {
-                    kind: BodyKind::Json,
-                    text: vars_to_reqly(&serde_json::to_string_pretty(&json).unwrap_or_default()),
-                    ..Body::default()
-                }
+                let vars = vars_to_reqly(text(blocks, "body:graphql:vars"));
+                crate::graphql_body(
+                    &vars_to_reqly(text(blocks, "body:graphql")),
+                    &Value::String(vars.trim().to_string()),
+                    "",
+                )
             }
             other => {
                 self.report.push(
@@ -458,6 +449,7 @@ impl Importer {
             description: text(&blocks, "docs").into(),
             variables: Self::variables(&blocks),
             scripts: self.scripts(&path, &blocks),
+            event_stream: false,
         };
         Some((seq, ImportedItem::request(name, request)))
     }
@@ -611,6 +603,8 @@ pub fn import(sources: &[Source]) -> CoreResult<ImportBundle> {
                 let (h, a) = match item {
                     ImportedItem::Folder { data, .. } => (&mut data.headers, &mut data.auth),
                     ImportedItem::Request { data, .. } => (&mut data.headers, &mut data.auth),
+                    ImportedItem::WebSocket { data, .. } => (&mut data.headers, &mut data.auth),
+                    ImportedItem::Grpc { data, .. } => (&mut data.metadata, &mut data.auth),
                 };
                 let mut merged = headers.clone();
                 merged.append(h);

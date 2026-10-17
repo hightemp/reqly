@@ -37,7 +37,9 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
             "Search form",
             "GraphQL viewer",
             "Upload binary",
-            "SOAP call"
+            "SOAP call",
+            "Live events",
+            "Ping"
         ]
     );
     assert_eq!(c.variables["base_url"], "https://api.example.com");
@@ -138,7 +140,22 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
     assert_eq!(oauth.token_url, "https://auth.example.com/token");
     assert_eq!(oauth.client_secret, "xyz");
 
-    // Report: WebSocket + gRPC, scripts, GraphQL.
+    assert_eq!(graphql.body.kind, BodyKind::Graphql);
+    assert!(graphql.body.graphql.query.contains("viewer"));
+
+    let ImportedItem::WebSocket { data: ws, .. } = find(&c.items, "Live events") else {
+        panic!()
+    };
+    assert_eq!(ws.url, "wss://events.example.com/socket");
+    let ImportedItem::Grpc { data: grpc, .. } = find(&c.items, "Ping") else {
+        panic!()
+    };
+    assert_eq!(
+        (grpc.service.as_str(), grpc.method.as_str()),
+        ("ping.Ping", "Ping")
+    );
+
+    // Report: scripts; the proto file is not in the export.
     let codes: Vec<_> = bundle
         .report
         .entries
@@ -146,9 +163,8 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
         .map(|e| (e.kind, e.code.as_str()))
         .collect();
     for expected in [
-        (ReportKind::Unsupported, "protocol_unsupported"),
         (ReportKind::Unsupported, "script_kept"),
-        (ReportKind::Converted, "graphql_as_json"),
+        (ReportKind::Converted, "proto_missing"),
     ] {
         assert!(codes.contains(&expected), "{expected:?} in {codes:?}");
     }
@@ -156,12 +172,9 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
         !codes.iter().any(|c| c.1 == "auth_unsupported"),
         "{codes:?}"
     );
-    assert_eq!(
-        codes
-            .iter()
-            .filter(|c| c.1 == "protocol_unsupported")
-            .count(),
-        2
+    assert!(
+        !codes.iter().any(|c| c.1 == "protocol_unsupported"),
+        "{codes:?}"
     );
     assert!(!codes.iter().any(|c| c.1 == "tag_unsupported"), "{codes:?}");
 }
@@ -237,6 +250,7 @@ fn normalized(
                         *token = token.split(", ").next().unwrap_or("").to_string();
                     }
                 }
+                ImportedItem::WebSocket { id, .. } | ImportedItem::Grpc { id, .. } => *id = None,
             }
         }
     }
@@ -269,6 +283,8 @@ fn round_trip_through_insomnia_formats() {
                         f.value = f.value.replace("{{ $uuid }}", "{% uuid %}");
                     }
                 }
+                ImportedItem::WebSocket { data, .. } => data.variables.clear(),
+                ImportedItem::Grpc { data, .. } => data.variables.clear(),
             }
         }
     }

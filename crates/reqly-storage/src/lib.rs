@@ -5,6 +5,7 @@ pub mod cookies;
 pub mod crypto;
 mod db;
 pub mod environments;
+pub mod graphql;
 pub mod history;
 pub mod oauth2;
 pub mod search;

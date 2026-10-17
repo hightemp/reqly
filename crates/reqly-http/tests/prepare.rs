@@ -370,3 +370,71 @@ mod props {
         }
     }
 }
+
+#[test]
+fn graphql_post_body_and_get_query() {
+    use reqly_core::model::{Body, BodyKind, GraphqlBody};
+    let body = Body {
+        kind: BodyKind::Graphql,
+        graphql: GraphqlBody {
+            query: "query Q($id: Int!) { user(id: $id) { name } }".into(),
+            variables: "{\"id\": 1}".into(),
+            operation_name: "Q".into(),
+        },
+        ..Default::default()
+    };
+    let post = reqly_http::prepare::prepare(
+        &reqly_core::model::HttpRequest {
+            method: "POST".into(),
+            url: "http://x/graphql".into(),
+            body: body.clone(),
+            ..Default::default()
+        },
+        &[],
+    )
+    .unwrap();
+    let reqly_http::prepare::PreparedBody::Bytes(bytes) = &post.body else {
+        panic!()
+    };
+    let json: serde_json::Value = serde_json::from_slice(bytes).unwrap();
+    assert_eq!(
+        json,
+        serde_json::json!({ "query": body.graphql.query, "variables": { "id": 1 }, "operationName": "Q" })
+    );
+    assert!(
+        post.headers
+            .iter()
+            .any(|(k, v)| k == "Content-Type" && v == "application/json")
+    );
+
+    let get = reqly_http::prepare::prepare(
+        &reqly_core::model::HttpRequest {
+            method: "GET".into(),
+            url: "http://x/graphql".into(),
+            body: body.clone(),
+            ..Default::default()
+        },
+        &[],
+    )
+    .unwrap();
+    assert!(matches!(get.body, reqly_http::prepare::PreparedBody::None));
+    assert!(
+        get.url.contains("operationName=Q") && get.url.contains("variables=%7B%22id%22%3A1%7D"),
+        "{}",
+        get.url
+    );
+
+    let mut bad = body;
+    bad.graphql.variables = "{oops".into();
+    let err = reqly_http::prepare::prepare(
+        &reqly_core::model::HttpRequest {
+            method: "POST".into(),
+            url: "http://x/".into(),
+            body: bad,
+            ..Default::default()
+        },
+        &[],
+    )
+    .unwrap_err();
+    assert_eq!(err.code, "graphql.invalid_variables");
+}

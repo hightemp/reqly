@@ -78,8 +78,85 @@
             "name": { "type": "string" },
             "data": { "$ref": "#/$defs/request" }
           }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": { "const": "webSocket" },
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "data": { "$ref": "#/$defs/webSocket" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": { "const": "grpc" },
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "data": { "$ref": "#/$defs/grpc" }
+          }
         }
       ]
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "format": { "enum": ["text", "json", "binary"] },
+        "body": { "type": "string", "description": "Base64 for binary messages." }
+      }
+    },
+    "webSocket": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "description": "ws:// or wss://" },
+        "params": { "$ref": "#/$defs/rows" },
+        "headers": { "$ref": "#/$defs/rows" },
+        "auth": { "$ref": "#/$defs/auth" },
+        "settings": { "$ref": "#/$defs/settings" },
+        "subprotocols": { "type": "array", "items": { "type": "string" } },
+        "draft": { "$ref": "#/$defs/message" },
+        "templates": { "type": "array", "items": { "$ref": "#/$defs/message" } },
+        "autoReconnect": { "type": "boolean" },
+        "reconnectDelayMs": { "type": "integer", "minimum": 0 },
+        "description": { "type": "string" },
+        "variables": { "$ref": "#/$defs/variables" },
+        "scripts": { "$ref": "#/$defs/scripts" }
+      }
+    },
+    "grpc": {
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "description": "host:port, grpc://host:port or grpcs://host:port" },
+        "proto": {
+          "type": "object",
+          "properties": {
+            "reflection": { "type": "boolean" },
+            "files": { "type": "array", "items": { "type": "object" } },
+            "inline": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": { "name": { "type": "string" }, "text": { "type": "string" } }
+              }
+            },
+            "importPaths": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "service": { "type": "string", "description": "Fully qualified, e.g. helloworld.Greeter" },
+        "method": { "type": "string" },
+        "message": { "type": "string", "description": "JSON" },
+        "metadata": { "$ref": "#/$defs/rows" },
+        "auth": { "$ref": "#/$defs/auth" },
+        "settings": { "$ref": "#/$defs/settings" },
+        "description": { "type": "string" },
+        "variables": { "$ref": "#/$defs/variables" },
+        "scripts": { "$ref": "#/$defs/scripts" }
+      }
     },
     "row": {
       "type": "object",
@@ -162,6 +239,7 @@
         "auth": { "$ref": "#/$defs/auth" },
         "settings": { "$ref": "#/$defs/settings" },
         "description": { "type": "string", "description": "Markdown." },
+        "eventStream": { "type": "boolean", "description": "Server-sent events: keep the connection open and parse the stream." },
         "variables": { "$ref": "#/$defs/variables" },
         "scripts": { "$ref": "#/$defs/scripts" }
       }
@@ -178,9 +256,19 @@
           "type": "object",
           "properties": {
             "kind": {
-              "enum": ["none", "json", "xml", "yaml", "text", "html", "formUrlencoded", "multipart", "binary"]
+              "enum": [
+                "none", "json", "xml", "yaml", "text", "html", "formUrlencoded", "multipart", "binary", "graphql"
+              ]
             },
             "text": { "type": "string" },
+            "graphql": {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string" },
+                "variables": { "type": "string", "description": "JSON object text; templates allowed." },
+                "operationName": { "type": "string" }
+              }
+            },
             "fields": { "$ref": "#/$defs/rows" },
             "file": {
               "type": ["object", "null"],

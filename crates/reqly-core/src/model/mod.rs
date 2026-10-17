@@ -5,6 +5,7 @@ mod body;
 mod environment;
 mod kv;
 mod node;
+mod protocols;
 mod request;
 mod response;
 mod settings;
@@ -17,6 +18,10 @@ pub use body::{Body, BodyKind, FileRef};
 pub use environment::{Environment, EnvironmentKind};
 pub use kv::{KeyValue, KeyValueKind};
 pub use node::{Collection, FolderData, Node, NodeData, NodeKind, NodeSummary, Workspace};
+pub use protocols::{
+    GraphqlBody, GrpcRequest, InlineProto, MessageFormat, MessageTemplate, ProtoSource, Protocol,
+    WebSocketRequest,
+};
 pub use request::{HttpRequest, Scripts};
 pub use response::{ResponseRecord, ResponseSummary};
 pub use settings::{HttpVersion, ProxyMode, ProxySettings, RequestSettings, TlsVersion};
