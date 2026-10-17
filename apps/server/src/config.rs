@@ -14,6 +14,7 @@ pub struct Config {
     /// `tracing` filter, e.g. `info,reqly_server=debug`.
     pub log: String,
     pub network: NetworkConfig,
+    pub auth: crate::auth::AuthConfig,
 }
 
 /// Outgoing request policy (SSRF protection). Metadata and link-local
@@ -51,6 +52,7 @@ impl Default for Config {
             data_dir: PathBuf::from(".reqly-data"),
             log: "info".into(),
             network: NetworkConfig::default(),
+            auth: crate::auth::AuthConfig::default(),
         }
     }
 }
@@ -79,6 +81,24 @@ impl Config {
         }
         if let Some(v) = env("REQLY_BLOCK_LOOPBACK") {
             cfg.network.block_loopback = flag(v);
+        }
+        if let Some(v) = env("REQLY_AUTH_MODE") {
+            cfg.auth.mode = match v.to_lowercase().as_str() {
+                "token" => crate::auth::AuthMode::Token,
+                "none" => crate::auth::AuthMode::None,
+                other => anyhow::bail!("REQLY_AUTH_MODE must be none or token, got {other}"),
+            };
+        }
+        if let Some(v) = env("REQLY_AUTH_TOKEN") {
+            cfg.auth.token = Some(v);
+        }
+        if let Some(v) = env("REQLY_SECURE_COOKIE") {
+            cfg.auth.secure_cookie = flag(v);
+        }
+        if cfg.auth.mode == crate::auth::AuthMode::Token
+            && cfg.auth.token.as_deref().is_none_or(|t| t.len() < 12)
+        {
+            anyhow::bail!("token auth needs REQLY_AUTH_TOKEN (at least 12 characters)");
         }
         if let Some(v) = env("REQLY_ALLOW_HOSTS") {
             cfg.network.allow_hosts = v

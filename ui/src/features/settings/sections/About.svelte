@@ -42,6 +42,17 @@
     </Field>
   {/if}
 {/if}
+{#if services.transport.kind === 'web'}
+  <Field label={t('login.signOut')}>
+    <Button
+      size="sm"
+      onclick={async () => {
+        await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'same-origin' });
+        location.reload();
+      }}>{t('login.signOut')}</Button
+    >
+  </Field>
+{/if}
 <Field label={t('settings.cleanup')} hint={t('settings.cleanupHint')}>
   <Button size="sm" loading={cleaning} onclick={() => void cleanup()}
     >{t('settings.cleanupRun')}</Button

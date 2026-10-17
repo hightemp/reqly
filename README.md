@@ -1,35 +1,71 @@
 # Reqly
 
-Fast, themeable API client — desktop (Tauri 2) and self-hosted web (Rust server).
+Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS) and a
+self-hosted web version served by a single Rust binary.
 
-> Status: early development (stage 0). See [PRD.md](PRD.md) and [TASKS.md](TASKS.md) (in Russian).
+> Status: v0.1 (stage 1 of the [roadmap](PRD.md#9-этапы-roadmap)). HTTP
+> requests are fully supported; variables, imports, more auth types and
+> protocols come next. Planning docs are in Russian: [PRD.md](PRD.md), [TASKS.md](TASKS.md).
 
-## Layout
+## Features
 
+- Workspaces → collections → nested folders and requests; tree view or
+  "folders + request list" view; drag & drop (also between views),
+  multi-select, cut/copy/paste, duplicate, trash with undo, per-folder sorting
+- Postman-style tabs (preview tab, pinning, reopen closed)
+- Request editor: URL bar synced with query params, path params, every body
+  type (JSON/XML/YAML/text/HTML, form, multipart with files, binary), Basic /
+  Bearer / API key auth inherited through folders, folder-level headers,
+  per-request network settings, Markdown docs, paste a cURL command to import
+- Response viewer: status, timing breakdown (DNS/connect/TLS/TTFB), sizes,
+  pretty/raw/preview (sandboxed HTML, images, PDF, media), JSONPath / jq /
+  XPath filters, headers, cookies, a raw timeline like Insomnia's, history
+- libcurl engine: HTTP/2, proxies (HTTP/HTTPS/SOCKS), custom CAs, client
+  certificates (PEM/PKCS#12), cookies per workspace, cancel in flight
+- 10 built-in themes plus a theme editor (JSON import/export), density,
+  fonts, zoom; custom window frame; remappable shortcuts; English and Russian
+- Command palette (`Ctrl+K`), request log, cookie manager, copy as cURL
+- Server mode: token login, SSRF protection for requests sent by the server,
+  Docker image
+
+## Run with Docker
+
+```sh
+export REQLY_AUTH_TOKEN="change-me-to-a-long-secret"
+docker compose -f docker/compose.yaml up -d
+# open http://localhost:8484
 ```
-crates/reqly-core        domain primitives (ids, sort keys, errors)
-crates/reqly-storage     SQLite storage and migrations
-crates/reqly-api         typed command/event contract shared by both shells
-crates/reqly-testserver  local HTTP(S)/mTLS fixtures for integration tests
-apps/server              axum server: web UI + API (HTTP + WebSocket)
-apps/desktop             Tauri 2 desktop app
-ui/                      Svelte 5 + Vite SPA used by both
-docs/adr                 architecture decision records
-```
 
-## Requirements
+## Server configuration
 
-- Rust (stable, see `rust-toolchain.toml`)
-- Node.js 22+, pnpm 10
-- Tauri 2 system dependencies for desktop builds:
-  <https://v2.tauri.app/start/prerequisites/>
+`reqly.toml` in the working directory (or `REQLY_CONFIG=path`), overridden by
+environment variables:
+
+| Key | Env | Default | |
+|---|---|---|---|
+| `bind` | `REQLY_BIND` | `127.0.0.1:8484` | Listen address |
+| `data_dir` | `REQLY_DATA_DIR` | `.reqly-data` | Database and files |
+| `log` | `REQLY_LOG` | `info` | `tracing` filter |
+| `auth.mode` | `REQLY_AUTH_MODE` | `none` | `none` or `token` |
+| `auth.token` | `REQLY_AUTH_TOKEN` | — | Required for `token` (12+ chars) |
+| `auth.secure_cookie` | `REQLY_SECURE_COOKIE` | `false` | Set behind HTTPS |
+| `network.block_private` | `REQLY_BLOCK_PRIVATE` | `false` | Deny RFC 1918 targets |
+| `network.block_loopback` | `REQLY_BLOCK_LOOPBACK` | `false` | Deny 127.0.0.0/8 |
+| `network.allow_hosts` | `REQLY_ALLOW_HOSTS` | — | Hosts that skip checks |
+| `network.deny` | — | — | Extra CIDRs to deny |
+
+Cloud metadata and link-local addresses are always blocked for requests sent
+by the server. Scripts can call the API with `Authorization: Bearer <token>`.
 
 ## Development
+
+Requirements: Rust (stable), Node.js 22+, pnpm 10, and the
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for desktop builds.
 
 ```sh
 pnpm install
 
-# Web: run the server and the Vite dev server (proxies /api to :8484)
+# Web: API server + Vite dev server (proxies /api to :8484)
 cargo run -p reqly-server
 pnpm dev                       # http://localhost:5173
 
@@ -38,20 +74,27 @@ pnpm -C apps/desktop dev
 
 # Tests
 cargo test --workspace         # also regenerates ui/src/lib/api/generated
-pnpm test                      # unit tests (Vitest)
-pnpm -C ui e2e                 # end-to-end (Playwright, builds UI + server)
+pnpm test                      # UI unit tests (Vitest)
+pnpm -C ui e2e                 # end-to-end (Playwright; builds UI + server)
 pnpm lint
 ```
 
-### Server configuration
+On Linux with NVIDIA GPUs WebKitGTK may need `WEBKIT_DISABLE_DMABUF_RENDERER=1`;
+the desktop app sets it automatically.
 
-`reqly.toml` in the working directory (or `REQLY_CONFIG=path`), overridden by env:
+### Layout
 
-| Key | Env | Default |
-|---|---|---|
-| `bind` | `REQLY_BIND` | `127.0.0.1:8484` |
-| `data_dir` | `REQLY_DATA_DIR` | `.reqly-data` |
-| `log` | `REQLY_LOG` | `info` |
+```
+crates/reqly-core        domain model, ids, sort keys, errors
+crates/reqly-storage     SQLite (migrations, tree, history, cookies, search, sessions), blob store
+crates/reqly-http        request preparation, libcurl engine, filters, cURL, network policy
+crates/reqly-api         typed commands/events shared by both shells (+ TS bindings)
+crates/reqly-testserver  local HTTP(S)/mTLS fixtures for tests
+apps/server              axum server: embedded web UI, API, auth
+apps/desktop             Tauri 2 app
+ui/                      Svelte 5 + Vite SPA used by both
+docs/adr                 architecture decision records
+```
 
 ## License
 

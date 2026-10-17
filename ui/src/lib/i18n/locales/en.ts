@@ -262,6 +262,15 @@ export const en = {
     filter: 'Filter by method or URL',
     empty: 'No requests sent yet',
   },
+  login: {
+    title: 'Sign in to Reqly',
+    hint: 'This server requires an access token.',
+    token: 'Access token',
+    submit: 'Sign in',
+    invalid: 'The token is not valid',
+    tooMany: 'Too many attempts. Try again in a minute.',
+    signOut: 'Sign out',
+  },
   window: {
     minimize: 'Minimize',
     maximize: 'Maximize',

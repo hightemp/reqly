@@ -279,6 +279,15 @@ export const ru: Translation<Messages> = {
     filter: 'Фильтр по методу или URL',
     empty: 'Запросы ещё не отправлялись',
   },
+  login: {
+    title: 'Вход в Reqly',
+    hint: 'Для доступа к этому серверу нужен токен.',
+    token: 'Токен доступа',
+    submit: 'Войти',
+    invalid: 'Неверный токен',
+    tooMany: 'Слишком много попыток. Повторите через минуту.',
+    signOut: 'Выйти',
+  },
   window: {
     minimize: 'Свернуть',
     maximize: 'Развернуть',

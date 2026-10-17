@@ -428,3 +428,38 @@ async fn ancestors_are_outermost_first() {
     assert_eq!(names, ["a", "b"]);
     assert!(fx.repo().ancestors(a).await.unwrap().is_empty());
 }
+
+/// PRD §8: listing a 10 000-node collection must be fast enough for the sidebar.
+#[tokio::test]
+async fn lists_ten_thousand_nodes_quickly() {
+    let fx = Fx::new().await;
+    let col = fx.collection().await;
+    let mut tx = fx.storage.pool().begin().await.unwrap();
+    let mut key: Option<reqly_core::SortKey> = None;
+    for i in 0..10_000 {
+        key = Some(reqly_core::SortKey::between(key.as_ref(), None).unwrap());
+        let data = request("GET", &format!("http://h/{i}"));
+        let json = serde_json::to_string(&data).unwrap();
+        sqlx::query(
+            "INSERT INTO nodes (id, collection_id, parent_id, kind, name, method, url, data, sort_key, created_at, updated_at, version) \
+             VALUES (?, ?, NULL, 'request', ?, 'GET', ?, ?, ?, 0, 0, 1)",
+        )
+        .bind(Id::new().to_string())
+        .bind(col.to_string())
+        .bind(format!("request {i}"))
+        .bind(format!("http://h/{i}"))
+        .bind(json)
+        .bind(key.as_ref().unwrap().as_str())
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    }
+    tx.commit().await.unwrap();
+
+    let started = std::time::Instant::now();
+    let nodes = fx.repo().list_tree(col).await.unwrap();
+    let elapsed = started.elapsed();
+    assert_eq!(nodes.len(), 10_000);
+    assert!(elapsed.as_millis() < 1500, "list_tree took {elapsed:?}");
+    println!("list_tree(10k) = {elapsed:?}");
+}

@@ -51,6 +51,8 @@ export const TRANSPORT_TOPICS = {
   /** The event stream was interrupted; state may be stale and should be reloaded. */
   reconnected: 'transport.reconnected',
   disconnected: 'transport.disconnected',
+  /** The server session expired or was revoked. */
+  unauthorized: 'transport.unauthorized',
   lagged: 'transport.lagged',
 } as const;
 
@@ -95,6 +97,7 @@ export class WebTransport implements Transport {
       throw new ApiError({ code: 'transport.network', message: String(e), params: { name } });
     }
     const body: unknown = await response.json().catch(() => null);
+    if (response.status === 401) this.emit({ topic: TRANSPORT_TOPICS.unauthorized, payload: null });
     if (!response.ok) {
       throw body
         ? ApiError.from(body)

@@ -1,0 +1,24 @@
+# docker compose -f docker/compose.yaml up -d
+# Then open http://localhost:8484 and sign in with REQLY_AUTH_TOKEN.
+services:
+  reqly:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: ghcr.io/hightemp/reqly-server:latest
+    restart: unless-stopped
+    ports:
+      - "8484:8484"
+    environment:
+      REQLY_AUTH_MODE: token
+      # Change this. At least 12 characters.
+      REQLY_AUTH_TOKEN: ${REQLY_AUTH_TOKEN:?set REQLY_AUTH_TOKEN}
+      # Set to "true" when served over HTTPS (reverse proxy).
+      REQLY_SECURE_COOKIE: "false"
+      # Block requests from the server to private networks (SSRF hardening).
+      REQLY_BLOCK_PRIVATE: "false"
+    volumes:
+      - reqly-data:/data
+
+volumes:
+  reqly-data:

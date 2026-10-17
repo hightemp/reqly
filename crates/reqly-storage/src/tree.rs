@@ -29,6 +29,14 @@ pub struct TreeRepo<'a> {
     clock: &'a dyn Clock,
 }
 
+/// Columns needed for `NodeSummary` (no `data` JSON).
+macro_rules! summary_columns {
+    () => {
+        "id, collection_id, parent_id, kind, name, method, url, \
+         sort_key, created_at, updated_at, version, deleted_at"
+    };
+}
+
 macro_rules! node_columns {
     () => {
         "id, collection_id, parent_id, kind, name, method, url, data, \
@@ -467,7 +475,7 @@ impl<'a> TreeRepo<'a> {
     pub async fn list_tree(&self, collection_id: Id) -> CoreResult<Vec<NodeSummary>> {
         let rows = sqlx::query(concat!(
             "SELECT ",
-            node_columns!(),
+            summary_columns!(),
             " FROM nodes WHERE collection_id = ? AND deleted_at IS NULL ORDER BY sort_key, id"
         ))
         .bind(collection_id.to_string())
