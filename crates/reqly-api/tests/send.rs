@@ -285,3 +285,25 @@ async fn uploaded_blob_is_sent_as_binary_body() {
         .await;
     assert!(body_text(&chunk).contains("\"body\":\"bin!\""));
 }
+
+#[tokio::test]
+async fn curl_import_and_export() {
+    let fx = Fx::new().await;
+    let parsed = fx
+        .call(
+            "curl.parse",
+            json!({ "command": "curl -X POST 'http://h/x?a=1' -H 'X-A: 1' -d 'k=v'" }),
+        )
+        .await;
+    let data = parsed[0]["request"].clone();
+    assert_eq!(data["method"], "POST");
+    assert_eq!(data["params"][0]["name"], "a");
+
+    let mut node_data = data.clone();
+    node_data["kind"] = json!("request");
+    let id = fx.request(Value::Null, node_data).await;
+    let out = fx.call("request.toCurl", json!({ "requestId": id })).await;
+    let cmd = out["command"].as_str().unwrap();
+    assert!(cmd.contains("--url 'http://h/x?a=1'"), "{cmd}");
+    assert!(cmd.contains("--data-raw 'k=v'"), "{cmd}");
+}

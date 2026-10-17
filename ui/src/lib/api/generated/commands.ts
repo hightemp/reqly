@@ -12,6 +12,9 @@ import type { CollectionSettingsInput } from "./CollectionSettingsInput";
 import type { Cookie } from "./Cookie";
 import type { CookieDeleteInput } from "./CookieDeleteInput";
 import type { CookieUpsertInput } from "./CookieUpsertInput";
+import type { CurlOutput } from "./CurlOutput";
+import type { CurlParseInput } from "./CurlParseInput";
+import type { CurlParseOutput } from "./CurlParseOutput";
 import type { Empty } from "./Empty";
 import type { HistoryWorkspaceInput } from "./HistoryWorkspaceInput";
 import type { IdInput } from "./IdInput";
@@ -76,6 +79,8 @@ export type Commands = {
   "cookies.delete": { input: CookieDeleteInput; output: Empty };
   "cookies.clear": { input: WorkspaceIdInput; output: Empty };
   "blob.upload": { input: BlobUploadInput; output: BlobUploadOutput };
+  "curl.parse": { input: CurlParseInput; output: Array<CurlParseOutput> };
+  "request.toCurl": { input: RequestIdInput; output: CurlOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

@@ -38,7 +38,9 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<CookiesUpsert>()
         .register::<CookiesDelete>()
         .register::<CookiesClear>()
-        .register::<BlobUpload>();
+        .register::<BlobUpload>()
+        .register::<CurlParse>()
+        .register::<RequestToCurl>();
 }
 
 // ----- settings stored by the UI --------------------------------------------
@@ -257,7 +259,8 @@ pub async fn collect_garbage(ctx: &AppContext) -> CoreResult<usize> {
     ctx.blobs.gc(&live).await
 }
 
-pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<ResponseRecord> {
+/// Prepares a stored request with its folders, collection and global settings.
+async fn prepare_stored(ctx: &AppContext, request_id: Id) -> CoreResult<(PreparedRequest, Id)> {
     let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
     let node = tree.get_node(request_id).await?;
     let NodeData::Request(http) = &node.data else {
@@ -278,13 +281,19 @@ pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<Respon
     let global: RequestSettings = setting(ctx, HTTP_DEFAULTS_KEY).await?;
     let base = collection.settings.merge(&global);
 
-    let mut prepared = prepare_with_base(http, &folders, &base)?;
+    Ok((
+        prepare_with_base(http, &folders, &base)?,
+        collection.workspace_id,
+    ))
+}
+
+pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<ResponseRecord> {
+    let (mut prepared, workspace_id) = prepare_stored(ctx, request_id).await?;
     let snapshot = serde_json::to_value(RequestSnapshot::from(&prepared)).unwrap_or_default();
     resolve_blobs(ctx, &mut prepared)?;
 
     let tls: TlsSettings = setting(ctx, HTTP_TLS_KEY).await?;
     let cookies_repo = CookieRepo::new(&ctx.storage, ctx.clock.as_ref());
-    let workspace_id = collection.workspace_id;
     let options = ExecOptions {
         ca_pems: tls.ca_pems.clone(),
         client_identity: client_identity(&tls, &prepared.url)?,
@@ -747,6 +756,53 @@ command!(
             name: input.name,
             size: blob.size,
         })
+    }
+);
+
+// ----- cURL ---------------------------------------------------------------------
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub struct CurlParseInput {
+    pub command: String,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[ts(export)]
+pub struct CurlParseOutput {
+    pub request: reqly_core::model::HttpRequest,
+    pub warnings: Vec<String>,
+}
+
+command!(
+    /// Parses one or more cURL commands into request data.
+    CurlParse,
+    "curl.parse",
+    CurlParseInput,
+    Vec<CurlParseOutput>,
+    |_ctx, input| {
+        Ok(reqly_http::curl::parse_curl_many(&input.command)?
+            .into_iter()
+            .map(|p| CurlParseOutput { request: p.request, warnings: p.warnings })
+            .collect())
+    }
+);
+
+#[derive(Debug, Serialize, TS)]
+#[ts(export)]
+pub struct CurlOutput {
+    pub command: String,
+}
+
+command!(
+    /// "Copy as cURL": the request as it would be sent (inherited headers and auth included).
+    RequestToCurl,
+    "request.toCurl",
+    RequestIdInput,
+    CurlOutput,
+    |ctx, input| {
+        let (prepared, _) = prepare_stored(ctx, input.request_id).await?;
+        Ok(CurlOutput { command: reqly_http::curl::to_curl(&prepared) })
     }
 );
 

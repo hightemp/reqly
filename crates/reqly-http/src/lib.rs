@@ -2,6 +2,7 @@
 //! and executes them with libcurl ([`engine`]), see ADR-002.
 
 mod ca;
+pub mod curl;
 pub mod engine;
 pub mod policy;
 pub mod prepare;
