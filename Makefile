@@ -11,6 +11,9 @@ DATA_DIR ?= $(CURDIR)/.data
 BIND ?= 127.0.0.1:8484
 # Tests talk to local servers; a system proxy would intercept them.
 TEST_ENV := NO_PROXY='*' no_proxy='*'
+# Dev servers on localhost must bypass a system proxy (HTTP_PROXY etc.).
+LOCAL_ENV := NO_PROXY="localhost,127.0.0.1,::1$${NO_PROXY:+,$$NO_PROXY}" no_proxy="localhost,127.0.0.1,::1$${no_proxy:+,$$no_proxy}"
+
 
 .PHONY: help install dev dev-server dev-desktop build build-ui build-server build-desktop \
 	run-server test test-rust test-ui e2e e2e-desktop coverage lint fmt check types \
@@ -27,14 +30,14 @@ install: ## Install JS dependencies and git hooks
 
 dev: ## Run the server and the UI dev server (http://localhost:5173)
 	@trap 'kill 0' EXIT; \
-	REQLY_BIND=$(BIND) REQLY_DATA_DIR=$(DATA_DIR) $(CARGO) run -p reqly-server & \
-	$(PNPM) -C ui dev
+	$(LOCAL_ENV) REQLY_BIND=$(BIND) REQLY_DATA_DIR=$(DATA_DIR) $(CARGO) run -p reqly-server & \
+	$(LOCAL_ENV) $(PNPM) -C ui dev
 
 dev-server: ## Run only the server (BIND=127.0.0.1:8484)
 	REQLY_BIND=$(BIND) REQLY_DATA_DIR=$(DATA_DIR) $(CARGO) run -p reqly-server
 
 dev-desktop: ## Run the desktop app with hot reload
-	$(PNPM) -C apps/desktop tauri dev
+	$(LOCAL_ENV) $(PNPM) -C apps/desktop tauri dev
 
 # ----- builds -------------------------------------------------------------------
 

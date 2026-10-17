@@ -5,6 +5,12 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Linux desktop: with `HTTP_PROXY` set, the webview sent `localhost` (the dev
+  server) through the proxy and showed a connection error. Local hosts are
+  now added to `NO_PROXY`; `make dev` and `make dev-desktop` do the same.
+
 ## [0.3.0] — 2026-10-17
 
 Stage 3: import, export and code generation.
