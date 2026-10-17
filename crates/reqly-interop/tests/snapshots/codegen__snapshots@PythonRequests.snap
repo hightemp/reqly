@@ -1,0 +1,75 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: Requests
+expression: out
+---
+// ===== GET with query and auth =====
+import requests
+
+url = "https://api.example.com/users?page=1&q=a%20b"
+headers = {
+  "Accept": "application/json",
+  "Authorization": "Bearer t0k'en\"$x"
+}
+
+response = requests.request("GET", url, headers=headers)
+
+print(response.text)
+
+// ===== POST JSON =====
+import requests
+
+url = "https://api.example.com/users"
+headers = {
+  "Content-Type": "application/json"
+}
+payload = "{\"name\":\"Ann\",\"tags\":[\"a\"]}"
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+
+// ===== PUT form =====
+import requests
+
+url = "http://localhost:8080/form"
+headers = {
+  "Content-Type": "application/x-www-form-urlencoded"
+}
+payload = {
+  "a": "1",
+  "b": "x y&z"
+}
+
+response = requests.request("PUT", url, headers=headers, data=payload)
+
+print(response.text)
+
+// ===== POST multipart =====
+import requests
+
+url = "https://api.example.com/upload"
+headers = {}
+payload = {
+  "title": "Hello"
+}
+files = {
+  "file": open("/tmp/a.png", "rb")
+}
+
+response = requests.request("POST", url, headers=headers, data=payload, files=files)
+
+print(response.text)
+
+// ===== PATCH file =====
+import requests
+
+url = "https://api.example.com/raw"
+headers = {
+  "Content-Type": "application/octet-stream"
+}
+payload = open("/tmp/data.bin", "rb")
+
+response = requests.request("PATCH", url, headers=headers, data=payload)
+
+print(response.text)

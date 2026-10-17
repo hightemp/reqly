@@ -1,0 +1,106 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: Node.js http
+expression: out
+---
+// ===== GET with query and auth =====
+import https from 'node:https';
+
+const req = https.request('https://api.example.com/users?page=1&q=a%20b', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json',
+    'Authorization': 'Bearer t0k\'en"$x'
+  }
+}, (res) => {
+  let data = '';
+  res.on('data', (chunk) => (data += chunk));
+  res.on('end', () => console.log(data));
+});
+req.on('error', console.error);
+req.end();
+
+// ===== POST JSON =====
+import https from 'node:https';
+
+const req = https.request('https://api.example.com/users', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+}, (res) => {
+  let data = '';
+  res.on('data', (chunk) => (data += chunk));
+  res.on('end', () => console.log(data));
+});
+req.on('error', console.error);
+req.write(JSON.stringify({
+  "name": "Ann",
+  "tags": [
+    "a"
+  ]
+}));
+req.end();
+
+// ===== PUT form =====
+import http from 'node:http';
+
+const body = new URLSearchParams();
+body.append('a', '1');
+body.append('b', 'x y&z');
+const req = http.request('http://localhost:8080/form', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  }
+}, (res) => {
+  let data = '';
+  res.on('data', (chunk) => (data += chunk));
+  res.on('end', () => console.log(data));
+});
+req.on('error', console.error);
+req.write(body.toString());
+req.end();
+
+// ===== POST multipart =====
+import https from 'node:https';
+import fs from 'node:fs/promises';
+
+const boundary = '----ReqlyFormBoundary7MA4YWxk';
+const parts = [];
+parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="title"\r\n\r\n`), Buffer.from('Hello'), Buffer.from('\r\n'));
+parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="a.png"\r\n\r\n`));
+parts.push(await fs.readFile('/tmp/a.png'), Buffer.from('\r\n'));
+parts.push(Buffer.from(`--${boundary}--\r\n`));
+const body = Buffer.concat(parts);
+const req = https.request('https://api.example.com/upload', {
+  method: 'POST',
+  headers: {
+    'Content-Type': `multipart/form-data; boundary=${boundary}`
+  }
+}, (res) => {
+  let data = '';
+  res.on('data', (chunk) => (data += chunk));
+  res.on('end', () => console.log(data));
+});
+req.on('error', console.error);
+req.write(body);
+req.end();
+
+// ===== PATCH file =====
+import https from 'node:https';
+import fs from 'node:fs/promises';
+
+const req = https.request('https://api.example.com/raw', {
+  method: 'PATCH',
+  headers: {
+    'Content-Type': 'application/octet-stream'
+  }
+}, (res) => {
+  let data = '';
+  res.on('data', (chunk) => (data += chunk));
+  res.on('end', () => console.log(data));
+});
+req.on('error', console.error);
+req.write(await fs.readFile('/tmp/data.bin'));
+req.end();

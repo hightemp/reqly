@@ -1,0 +1,68 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: fetch
+expression: out
+---
+// ===== GET with query and auth =====
+const response = await fetch('https://api.example.com/users?page=1&q=a%20b', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json',
+    'Authorization': 'Bearer t0k\'en"$x'
+  }
+});
+
+console.log(await response.text());
+
+// ===== POST JSON =====
+const response = await fetch('https://api.example.com/users', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+  "name": "Ann",
+  "tags": [
+    "a"
+  ]
+})
+});
+
+console.log(await response.text());
+
+// ===== PUT form =====
+const body = new URLSearchParams();
+body.append('a', '1');
+body.append('b', 'x y&z');
+const response = await fetch('http://localhost:8080/form', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  },
+  body: body
+});
+
+console.log(await response.text());
+
+// ===== POST multipart =====
+const body = new FormData();
+body.append('title', 'Hello');
+body.append('file', fileInput.files[0]); // /tmp/a.png
+const response = await fetch('https://api.example.com/upload', {
+  method: 'POST',
+  headers: {},
+  body: body
+});
+
+console.log(await response.text());
+
+// ===== PATCH file =====
+const response = await fetch('https://api.example.com/raw', {
+  method: 'PATCH',
+  headers: {
+    'Content-Type': 'application/octet-stream'
+  },
+  body: fileInput.files[0] /* /tmp/data.bin */
+});
+
+console.log(await response.text());

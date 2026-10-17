@@ -1,0 +1,46 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: RestSharp
+expression: out
+---
+// ===== GET with query and auth =====
+var client = new RestClient("https://api.example.com/users?page=1&q=a%20b");
+var request = new RestRequest("", Method.Get);
+request.AddHeader("Accept", "application/json");
+request.AddHeader("Authorization", "Bearer t0k'en\"$x");
+var response = await client.ExecuteAsync(request);
+Console.WriteLine(response.Content);
+
+// ===== POST JSON =====
+var client = new RestClient("https://api.example.com/users");
+var request = new RestRequest("", Method.Post);
+request.AddHeader("Content-Type", "application/json");
+request.AddStringBody("{\"name\":\"Ann\",\"tags\":[\"a\"]}", "application/json");
+var response = await client.ExecuteAsync(request);
+Console.WriteLine(response.Content);
+
+// ===== PUT form =====
+var client = new RestClient("http://localhost:8080/form");
+var request = new RestRequest("", Method.Put);
+request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+request.AddParameter("a", "1");
+request.AddParameter("b", "x y&z");
+var response = await client.ExecuteAsync(request);
+Console.WriteLine(response.Content);
+
+// ===== POST multipart =====
+var client = new RestClient("https://api.example.com/upload");
+var request = new RestRequest("", Method.Post);
+request.AlwaysMultipartFormData = true;
+request.AddParameter("title", "Hello");
+request.AddFile("file", "/tmp/a.png");
+var response = await client.ExecuteAsync(request);
+Console.WriteLine(response.Content);
+
+// ===== PATCH file =====
+var client = new RestClient("https://api.example.com/raw");
+var request = new RestRequest("", Method.Patch);
+request.AddHeader("Content-Type", "application/octet-stream");
+request.AddParameter("application/octet-stream", File.ReadAllBytes("/tmp/data.bin"), ParameterType.RequestBody);
+var response = await client.ExecuteAsync(request);
+Console.WriteLine(response.Content);

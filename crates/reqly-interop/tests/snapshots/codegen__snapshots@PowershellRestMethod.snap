@@ -1,0 +1,32 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: PowerShell Invoke-RestMethod
+expression: out
+---
+// ===== GET with query and auth =====
+$headers = @{}
+$headers.Add('Accept', 'application/json')
+$headers.Add('Authorization', 'Bearer t0k''en"$x')
+$response = Invoke-RestMethod -Uri 'https://api.example.com/users?page=1&q=a%20b' -Method GET -Headers $headers
+
+// ===== POST JSON =====
+$headers = @{}
+$body = '{"name":"Ann","tags":["a"]}'
+$response = Invoke-RestMethod -Uri 'https://api.example.com/users' -Method POST -Headers $headers -ContentType 'application/json' -Body $body
+
+// ===== PUT form =====
+$headers = @{}
+$body = 'a=1&b=x+y%26z'
+$response = Invoke-RestMethod -Uri 'http://localhost:8080/form' -Method PUT -Headers $headers -ContentType 'application/x-www-form-urlencoded' -Body $body
+
+// ===== POST multipart =====
+$headers = @{}
+$form = @{
+  'title' = 'Hello'
+  'file' = Get-Item -Path '/tmp/a.png'
+}
+$response = Invoke-RestMethod -Uri 'https://api.example.com/upload' -Method POST -Headers $headers -Form $form
+
+// ===== PATCH file =====
+$headers = @{}
+$response = Invoke-RestMethod -Uri 'https://api.example.com/raw' -Method PATCH -Headers $headers -ContentType 'application/octet-stream' -InFile '/tmp/data.bin'

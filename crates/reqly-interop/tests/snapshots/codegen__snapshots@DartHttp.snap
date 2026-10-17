@@ -1,0 +1,69 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: http
+expression: out
+---
+// ===== GET with query and auth =====
+import 'package:http/http.dart' as http;
+
+Future<void> main() async {
+  final request = http.Request("GET", Uri.parse("https://api.example.com/users?page=1&q=a%20b"));
+  request.headers["Accept"] = "application/json";
+  request.headers["Authorization"] = "Bearer t0k'en\"\$x";
+
+  final response = await request.send();
+  print(await response.stream.bytesToString());
+}
+
+// ===== POST JSON =====
+import 'package:http/http.dart' as http;
+
+Future<void> main() async {
+  final request = http.Request("POST", Uri.parse("https://api.example.com/users"));
+  request.headers["Content-Type"] = "application/json";
+  request.body = "{\"name\":\"Ann\",\"tags\":[\"a\"]}";
+
+  final response = await request.send();
+  print(await response.stream.bytesToString());
+}
+
+// ===== PUT form =====
+import 'package:http/http.dart' as http;
+
+Future<void> main() async {
+  final request = http.Request("PUT", Uri.parse("http://localhost:8080/form"));
+  request.headers["Content-Type"] = "application/x-www-form-urlencoded";
+  request.bodyFields = {
+    "a": "1",
+    "b": "x y&z",
+  };
+
+  final response = await request.send();
+  print(await response.stream.bytesToString());
+}
+
+// ===== POST multipart =====
+import 'package:http/http.dart' as http;
+import 'dart:io';
+
+Future<void> main() async {
+  final request = http.MultipartRequest("POST", Uri.parse("https://api.example.com/upload"));
+  request.fields["title"] = "Hello";
+  request.files.add(await http.MultipartFile.fromPath("file", "/tmp/a.png"));
+
+  final response = await request.send();
+  print(await response.stream.bytesToString());
+}
+
+// ===== PATCH file =====
+import 'package:http/http.dart' as http;
+import 'dart:io';
+
+Future<void> main() async {
+  final request = http.Request("PATCH", Uri.parse("https://api.example.com/raw"));
+  request.headers["Content-Type"] = "application/octet-stream";
+  request.bodyBytes = await File("/tmp/data.bin").readAsBytes();
+
+  final response = await request.send();
+  print(await response.stream.bytesToString());
+}

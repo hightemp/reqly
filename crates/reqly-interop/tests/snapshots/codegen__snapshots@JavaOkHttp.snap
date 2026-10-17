@@ -1,0 +1,72 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: OkHttp
+expression: out
+---
+// ===== GET with query and auth =====
+OkHttpClient client = new OkHttpClient();
+Request request = new Request.Builder()
+  .url("https://api.example.com/users?page=1&q=a%20b")
+  .method("GET", null)
+  .addHeader("Accept", "application/json")
+  .addHeader("Authorization", "Bearer t0k'en\"$x")
+  .build();
+
+try (Response response = client.newCall(request).execute()) {
+  System.out.println(response.body().string());
+}
+
+// ===== POST JSON =====
+OkHttpClient client = new OkHttpClient();
+RequestBody body = RequestBody.create("{\"name\":\"Ann\",\"tags\":[\"a\"]}", MediaType.parse("application/json"));
+Request request = new Request.Builder()
+  .url("https://api.example.com/users")
+  .method("POST", body)
+  .addHeader("Content-Type", "application/json")
+  .build();
+
+try (Response response = client.newCall(request).execute()) {
+  System.out.println(response.body().string());
+}
+
+// ===== PUT form =====
+OkHttpClient client = new OkHttpClient();
+RequestBody body = RequestBody.create("a=1&b=x+y%26z", MediaType.parse("application/x-www-form-urlencoded"));
+Request request = new Request.Builder()
+  .url("http://localhost:8080/form")
+  .method("PUT", body)
+  .addHeader("Content-Type", "application/x-www-form-urlencoded")
+  .build();
+
+try (Response response = client.newCall(request).execute()) {
+  System.out.println(response.body().string());
+}
+
+// ===== POST multipart =====
+OkHttpClient client = new OkHttpClient();
+RequestBody body = new MultipartBody.Builder()
+  .setType(MultipartBody.FORM)
+  .addFormDataPart("title", "Hello")
+  .addFormDataPart("file", "a.png", RequestBody.create(new File("/tmp/a.png"), MediaType.parse("application/octet-stream")))
+  .build();
+Request request = new Request.Builder()
+  .url("https://api.example.com/upload")
+  .method("POST", body)
+  .build();
+
+try (Response response = client.newCall(request).execute()) {
+  System.out.println(response.body().string());
+}
+
+// ===== PATCH file =====
+OkHttpClient client = new OkHttpClient();
+RequestBody body = RequestBody.create(new File("/tmp/data.bin"), MediaType.parse("application/octet-stream"));
+Request request = new Request.Builder()
+  .url("https://api.example.com/raw")
+  .method("PATCH", body)
+  .addHeader("Content-Type", "application/octet-stream")
+  .build();
+
+try (Response response = client.newCall(request).execute()) {
+  System.out.println(response.body().string());
+}

@@ -267,11 +267,22 @@ pub async fn collect_garbage(ctx: &AppContext) -> CoreResult<usize> {
 
 /// Renders templates and prepares a stored request with its folders,
 /// collection and global settings.
-async fn prepare_stored(
+pub(crate) async fn prepare_stored(
     ctx: &AppContext,
     request_id: Id,
     prompts: &HashMap<String, String>,
     chain: &[Id],
+) -> CoreResult<(PreparedRequest, Id)> {
+    prepare_stored_with(ctx, request_id, prompts, chain, true).await
+}
+
+/// Like [`prepare_stored`]; with `render: false` templates stay as written.
+pub(crate) async fn prepare_stored_with(
+    ctx: &AppContext,
+    request_id: Id,
+    prompts: &HashMap<String, String>,
+    chain: &[Id],
+    render: bool,
 ) -> CoreResult<(PreparedRequest, Id)> {
     let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
     let node = tree.get_node(request_id).await?;
@@ -296,12 +307,16 @@ async fn prepare_stored(
     let renderer = Renderer::new(&scope.vars, &host, options);
 
     let mut http = http.clone();
-    template::render_request(&renderer, &mut http).await?;
+    if render {
+        template::render_request(&renderer, &mut http).await?;
+    }
     let mut folders: Vec<FolderData> = Vec::new();
     for n in &scope.ancestors {
         if let NodeData::Folder(f) = &n.data {
             let mut f = f.clone();
-            template::render_folder(&renderer, &mut f).await?;
+            if render {
+                template::render_folder(&renderer, &mut f).await?;
+            }
             folders.push(f);
         }
     }

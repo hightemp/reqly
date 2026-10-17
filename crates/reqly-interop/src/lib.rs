@@ -6,6 +6,7 @@
 //! could not be imported. Nothing is dropped silently.
 
 pub mod bruno;
+pub mod codegen;
 pub mod curl;
 pub mod detect;
 pub mod har;

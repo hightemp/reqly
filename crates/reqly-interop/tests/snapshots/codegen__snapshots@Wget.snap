@@ -1,0 +1,43 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: Wget
+expression: out
+---
+// ===== GET with query and auth =====
+wget --quiet \
+  --method GET \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Bearer t0k'\''en"$x' \
+  --output-document - \
+  'https://api.example.com/users?page=1&q=a%20b'
+
+// ===== POST JSON =====
+wget --quiet \
+  --method POST \
+  --header 'Content-Type: application/json' \
+  --body-data '{"name":"Ann","tags":["a"]}' \
+  --output-document - \
+  https://api.example.com/users
+
+// ===== PUT form =====
+wget --quiet \
+  --method PUT \
+  --header 'Content-Type: application/x-www-form-urlencoded' \
+  --body-data 'a=1&b=x+y%26z' \
+  --output-document - \
+  http://localhost:8080/form
+
+// ===== POST multipart =====
+# wget cannot send multipart bodies; use curl --form instead
+wget --quiet \
+  --method POST \
+  --output-document - \
+  https://api.example.com/upload
+
+// ===== PATCH file =====
+wget --quiet \
+  --method PATCH \
+  --header 'Content-Type: application/octet-stream' \
+  --body-file /tmp/data.bin \
+  --output-document - \
+  https://api.example.com/raw

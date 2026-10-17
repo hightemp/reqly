@@ -1,0 +1,48 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: HttpClient
+expression: out
+---
+// ===== GET with query and auth =====
+using var client = new HttpClient();
+var request = new HttpRequestMessage(new HttpMethod("GET"), "https://api.example.com/users?page=1&q=a%20b");
+request.Headers.TryAddWithoutValidation("Accept", "application/json");
+request.Headers.TryAddWithoutValidation("Authorization", "Bearer t0k'en\"$x");
+using var response = await client.SendAsync(request);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+// ===== POST JSON =====
+using var client = new HttpClient();
+var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.example.com/users");
+request.Content = new StringContent("{\"name\":\"Ann\",\"tags\":[\"a\"]}", System.Text.Encoding.UTF8, "application/json");
+using var response = await client.SendAsync(request);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+// ===== PUT form =====
+using var client = new HttpClient();
+var request = new HttpRequestMessage(new HttpMethod("PUT"), "http://localhost:8080/form");
+request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+{
+  { "a", "1" },
+  { "b", "x y&z" },
+});
+using var response = await client.SendAsync(request);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+// ===== POST multipart =====
+using var client = new HttpClient();
+var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.example.com/upload");
+var content = new MultipartFormDataContent();
+content.Add(new StringContent("Hello"), "title");
+content.Add(new ByteArrayContent(File.ReadAllBytes("/tmp/a.png")), "file", "a.png");
+request.Content = content;
+using var response = await client.SendAsync(request);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+// ===== PATCH file =====
+using var client = new HttpClient();
+var request = new HttpRequestMessage(new HttpMethod("PATCH"), "https://api.example.com/raw");
+request.Content = new ByteArrayContent(File.ReadAllBytes("/tmp/data.bin"));
+request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
+using var response = await client.SendAsync(request);
+Console.WriteLine(await response.Content.ReadAsStringAsync());

@@ -1,0 +1,50 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: XMLHttpRequest
+expression: out
+---
+// ===== GET with query and auth =====
+const xhr = new XMLHttpRequest();
+xhr.addEventListener('load', () => console.log(xhr.responseText));
+xhr.open('GET', 'https://api.example.com/users?page=1&q=a%20b');
+xhr.setRequestHeader('Accept', 'application/json');
+xhr.setRequestHeader('Authorization', 'Bearer t0k\'en"$x');
+xhr.send(null);
+
+// ===== POST JSON =====
+const xhr = new XMLHttpRequest();
+xhr.addEventListener('load', () => console.log(xhr.responseText));
+xhr.open('POST', 'https://api.example.com/users');
+xhr.setRequestHeader('Content-Type', 'application/json');
+xhr.send(JSON.stringify({
+  "name": "Ann",
+  "tags": [
+    "a"
+  ]
+}));
+
+// ===== PUT form =====
+const body = new URLSearchParams();
+body.append('a', '1');
+body.append('b', 'x y&z');
+const xhr = new XMLHttpRequest();
+xhr.addEventListener('load', () => console.log(xhr.responseText));
+xhr.open('PUT', 'http://localhost:8080/form');
+xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+xhr.send(body);
+
+// ===== POST multipart =====
+const body = new FormData();
+body.append('title', 'Hello');
+body.append('file', fileInput.files[0]); // /tmp/a.png
+const xhr = new XMLHttpRequest();
+xhr.addEventListener('load', () => console.log(xhr.responseText));
+xhr.open('POST', 'https://api.example.com/upload');
+xhr.send(body);
+
+// ===== PATCH file =====
+const xhr = new XMLHttpRequest();
+xhr.addEventListener('load', () => console.log(xhr.responseText));
+xhr.open('PATCH', 'https://api.example.com/raw');
+xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+xhr.send(fileInput.files[0] /* /tmp/data.bin */);

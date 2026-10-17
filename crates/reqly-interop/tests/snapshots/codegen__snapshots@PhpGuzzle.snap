@@ -1,0 +1,84 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: Guzzle
+expression: out
+---
+// ===== GET with query and auth =====
+<?php
+
+require 'vendor/autoload.php';
+
+$client = new \GuzzleHttp\Client();
+
+$response = $client->request('GET', 'https://api.example.com/users?page=1&q=a%20b', [
+  'headers' => [
+    'Accept' => 'application/json',
+    'Authorization' => 'Bearer t0k\'en"$x',
+  ],
+]);
+
+echo $response->getBody();
+
+// ===== POST JSON =====
+<?php
+
+require 'vendor/autoload.php';
+
+$client = new \GuzzleHttp\Client();
+
+$response = $client->request('POST', 'https://api.example.com/users', [
+  'headers' => [
+    'Content-Type' => 'application/json',
+  ],
+  'body' => '{"name":"Ann","tags":["a"]}',
+]);
+
+echo $response->getBody();
+
+// ===== PUT form =====
+<?php
+
+require 'vendor/autoload.php';
+
+$client = new \GuzzleHttp\Client();
+
+$response = $client->request('PUT', 'http://localhost:8080/form', [
+  'form_params' => [
+    'a' => '1',
+    'b' => 'x y&z',
+  ],
+]);
+
+echo $response->getBody();
+
+// ===== POST multipart =====
+<?php
+
+require 'vendor/autoload.php';
+
+$client = new \GuzzleHttp\Client();
+
+$response = $client->request('POST', 'https://api.example.com/upload', [
+  'multipart' => [
+    ['name' => 'title', 'contents' => 'Hello'],
+    ['name' => 'file', 'contents' => fopen('/tmp/a.png', 'r')],
+  ],
+]);
+
+echo $response->getBody();
+
+// ===== PATCH file =====
+<?php
+
+require 'vendor/autoload.php';
+
+$client = new \GuzzleHttp\Client();
+
+$response = $client->request('PATCH', 'https://api.example.com/raw', [
+  'headers' => [
+    'Content-Type' => 'application/octet-stream',
+  ],
+  'body' => fopen('/tmp/data.bin', 'r'),
+]);
+
+echo $response->getBody();

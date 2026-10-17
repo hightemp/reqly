@@ -1,0 +1,127 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: net/http
+expression: out
+---
+// ===== GET with query and auth =====
+package main
+
+import (
+  "fmt"
+  "io"
+  "net/http"
+)
+
+func main() {
+  req, _ := http.NewRequest("GET", "https://api.example.com/users?page=1&q=a%20b", nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Bearer t0k'en\"$x")
+  res, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer res.Body.Close()
+  body, _ := io.ReadAll(res.Body)
+  fmt.Println(string(body))
+}
+
+// ===== POST JSON =====
+package main
+
+import (
+  "fmt"
+  "io"
+  "net/http"
+  "strings"
+)
+
+func main() {
+  payload := strings.NewReader("{\"name\":\"Ann\",\"tags\":[\"a\"]}")
+  req, _ := http.NewRequest("POST", "https://api.example.com/users", payload)
+  req.Header.Add("Content-Type", "application/json")
+  res, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer res.Body.Close()
+  body, _ := io.ReadAll(res.Body)
+  fmt.Println(string(body))
+}
+
+// ===== PUT form =====
+package main
+
+import (
+  "fmt"
+  "io"
+  "net/http"
+  "strings"
+)
+
+func main() {
+  payload := strings.NewReader("a=1&b=x+y%26z")
+  req, _ := http.NewRequest("PUT", "http://localhost:8080/form", payload)
+  req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+  res, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer res.Body.Close()
+  body, _ := io.ReadAll(res.Body)
+  fmt.Println(string(body))
+}
+
+// ===== POST multipart =====
+package main
+
+import (
+  "bytes"
+  "fmt"
+  "io"
+  "mime/multipart"
+  "net/http"
+  "os"
+)
+
+func main() {
+  payload := &bytes.Buffer{}
+  writer := multipart.NewWriter(payload)
+  writer.WriteField("title", "Hello")
+  file, _ := os.ReadFile("/tmp/a.png")
+  part, _ := writer.CreateFormFile("file", "a.png")
+  part.Write(file)
+  writer.Close()
+  req, _ := http.NewRequest("POST", "https://api.example.com/upload", payload)
+  req.Header.Set("Content-Type", writer.FormDataContentType())
+  res, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer res.Body.Close()
+  body, _ := io.ReadAll(res.Body)
+  fmt.Println(string(body))
+}
+
+// ===== PATCH file =====
+package main
+
+import (
+  "fmt"
+  "io"
+  "net/http"
+  "os"
+)
+
+func main() {
+  payload, _ := os.Open("/tmp/data.bin")
+  defer payload.Close()
+  req, _ := http.NewRequest("PATCH", "https://api.example.com/raw", payload)
+  req.Header.Add("Content-Type", "application/octet-stream")
+  res, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer res.Body.Close()
+  body, _ := io.ReadAll(res.Body)
+  fmt.Println(string(body))
+}

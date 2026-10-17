@@ -1,0 +1,76 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: reqwest
+expression: out
+---
+// ===== GET with query and auth =====
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let client = reqwest::Client::new();
+  let response = client
+    .request(reqwest::Method::from_bytes(b"GET")?, "https://api.example.com/users?page=1&q=a%20b")
+    .header("Accept", "application/json")
+    .header("Authorization", "Bearer t0k'en\"$x")
+    .send()
+    .await?;
+  println!("{}", response.text().await?);
+  Ok(())
+}
+
+// ===== POST JSON =====
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let client = reqwest::Client::new();
+  let response = client
+    .request(reqwest::Method::from_bytes(b"POST")?, "https://api.example.com/users")
+    .header("Content-Type", "application/json")
+    .body("{\"name\":\"Ann\",\"tags\":[\"a\"]}")
+    .send()
+    .await?;
+  println!("{}", response.text().await?);
+  Ok(())
+}
+
+// ===== PUT form =====
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let client = reqwest::Client::new();
+  let response = client
+    .request(reqwest::Method::from_bytes(b"PUT")?, "http://localhost:8080/form")
+    .header("Content-Type", "application/x-www-form-urlencoded")
+    .form(&[("a", "1"), ("b", "x y&z")])
+    .send()
+    .await?;
+  println!("{}", response.text().await?);
+  Ok(())
+}
+
+// ===== POST multipart =====
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let client = reqwest::Client::new();
+  let form = reqwest::multipart::Form::new()
+    .text("title", "Hello")
+    .part("file", reqwest::multipart::Part::bytes(std::fs::read("/tmp/a.png")?).file_name("a.png"));
+  let response = client
+    .request(reqwest::Method::from_bytes(b"POST")?, "https://api.example.com/upload")
+    .multipart(form)
+    .send()
+    .await?;
+  println!("{}", response.text().await?);
+  Ok(())
+}
+
+// ===== PATCH file =====
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let client = reqwest::Client::new();
+  let response = client
+    .request(reqwest::Method::from_bytes(b"PATCH")?, "https://api.example.com/raw")
+    .header("Content-Type", "application/octet-stream")
+    .body(std::fs::read("/tmp/data.bin")?)
+    .send()
+    .await?;
+  println!("{}", response.text().await?);
+  Ok(())
+}

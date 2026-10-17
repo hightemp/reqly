@@ -1,0 +1,80 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: Node.js undici
+expression: out
+---
+// ===== GET with query and auth =====
+import { request } from 'undici';
+
+const { statusCode, body: res } = await request('https://api.example.com/users?page=1&q=a%20b', {
+  method: 'GET',
+  headers: {
+    'Accept': 'application/json',
+    'Authorization': 'Bearer t0k\'en"$x'
+  }
+});
+
+console.log(statusCode, await res.text());
+
+// ===== POST JSON =====
+import { request } from 'undici';
+
+const { statusCode, body: res } = await request('https://api.example.com/users', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+  "name": "Ann",
+  "tags": [
+    "a"
+  ]
+})
+});
+
+console.log(statusCode, await res.text());
+
+// ===== PUT form =====
+import { request } from 'undici';
+
+const body = new URLSearchParams();
+body.append('a', '1');
+body.append('b', 'x y&z');
+const { statusCode, body: res } = await request('http://localhost:8080/form', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  },
+  body: body.toString()
+});
+
+console.log(statusCode, await res.text());
+
+// ===== POST multipart =====
+import { request } from 'undici';
+import fs from 'node:fs/promises';
+
+const body = new FormData();
+body.append('title', 'Hello');
+body.append('file', new Blob([await fs.readFile('/tmp/a.png')]), 'a.png');
+const { statusCode, body: res } = await request('https://api.example.com/upload', {
+  method: 'POST',
+  headers: {},
+  body: body
+});
+
+console.log(statusCode, await res.text());
+
+// ===== PATCH file =====
+import { request } from 'undici';
+import fs from 'node:fs/promises';
+
+const { statusCode, body: res } = await request('https://api.example.com/raw', {
+  method: 'PATCH',
+  headers: {
+    'Content-Type': 'application/octet-stream'
+  },
+  body: await fs.readFile('/tmp/data.bin')
+});
+
+console.log(statusCode, await res.text());

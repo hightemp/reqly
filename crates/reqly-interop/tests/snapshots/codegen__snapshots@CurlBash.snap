@@ -1,0 +1,35 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: cURL (bash)
+expression: out
+---
+// ===== GET with query and auth =====
+curl --request GET \
+  --url 'https://api.example.com/users?page=1&q=a%20b' \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Bearer t0k'\''en"$x'
+
+// ===== POST JSON =====
+curl --request POST \
+  --url https://api.example.com/users \
+  --header 'Content-Type: application/json' \
+  --data '{"name":"Ann","tags":["a"]}'
+
+// ===== PUT form =====
+curl --request PUT \
+  --url http://localhost:8080/form \
+  --header 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode a=1 \
+  --data-urlencode 'b=x y&z'
+
+// ===== POST multipart =====
+curl --request POST \
+  --url https://api.example.com/upload \
+  --form title=Hello \
+  --form file=@/tmp/a.png
+
+// ===== PATCH file =====
+curl --request PATCH \
+  --url https://api.example.com/raw \
+  --header 'Content-Type: application/octet-stream' \
+  --data-binary @/tmp/data.bin

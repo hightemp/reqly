@@ -1,0 +1,83 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: "Net::HTTP"
+expression: out
+---
+// ===== GET with query and auth =====
+require 'uri'
+require 'net/http'
+
+url = URI('https://api.example.com/users?page=1&q=a%20b')
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = url.scheme == 'https'
+
+request = Net::HTTP::Get.new(url)
+request['Accept'] = 'application/json'
+request['Authorization'] = 'Bearer t0k\'en"$x'
+
+response = http.request(request)
+puts response.read_body
+
+// ===== POST JSON =====
+require 'uri'
+require 'net/http'
+
+url = URI('https://api.example.com/users')
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = url.scheme == 'https'
+
+request = Net::HTTP::Post.new(url)
+request['Content-Type'] = 'application/json'
+request.body = '{"name":"Ann","tags":["a"]}'
+
+response = http.request(request)
+puts response.read_body
+
+// ===== PUT form =====
+require 'uri'
+require 'net/http'
+
+url = URI('http://localhost:8080/form')
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = url.scheme == 'https'
+
+request = Net::HTTP::Put.new(url)
+request['Content-Type'] = 'application/x-www-form-urlencoded'
+request.body = 'a=1&b=x+y%26z'
+
+response = http.request(request)
+puts response.read_body
+
+// ===== POST multipart =====
+require 'uri'
+require 'net/http'
+
+url = URI('https://api.example.com/upload')
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = url.scheme == 'https'
+
+request = Net::HTTP::Post.new(url)
+request.set_form([['title', 'Hello'], ['file', File.open('/tmp/a.png')]], 'multipart/form-data')
+
+response = http.request(request)
+puts response.read_body
+
+// ===== PATCH file =====
+require 'uri'
+require 'net/http'
+
+url = URI('https://api.example.com/raw')
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = url.scheme == 'https'
+
+request = Net::HTTP::Patch.new(url)
+request['Content-Type'] = 'application/octet-stream'
+request.body = File.binread('/tmp/data.bin')
+
+response = http.request(request)
+puts response.read_body

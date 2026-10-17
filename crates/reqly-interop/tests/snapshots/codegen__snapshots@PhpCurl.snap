@@ -1,0 +1,104 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: cURL
+expression: out
+---
+// ===== GET with query and auth =====
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'https://api.example.com/users?page=1&q=a%20b',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => 'GET',
+  CURLOPT_HTTPHEADER => [
+    'Accept: application/json',
+    'Authorization: Bearer t0k\'en"$x',
+  ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+
+echo $response;
+
+// ===== POST JSON =====
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'https://api.example.com/users',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => '{"name":"Ann","tags":["a"]}',
+  CURLOPT_HTTPHEADER => [
+    'Content-Type: application/json',
+  ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+
+echo $response;
+
+// ===== PUT form =====
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'http://localhost:8080/form',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => 'PUT',
+  CURLOPT_POSTFIELDS => 'a=1&b=x+y%26z',
+  CURLOPT_HTTPHEADER => [
+    'Content-Type: application/x-www-form-urlencoded',
+  ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+
+echo $response;
+
+// ===== POST multipart =====
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'https://api.example.com/upload',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => [
+    'title' => 'Hello',
+    'file' => new CURLFile('/tmp/a.png'),
+  ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+
+echo $response;
+
+// ===== PATCH file =====
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+  CURLOPT_URL => 'https://api.example.com/raw',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_CUSTOMREQUEST => 'PATCH',
+  CURLOPT_POSTFIELDS => file_get_contents('/tmp/data.bin'),
+  CURLOPT_HTTPHEADER => [
+    'Content-Type: application/octet-stream',
+  ],
+]);
+
+$response = curl_exec($curl);
+curl_close($curl);
+
+echo $response;

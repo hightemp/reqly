@@ -1,0 +1,58 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: HttpClient
+expression: out
+---
+// ===== GET with query and auth =====
+HttpRequest request = HttpRequest.newBuilder()
+  .uri(URI.create("https://api.example.com/users?page=1&q=a%20b"))
+  .header("Accept", "application/json")
+  .header("Authorization", "Bearer t0k'en\"$x")
+  .method("GET", HttpRequest.BodyPublishers.noBody())
+  .build();
+HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());
+
+// ===== POST JSON =====
+HttpRequest request = HttpRequest.newBuilder()
+  .uri(URI.create("https://api.example.com/users"))
+  .header("Content-Type", "application/json")
+  .method("POST", HttpRequest.BodyPublishers.ofString("{\"name\":\"Ann\",\"tags\":[\"a\"]}"))
+  .build();
+HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());
+
+// ===== PUT form =====
+HttpRequest request = HttpRequest.newBuilder()
+  .uri(URI.create("http://localhost:8080/form"))
+  .header("Content-Type", "application/x-www-form-urlencoded")
+  .method("PUT", HttpRequest.BodyPublishers.ofString("a=1&b=x+y%26z"))
+  .build();
+HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());
+
+// ===== POST multipart =====
+String boundary = "----ReqlyFormBoundary7MA4YWxk";
+var body = new java.io.ByteArrayOutputStream();
+body.write(("--" + boundary + "\r\nContent-Disposition: form-data; name=" + "\"title\"" + "\r\n\r\n" + "Hello" + "\r\n").getBytes());
+body.write(("--" + boundary + "\r\nContent-Disposition: form-data; name=" + "\"file\"" + "; filename=" + "\"a.png\"" + "\r\n\r\n").getBytes());
+body.write(java.nio.file.Files.readAllBytes(java.nio.file.Path.of("/tmp/a.png")));
+body.write("\r\n".getBytes());
+body.write(("--" + boundary + "--\r\n").getBytes());
+
+HttpRequest request = HttpRequest.newBuilder()
+  .uri(URI.create("https://api.example.com/upload"))
+  .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+  .method("POST", HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()))
+  .build();
+HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());
+
+// ===== PATCH file =====
+HttpRequest request = HttpRequest.newBuilder()
+  .uri(URI.create("https://api.example.com/raw"))
+  .header("Content-Type", "application/octet-stream")
+  .method("PATCH", HttpRequest.BodyPublishers.ofFile(java.nio.file.Path.of("/tmp/data.bin")))
+  .build();
+HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+System.out.println(response.body());

@@ -398,3 +398,41 @@ async fn postman_export_has_environment_files() {
         ]
     );
 }
+
+#[tokio::test]
+async fn code_generation() {
+    let fx = Fx::new().await;
+    let base = fx
+        .call("environment.list", json!({ "collectionId": fx.collection }))
+        .await["collection"][0]["id"]
+        .clone();
+    fx.call(
+        "environment.update",
+        json!({ "id": base, "data": { "host": "https://api.test" } }),
+    )
+    .await;
+    let req = fx
+        .node(Value::Null, "r", json!({ "kind": "request", "method": "POST", "url": "{{ host }}/x",
+            "headers": [{ "name": "X-A", "value": "1" }], "body": { "kind": "json", "text": "{\"a\":1}" } }))
+        .await;
+    let targets = fx.call("codegen.targets", json!({})).await;
+    assert!(targets.as_array().unwrap().len() > 20);
+    let out = fx
+        .call(
+            "codegen.generate",
+            json!({ "requestId": req, "target": "pythonRequests" }),
+        )
+        .await;
+    let code = out["code"].as_str().unwrap();
+    assert!(code.contains("url = \"https://api.test/x\""), "{code}");
+    let raw = fx
+        .call(
+            "codegen.generate",
+            json!({ "requestId": req, "target": "curlBash", "resolve": false }),
+        )
+        .await;
+    assert!(
+        raw["code"].as_str().unwrap().contains("{{ host }}/x"),
+        "{raw}"
+    );
+}

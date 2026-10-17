@@ -1,0 +1,28 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: HTTPie
+expression: out
+---
+// ===== GET with query and auth =====
+http GET 'https://api.example.com/users?page=1&q=a%20b' \
+  Accept:application/json \
+  'Authorization:Bearer t0k'\''en"$x'
+
+// ===== POST JSON =====
+printf %s '{"name":"Ann","tags":["a"]}' | http POST https://api.example.com/users \
+  Content-Type:application/json
+
+// ===== PUT form =====
+http --form PUT http://localhost:8080/form \
+  Content-Type:application/x-www-form-urlencoded \
+  a=1 \
+  'b=x y&z'
+
+// ===== POST multipart =====
+http --multipart POST https://api.example.com/upload \
+  title=Hello \
+  file@/tmp/a.png
+
+// ===== PATCH file =====
+http PATCH https://api.example.com/raw < /tmp/data.bin \
+  Content-Type:application/octet-stream

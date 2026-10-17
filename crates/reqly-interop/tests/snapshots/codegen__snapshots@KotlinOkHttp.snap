@@ -1,0 +1,72 @@
+---
+source: crates/reqly-interop/tests/codegen.rs
+description: OkHttp
+expression: out
+---
+// ===== GET with query and auth =====
+val client = OkHttpClient()
+val request = Request.Builder()
+  .url("https://api.example.com/users?page=1&q=a%20b")
+  .method("GET", null)
+  .addHeader("Accept", "application/json")
+  .addHeader("Authorization", "Bearer t0k'en\"\$x")
+  .build()
+
+client.newCall(request).execute().use { response ->
+  println(response.body?.string())
+}
+
+// ===== POST JSON =====
+val client = OkHttpClient()
+val body = "{\"name\":\"Ann\",\"tags\":[\"a\"]}".toRequestBody("application/json".toMediaType())
+val request = Request.Builder()
+  .url("https://api.example.com/users")
+  .method("POST", body)
+  .addHeader("Content-Type", "application/json")
+  .build()
+
+client.newCall(request).execute().use { response ->
+  println(response.body?.string())
+}
+
+// ===== PUT form =====
+val client = OkHttpClient()
+val body = "a=1&b=x+y%26z".toRequestBody("application/x-www-form-urlencoded".toMediaType())
+val request = Request.Builder()
+  .url("http://localhost:8080/form")
+  .method("PUT", body)
+  .addHeader("Content-Type", "application/x-www-form-urlencoded")
+  .build()
+
+client.newCall(request).execute().use { response ->
+  println(response.body?.string())
+}
+
+// ===== POST multipart =====
+val client = OkHttpClient()
+val body = MultipartBody.Builder()
+  .setType(MultipartBody.FORM)
+  .addFormDataPart("title", "Hello")
+  .addFormDataPart("file", "a.png", File("/tmp/a.png").asRequestBody("application/octet-stream".toMediaType()))
+  .build()
+val request = Request.Builder()
+  .url("https://api.example.com/upload")
+  .method("POST", body)
+  .build()
+
+client.newCall(request).execute().use { response ->
+  println(response.body?.string())
+}
+
+// ===== PATCH file =====
+val client = OkHttpClient()
+val body = File("/tmp/data.bin").asRequestBody("application/octet-stream".toMediaType())
+val request = Request.Builder()
+  .url("https://api.example.com/raw")
+  .method("PATCH", body)
+  .addHeader("Content-Type", "application/octet-stream")
+  .build()
+
+client.newCall(request).execute().use { response ->
+  println(response.body?.string())
+}

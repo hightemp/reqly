@@ -26,7 +26,9 @@ use crate::events::Event;
 use crate::registry::{Command, Registry};
 
 pub fn register(r: &mut Registry<AppContext>) {
-    r.register::<ImportPreview>()
+    r.register::<CodegenTargets>()
+        .register::<CodegenGenerate>()
+        .register::<ImportPreview>()
         .register::<ImportFromUrl>()
         .register::<ImportApply>()
         .register::<ExportRun>();
@@ -901,5 +903,63 @@ command!(
         let source = format!("reqly {}", env!("CARGO_PKG_VERSION"));
         let files = reqly_interop::export(&data, input.format, ctx.clock.now().0, &source, &stem)?;
         Ok(ExportRunOutput { files })
+    }
+);
+
+// ----- code generation -----------------------------------------------------------------
+
+command!(
+    CodegenTargets,
+    "codegen.targets",
+    super::Empty,
+    Vec<reqly_interop::codegen::TargetInfo>,
+    |_ctx, _input| { Ok(reqly_interop::codegen::targets()) }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CodegenInput {
+    pub request_id: Id,
+    pub target: reqly_interop::codegen::Target,
+    /// Render variables and template tags (default true).
+    #[ts(optional)]
+    pub resolve: Option<bool>,
+    /// Spaces per indentation level (default 2).
+    #[ts(optional)]
+    pub indent: Option<u8>,
+    /// Values for `{% prompt %}` tags when resolving.
+    #[ts(optional)]
+    pub prompt_values: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CodegenOutput {
+    pub code: String,
+}
+
+command!(
+    CodegenGenerate,
+    "codegen.generate",
+    CodegenInput,
+    CodegenOutput,
+    |ctx, input| {
+        let (prepared, _) = super::http::prepare_stored_with(
+            ctx,
+            input.request_id,
+            &input.prompt_values.unwrap_or_default(),
+            &[input.request_id],
+            input.resolve.unwrap_or(true),
+        )
+        .await?;
+        let request = reqly_interop::codegen::CodeRequest::from_prepared(&prepared);
+        let options = reqly_interop::codegen::Options {
+            indent: usize::from(input.indent.unwrap_or(2)),
+        };
+        Ok(CodegenOutput {
+            code: reqly_interop::codegen::generate(input.target, &request, options),
+        })
     }
 );
