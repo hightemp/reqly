@@ -12,7 +12,7 @@
   import Combobox from '$lib/ui/overlay/Combobox.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
-  import type { TagEditRequest } from './tagEditor.svelte';
+  import type { TagEditRequest } from './tagEditorState.svelte';
 
   let {
     services,

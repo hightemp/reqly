@@ -2,7 +2,7 @@
 
 import type { EnvironmentStore } from '$lib/stores/environments.svelte';
 import type { TemplateHostFactory } from '$lib/template/host';
-import { tagEditor } from './tagEditor.svelte';
+import { tagEditor } from './tagEditorState.svelte';
 
 export function createTemplateHostFactory(envs: EnvironmentStore): TemplateHostFactory {
   return (nodeId) => ({

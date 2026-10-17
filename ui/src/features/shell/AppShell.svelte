@@ -27,7 +27,7 @@
   import PromptDialog from '../template/PromptDialog.svelte';
   import { promptState } from '../template/prompts.svelte';
   import TagEditor from '../template/TagEditor.svelte';
-  import { tagEditor } from '../template/tagEditor.svelte';
+  import { tagEditor } from '../template/tagEditorState.svelte';
   import { provideTemplateHost } from '$lib/template/host';
   import Titlebar from './Titlebar.svelte';
 
