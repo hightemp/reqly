@@ -9,6 +9,7 @@
   import { bindPreferences, type Services } from '$lib/services.svelte';
   import type { IconName } from '$lib/ui/Icon.svelte';
   import IconButton from '$lib/ui/IconButton.svelte';
+  import OverlayHost from '$lib/ui/overlay/OverlayHost.svelte';
   import SplitPane from '$lib/ui/SplitPane.svelte';
   import Titlebar from './Titlebar.svelte';
 
@@ -123,6 +124,8 @@
       {/snippet}
     </SplitPane>
   </main>
+
+  <OverlayHost />
 
   <footer class="statusbar">
     {#if prefs.value.sidebarCollapsed}

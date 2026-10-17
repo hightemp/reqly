@@ -77,15 +77,15 @@
 
 Для каждого компонента: тесты (testing-library: рендер, клавиатура, ARIA, события), отображение во всех темах, страница-витрина `/__playground` (только dev).
 
-- [ ] **T1.1.1** Button, IconButton, Kbd, Badge, Spinner, ProgressBar, EmptyState.
-- [ ] **T1.1.2** Input, Textarea, NumberInput (с валидацией, состояниями error и disabled).
-- [ ] **T1.1.3** Checkbox, Radio, Switch.
-- [ ] **T1.1.4** Popover-примитив (позиционирование, flip и shift, порталы, закрытие по Esc и клику вне).
-- [ ] **T1.1.5** Tooltip (задержка, клавиатурный фокус).
-- [ ] **T1.1.6** Select и Combobox (поиск, клавиатурная навигация, виртуализация длинных списков, кастомный рендер опций).
-- [ ] **T1.1.7** DropdownMenu и ContextMenu (вложенные подменю, хоткеи в пунктах, disabled, разделители, typeahead).
-- [ ] **T1.1.8** Modal/Dialog (focus trap, возврат фокуса, стек модалок), ConfirmDialog, PromptDialog — сервисы вместо `alert`, `confirm` и `prompt`.
-- [ ] **T1.1.9** Toast-сервис (типы, действие Undo, авто-скрытие, очередь).
+- [x] **T1.1.1** Button, IconButton, Kbd, Badge, Spinner, ProgressBar, EmptyState.
+- [x] **T1.1.2** Input, Textarea, NumberInput (с валидацией, состояниями error и disabled).
+- [x] **T1.1.3** Checkbox, Radio, Switch.
+- [x] **T1.1.4** Popover-примитив (позиционирование, flip и shift, порталы, закрытие по Esc и клику вне).
+- [x] **T1.1.5** Tooltip (задержка, клавиатурный фокус).
+- [x] **T1.1.6** Select и Combobox (поиск, клавиатурная навигация, виртуализация длинных списков, кастомный рендер опций).
+- [x] **T1.1.7** DropdownMenu и ContextMenu (вложенные подменю, хоткеи в пунктах, disabled, разделители, typeahead).
+- [x] **T1.1.8** Modal/Dialog (focus trap, возврат фокуса, стек модалок), ConfirmDialog, PromptDialog — сервисы вместо `alert`, `confirm` и `prompt`.
+- [x] **T1.1.9** Toast-сервис (типы, действие Undo, авто-скрытие, очередь).
 - [ ] **T1.1.10** Tabs (клавиатура, overflow со скроллом, закрытие, DnD-сортировка).
 - [ ] **T1.1.11** SplitPane (горизонтальный и вертикальный, min и max, двойной клик для сброса, сохранение размеров).
 - [ ] **T1.1.12** VirtualList.

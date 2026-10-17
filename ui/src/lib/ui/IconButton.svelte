@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
   import Icon, { type IconName } from './Icon.svelte';
+  import { tooltip } from './overlay/tooltip.svelte';
 
   interface Props extends Omit<HTMLButtonAttributes, 'children'> {
     icon: IconName;
@@ -27,6 +28,7 @@
   class="icon-button {variant} {className ?? ''}"
   aria-label={label}
   aria-pressed={pressed}
+  use:tooltip={label}
   {...rest}
 >
   <Icon name={icon} {size} />

@@ -5,6 +5,11 @@ export const en = {
     loading: 'Loading…',
     connectionLost: 'Connection to the server lost. Reconnecting…',
   },
+  common: {
+    ok: 'OK',
+    cancel: 'Cancel',
+    close: 'Close',
+  },
   window: {
     minimize: 'Minimize',
     maximize: 'Maximize',

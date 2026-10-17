@@ -7,6 +7,11 @@ export const ru: Translation<Messages> = {
     loading: 'Загрузка…',
     connectionLost: 'Соединение с сервером потеряно. Переподключение…',
   },
+  common: {
+    ok: 'ОК',
+    cancel: 'Отмена',
+    close: 'Закрыть',
+  },
   window: {
     minimize: 'Свернуть',
     maximize: 'Развернуть',
