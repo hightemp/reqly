@@ -13,6 +13,35 @@ pub struct Config {
     pub data_dir: PathBuf,
     /// `tracing` filter, e.g. `info,reqly_server=debug`.
     pub log: String,
+    pub network: NetworkConfig,
+}
+
+/// Outgoing request policy (SSRF protection). Metadata and link-local
+/// ranges are always denied.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct NetworkConfig {
+    pub block_private: bool,
+    pub block_loopback: bool,
+    /// Extra denied ranges, e.g. `["203.0.113.0/24"]`.
+    pub deny: Vec<String>,
+    /// Hostnames that bypass every check.
+    pub allow_hosts: Vec<String>,
+}
+
+impl NetworkConfig {
+    pub fn policy(&self) -> anyhow::Result<reqly_http::policy::NetworkPolicy> {
+        let mut policy = reqly_http::policy::NetworkPolicy::server_default();
+        policy.block_private = self.block_private;
+        policy.block_loopback = self.block_loopback;
+        policy.allow_hosts = self.allow_hosts.clone();
+        for cidr in &self.deny {
+            policy
+                .deny
+                .push(reqly_http::policy::Cidr::parse(cidr).map_err(|e| anyhow::anyhow!("{e}"))?);
+        }
+        Ok(policy)
+    }
 }
 
 impl Default for Config {
@@ -21,6 +50,7 @@ impl Default for Config {
             bind: "127.0.0.1:8484".into(),
             data_dir: PathBuf::from(".reqly-data"),
             log: "info".into(),
+            network: NetworkConfig::default(),
         }
     }
 }
@@ -42,6 +72,20 @@ impl Config {
         }
         if let Some(v) = env("REQLY_LOG") {
             cfg.log = v;
+        }
+        let flag = |v: String| matches!(v.as_str(), "1" | "true" | "yes");
+        if let Some(v) = env("REQLY_BLOCK_PRIVATE") {
+            cfg.network.block_private = flag(v);
+        }
+        if let Some(v) = env("REQLY_BLOCK_LOOPBACK") {
+            cfg.network.block_loopback = flag(v);
+        }
+        if let Some(v) = env("REQLY_ALLOW_HOSTS") {
+            cfg.network.allow_hosts = v
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
         }
         Ok(cfg)
     }

@@ -162,6 +162,34 @@ fn config_file_then_env_override() {
 }
 
 #[test]
+fn network_policy_from_file_and_env() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("reqly.toml");
+    std::fs::write(
+        &file,
+        "[network]\nblock_private = true\ndeny = [\"203.0.113.0/24\"]\n",
+    )
+    .unwrap();
+    let cfg = Config::load(Some(&file), |k| {
+        (k == "REQLY_BLOCK_LOOPBACK").then(|| "1".into())
+    })
+    .unwrap();
+    let policy = cfg.network.policy().unwrap();
+    assert!(policy.block_private && policy.block_loopback);
+    assert!(policy.check_ip("203.0.113.9".parse().unwrap()).is_err());
+    assert!(policy.check_ip("169.254.169.254".parse().unwrap()).is_err());
+
+    std::fs::write(&file, "[network]\ndeny = [\"nope\"]\n").unwrap();
+    assert!(
+        Config::load(Some(&file), |_| None)
+            .unwrap()
+            .network
+            .policy()
+            .is_err()
+    );
+}
+
+#[test]
 fn config_rejects_unknown_keys() {
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("reqly.toml");

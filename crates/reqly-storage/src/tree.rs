@@ -423,6 +423,46 @@ impl<'a> TreeRepo<'a> {
         fetch_node(&mut *self.conn().await?, id).await
     }
 
+    /// Blob hashes referenced by request bodies (binary files, multipart
+    /// `blob:` fields), including trashed nodes so restore keeps working.
+    pub async fn blob_refs(&self) -> CoreResult<HashSet<String>> {
+        let rows: Vec<String> = sqlx::query_scalar(
+            "SELECT data FROM nodes WHERE kind = 'request' \
+             AND (data LIKE '%\"type\":\"blob\"%' OR data LIKE '%blob:%')",
+        )
+        .fetch_all(self.storage.pool())
+        .await
+        .map_err(db_err)?;
+        let mut refs = HashSet::new();
+        for raw in rows {
+            if let Ok(NodeData::Request(r)) = serde_json::from_str::<NodeData>(&raw) {
+                if let Some(reqly_core::model::FileRef::Blob { hash, .. }) = &r.body.file {
+                    refs.insert(hash.clone());
+                }
+                for f in &r.body.fields {
+                    if let Some(hash) = f.value.strip_prefix("blob:") {
+                        refs.insert(hash.to_string());
+                    }
+                }
+            }
+        }
+        Ok(refs)
+    }
+
+    /// Ancestor folders of a node, outermost first.
+    pub async fn ancestors(&self, id: Id) -> CoreResult<Vec<Node>> {
+        let mut conn = self.conn().await?;
+        let mut chain = Vec::new();
+        let mut parent = fetch_node(&mut conn, id).await?.parent_id;
+        while let Some(p) = parent {
+            let node = fetch_node(&mut conn, p).await?;
+            parent = node.parent_id;
+            chain.push(node);
+        }
+        chain.reverse();
+        Ok(chain)
+    }
+
     /// Live nodes of a collection, ordered by `(sort_key, id)` within each parent.
     pub async fn list_tree(&self, collection_id: Id) -> CoreResult<Vec<NodeSummary>> {
         let rows = sqlx::query(concat!(

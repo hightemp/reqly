@@ -409,3 +409,22 @@ async fn deleting_a_collection_hides_its_nodes_from_get() {
     // Node rows still exist for restore; reading by id still works.
     assert!(fx.repo().get_node(r).await.is_ok());
 }
+
+#[tokio::test]
+async fn ancestors_are_outermost_first() {
+    let fx = Fx::new().await;
+    let col = fx.collection().await;
+    let a = fx.add(col, None, "a", folder()).await;
+    let b = fx.add(col, Some(a), "b", folder()).await;
+    let r = fx.add(col, Some(b), "r", request("GET", "x")).await;
+    let names: Vec<_> = fx
+        .repo()
+        .ancestors(r)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|n| n.name)
+        .collect();
+    assert_eq!(names, ["a", "b"]);
+    assert!(fx.repo().ancestors(a).await.unwrap().is_empty());
+}

@@ -1,5 +1,6 @@
 //! Built-in commands and the shared application context.
 
+pub mod http;
 pub mod tree;
 
 use std::sync::Arc;
@@ -31,6 +32,12 @@ pub struct AppContext {
     pub storage: Storage,
     pub blobs: BlobStore,
     pub clock: Arc<dyn Clock>,
+    /// Outgoing request restrictions (server build only).
+    pub network_policy: Option<reqly_http::policy::NetworkPolicy>,
+    /// Cancel tokens of requests in flight, by request id.
+    pub inflight: std::sync::Mutex<
+        std::collections::HashMap<reqly_core::Id, reqly_http::engine::CancelToken>,
+    >,
 }
 
 impl AppContext {
@@ -41,6 +48,8 @@ impl AppContext {
             storage,
             blobs,
             clock: Arc::new(SystemClock),
+            network_policy: None,
+            inflight: Default::default(),
         }
     }
 
@@ -67,6 +76,7 @@ pub fn registry() -> Registry<AppContext> {
         .register::<SettingsGet>()
         .register::<SettingsSet>();
     tree::register(&mut r);
+    http::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

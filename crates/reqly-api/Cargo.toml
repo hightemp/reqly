@@ -9,6 +9,10 @@ rust-version.workspace = true
 [dependencies]
 reqly-core.workspace = true
 reqly-storage.workspace = true
+reqly-http.workspace = true
+base64 = "0.22"
+tracing.workspace = true
+url = "2"
 async-trait.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -20,6 +24,7 @@ ts-rs.workspace = true
 contract = []
 
 [dev-dependencies]
+reqly-testserver.workspace = true
 
 [lints]
 workspace = true

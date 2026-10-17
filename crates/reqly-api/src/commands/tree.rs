@@ -154,7 +154,8 @@ pub struct NameInput {
 }
 
 macro_rules! command {
-    ($ty:ident, $name:literal, $input:ty, $output:ty, |$ctx:ident, $inp:ident| $body:block) => {
+    ($(#[$doc:meta])* $ty:ident, $name:literal, $input:ty, $output:ty, |$ctx:ident, $inp:ident| $body:block) => {
+        $(#[$doc])*
         pub struct $ty;
         impl Command<AppContext> for $ty {
             const NAME: &'static str = $name;
@@ -175,8 +176,8 @@ command!(
     |ctx, _input| { repo(ctx).list_workspaces().await }
 );
 
-// Returns workspaces, creating "My Workspace" with one collection on first run.
 command!(
+    /// Returns workspaces, creating "My Workspace" with one collection on first run.
     WorkspaceEnsureDefault,
     "workspace.ensureDefault",
     Empty,

@@ -29,8 +29,10 @@ pub fn router() -> Router {
         .route("/echo", any(echo))
         .route("/status/{code}", any(status))
         .route("/redirect/{n}", any(redirect))
+        .route("/redirect-to", any(redirect_to))
         .route("/cookies", get(cookies))
         .route("/cookies/set", get(set_cookies))
+        .route("/cookies/redirect", get(set_cookies_and_redirect))
         .route("/delay/{ms}", any(delay))
         .route("/bytes/{n}", get(bytes))
         .route("/stream/{n}", get(stream_lines))
@@ -88,6 +90,17 @@ async fn redirect(Path(n): Path<u32>) -> Response {
     (StatusCode::FOUND, [(header::LOCATION, location)]).into_response()
 }
 
+/// `302` to an arbitrary `?url=` (absolute or relative); `?status=` overrides the code.
+async fn redirect_to(Query(q): Query<BTreeMap<String, String>>) -> Response {
+    let status = q.get("status").and_then(|s| s.parse().ok()).unwrap_or(302);
+    let location = q.get("url").cloned().unwrap_or_else(|| "/echo".into());
+    (
+        StatusCode::from_u16(status).unwrap_or(StatusCode::FOUND),
+        [(header::LOCATION, location)],
+    )
+        .into_response()
+}
+
 async fn cookies(headers: HeaderMap) -> axum::Json<BTreeMap<String, String>> {
     let jar = headers
         .get_all(header::COOKIE)
@@ -108,6 +121,33 @@ async fn set_cookies(Query(pairs): Query<Vec<(String, String)>>) -> Response {
             .append(header::SET_COOKIE, cookie.parse().expect("cookie header"));
     }
     res
+}
+
+/// Sets cookies on a 302 hop, so clients must carry them through redirects.
+async fn set_cookies_and_redirect(Query(pairs): Query<Vec<(String, String)>>) -> Response {
+    let mut res = (StatusCode::FOUND, [(header::LOCATION, "/cookies")]).into_response();
+    for (k, v) in pairs {
+        let cookie = format!("{k}={v}; Path=/");
+        res.headers_mut()
+            .append(header::SET_COOKIE, cookie.parse().expect("cookie header"));
+    }
+    res
+}
+
+/// Pretends to be a forward proxy: echoes the absolute request target.
+pub fn proxy_router() -> Router {
+    Router::new().fallback(|method: Method, uri: Uri, headers: HeaderMap| async move {
+        let auth = headers
+            .get(header::PROXY_AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_string);
+        axum::Json(json!({
+            "proxied": true,
+            "method": method.as_str(),
+            "uri": uri.to_string(),
+            "proxyAuthorization": auth,
+        }))
+    })
 }
 
 async fn delay(Path(ms): Path<u64>) -> axum::Json<Value> {

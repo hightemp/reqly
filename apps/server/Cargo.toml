@@ -13,6 +13,7 @@ path = "src/main.rs"
 [dependencies]
 reqly-api.workspace = true
 reqly-core.workspace = true
+reqly-http.workspace = true
 reqly-storage.workspace = true
 anyhow.workspace = true
 axum.workspace = true

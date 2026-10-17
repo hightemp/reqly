@@ -1,7 +1,9 @@
 //! SQLite storage, migrations and repositories for Reqly.
 
 pub mod blobs;
+pub mod cookies;
 mod db;
+pub mod history;
 pub mod search;
 pub mod settings;
 #[cfg(feature = "testing")]

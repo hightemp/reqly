@@ -1,0 +1,8 @@
+//! HTTP for Reqly: turns stored requests into wire requests ([`prepare`])
+//! and executes them with libcurl ([`engine`]), see ADR-002.
+
+mod ca;
+pub mod engine;
+pub mod policy;
+pub mod prepare;
+pub mod snapshot;

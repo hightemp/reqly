@@ -49,6 +49,26 @@ impl TestServer {
         }
     }
 
+    /// A fake forward proxy (plain HTTP) that answers every request itself
+    /// with `{"proxied": true, "uri": <absolute target>, ...}`.
+    pub async fn start_proxy() -> Self {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("local addr");
+        let task = tokio::spawn(async move {
+            axum::serve(listener, routes::proxy_router())
+                .await
+                .expect("serve");
+        });
+        Self {
+            addr,
+            scheme: "http",
+            pki: None,
+            task,
+        }
+    }
+
     /// HTTPS on a random localhost port with a freshly generated CA.
     pub async fn start_tls(mode: TlsMode) -> Self {
         let pki = TestPki::generate();

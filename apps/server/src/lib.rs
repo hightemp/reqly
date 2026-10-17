@@ -30,7 +30,9 @@ impl AppState {
     pub async fn from_config(config: &Config) -> anyhow::Result<Self> {
         let storage = Storage::open(&config.database_path(), OpenOptions::default()).await?;
         let blobs = BlobStore::new(config.data_dir.join("blobs"));
-        Ok(Self::new(AppContext::new(Platform::Server, storage, blobs)))
+        let mut ctx = AppContext::new(Platform::Server, storage, blobs);
+        ctx.network_policy = Some(config.network.policy()?);
+        Ok(Self::new(ctx))
     }
 
     pub async fn for_tests() -> Self {
