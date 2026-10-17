@@ -123,6 +123,12 @@ Add a `## [x.y.z]` section to `CHANGELOG.md`, run `make release V=x.y.z` and
 that section as its description and attaches desktop installers, server
 binaries and the Docker image (`ghcr.io/hightemp/reqly-server`).
 
+To publish the image to Docker Hub as well, add a repository variable
+`DOCKERHUB_USERNAME` and a secret `DOCKERHUB_TOKEN` (a Docker Hub access token
+with read & write access) under **Settings → Secrets and variables →
+Actions**. To rebuild only the image of an existing release, run the
+*Release* workflow by hand with the tag and `only: docker`.
+
 ### Layout
 
 ```
