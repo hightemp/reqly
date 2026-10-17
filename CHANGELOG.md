@@ -5,6 +5,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-18
+
+Stage 6: scripts.
+
 ### Added
 
 - Scripts: pre-request and after-response JavaScript on collections, folders
@@ -191,7 +195,8 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/hightemp/reqly/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/hightemp/reqly/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/hightemp/reqly/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hightemp/reqly/compare/v0.2.0...v0.3.0
