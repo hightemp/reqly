@@ -12,6 +12,7 @@
   import OverlayHost from '$lib/ui/overlay/OverlayHost.svelte';
   import SplitPane from '$lib/ui/SplitPane.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
+  import SettingsModal from '../settings/SettingsModal.svelte';
   import RequestPanel from '../request/RequestPanel.svelte';
   import ResponsePanel from '../response/ResponsePanel.svelte';
   import { createFolder, createRequest } from '../sidebar/actions';
@@ -36,6 +37,12 @@
   // i18n-dynamic: languages.
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
+  let settingsOpen = $state(false);
+
+  // Desktop: custom title bar or the OS frame.
+  $effect(() => {
+    void windowController?.setDecorations(prefs.value.nativeFrame);
+  });
 
   // Follow the active collection / workspace.
   $effect(() => {
@@ -78,6 +85,7 @@
       hotkeys.on('layout.toggle', toggleLayout),
       hotkeys.on('request.new', () => void createRequest(services, selectedOne())),
       hotkeys.on('folder.new', () => void createFolder(services, selectedOne())),
+      hotkeys.on('settings.open', () => (settingsOpen = true)),
       transport.subscribe((e) => {
         if (e.topic === TRANSPORT_TOPICS.disconnected) offline = true;
         if (e.topic === TRANSPORT_TOPICS.reconnected) {
@@ -104,7 +112,7 @@
 </script>
 
 <div class="app">
-  {#if windowController}
+  {#if windowController && !prefs.value.nativeFrame}
     <Titlebar controller={windowController} {platform} />
   {/if}
 
@@ -156,6 +164,9 @@
   </main>
 
   <OverlayHost />
+  {#if settingsOpen}
+    <SettingsModal {services} onclose={() => (settingsOpen = false)} />
+  {/if}
   {#if folderSettings}
     <FolderSettings {services} folderId={folderSettings} onclose={() => (folderSettings = null)} />
   {/if}
@@ -165,6 +176,12 @@
       <IconButton icon="sidebar" size={14} label={t('sidebar.expand')} onclick={toggleSidebar} />
     {/if}
     <span class="spacer"></span>
+    <IconButton
+      icon="settings"
+      size={14}
+      label={t('settings.title')}
+      onclick={() => (settingsOpen = true)}
+    />
     <IconButton
       icon={prefs.value.responseLayout === 'right' ? 'layout-right' : 'layout-bottom'}
       size={14}

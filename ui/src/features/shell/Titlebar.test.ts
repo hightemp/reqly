@@ -13,6 +13,7 @@ function controller(maximized = false) {
     }),
     close: vi.fn(async () => {}),
     isMaximized: vi.fn(async () => maximized),
+    setDecorations: vi.fn(async () => {}),
     onResized: vi.fn(async (l: () => void) => {
       onResized = l;
       return () => {};

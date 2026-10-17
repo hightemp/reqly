@@ -5,6 +5,7 @@ import type { AppPingInput } from "./AppPingInput";
 import type { AppPingOutput } from "./AppPingOutput";
 import type { BlobUploadInput } from "./BlobUploadInput";
 import type { BlobUploadOutput } from "./BlobUploadOutput";
+import type { CleanupOutput } from "./CleanupOutput";
 import type { Collection } from "./Collection";
 import type { CollectionCreateInput } from "./CollectionCreateInput";
 import type { CollectionIdInput } from "./CollectionIdInput";
@@ -84,6 +85,7 @@ export type Commands = {
   "blob.upload": { input: BlobUploadInput; output: BlobUploadOutput };
   "response.saveBody": { input: ResponseSaveInput; output: Empty };
   "response.filter": { input: ResponseFilterInput; output: ResponseFilterOutput };
+  "maintenance.cleanup": { input: Empty; output: CleanupOutput };
   "curl.parse": { input: CurlParseInput; output: Array<CurlParseOutput> };
   "request.toCurl": { input: RequestIdInput; output: CurlOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };

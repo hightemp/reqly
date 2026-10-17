@@ -41,6 +41,7 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<BlobUpload>()
         .register::<ResponseSaveBody>()
         .register::<ResponseFilter>()
+        .register::<MaintenanceCleanup>()
         .register::<CurlParse>()
         .register::<RequestToCurl>();
 }
@@ -658,6 +659,34 @@ command!(
             .await
             .map_err(|e| CoreError::internal(e.to_string()))??;
         Ok(ResponseFilterOutput { result })
+    }
+);
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CleanupOutput {
+    pub removed_history: u64,
+    pub removed_trash: u64,
+    pub removed_blobs: usize,
+}
+
+/// Trash entries older than this are purged by cleanup.
+const TRASH_RETENTION_MS: i64 = 30 * 86_400_000;
+
+command!(
+    /// Applies history limits, empties old trash and deletes unreferenced files.
+    MaintenanceCleanup,
+    "maintenance.cleanup",
+    super::Empty,
+    CleanupOutput,
+    |ctx, _input| {
+        let limits: HistoryLimitSettings = setting(ctx, HISTORY_LIMITS_KEY).await?;
+        let removed_history = history(ctx).enforce_limits(&limits.into()).await?;
+        let cutoff = reqly_core::Timestamp(ctx.clock.now().0 - TRASH_RETENTION_MS);
+        let removed_trash = TreeRepo::new(&ctx.storage, ctx.clock.as_ref()).purge_deleted_before(cutoff).await?;
+        let removed_blobs = collect_garbage(ctx).await?;
+        Ok(CleanupOutput { removed_history, removed_trash, removed_blobs })
     }
 );
 

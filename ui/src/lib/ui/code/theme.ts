@@ -12,7 +12,7 @@ export const reqlyTheme = EditorView.theme({
     color: v('fg'),
     backgroundColor: 'transparent',
     height: '100%',
-    fontSize: 'var(--font-size-sm)',
+    fontSize: 'var(--editor-font-size, 12px)',
   },
   '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.55' },
   '.cm-content': { caretColor: v('accent'), padding: '6px 0' },

@@ -25,6 +25,18 @@ export interface Preferences {
   autosave: boolean;
   activeWorkspaceId: string | null;
   activeCollectionId: string | null;
+  density: 'comfortable' | 'compact';
+  /** Interface font size in px. */
+  uiFontSize: number;
+  editorFontSize: number;
+  /** Empty = built-in font stack. */
+  fontUi: string;
+  fontMono: string;
+  /** Interface zoom in percent. */
+  zoom: number;
+  /** Desktop: use the OS window frame instead of the custom title bar (restart). */
+  nativeFrame: boolean;
+  editorWrap: boolean;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -40,6 +52,14 @@ export const DEFAULT_PREFERENCES: Preferences = {
   autosave: true,
   activeWorkspaceId: null,
   activeCollectionId: null,
+  density: 'comfortable',
+  uiFontSize: 13,
+  editorFontSize: 12,
+  fontUi: '',
+  fontMono: '',
+  zoom: 100,
+  nativeFrame: false,
+  editorWrap: false,
 };
 
 const validators: { [K in keyof Preferences]: (v: unknown) => boolean } = {
@@ -55,6 +75,14 @@ const validators: { [K in keyof Preferences]: (v: unknown) => boolean } = {
   autosave: (v) => typeof v === 'boolean',
   activeWorkspaceId: (v) => v === null || typeof v === 'string',
   activeCollectionId: (v) => v === null || typeof v === 'string',
+  density: (v) => v === 'comfortable' || v === 'compact',
+  uiFontSize: (v) => typeof v === 'number' && v >= 10 && v <= 20,
+  editorFontSize: (v) => typeof v === 'number' && v >= 9 && v <= 24,
+  fontUi: (v) => typeof v === 'string' && v.length < 200,
+  fontMono: (v) => typeof v === 'string' && v.length < 200,
+  zoom: (v) => typeof v === 'number' && v >= 50 && v <= 200,
+  nativeFrame: (v) => typeof v === 'boolean',
+  editorWrap: (v) => typeof v === 'boolean',
 };
 
 /** Keeps known, valid fields of untrusted stored data on top of defaults. */

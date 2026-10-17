@@ -11,6 +11,7 @@ import { TabsStore } from './stores/tabs.svelte';
 import { TreeStore } from './stores/tree.svelte';
 import { WorkspaceStore } from './stores/workspace.svelte';
 import { ThemeManager, type MediaQuery } from './themes/manager.svelte';
+import { parseTheme } from './themes/theme';
 
 /** Hotkey scopes active because of where keyboard focus is (e.g. `tree`). */
 export class FocusScopes {
@@ -59,6 +60,8 @@ export async function createServices(
   const hotkeys = new HotkeyRegistry(platform);
   defaultActions(transport.kind === 'tauri' ? 'desktop' : 'web').forEach((a) => hotkeys.define(a));
 
+  await loadUserCustomizations(transport, themes, hotkeys);
+
   const workspace = new WorkspaceStore(transport, prefs);
   const tree = new TreeStore(transport);
   const tabs = new TabsStore(transport);
@@ -87,9 +90,75 @@ export async function createServices(
   };
 }
 
-/** Keeps theme and locale in sync with preferences. Call inside a component. */
-export function bindPreferences(services: Services) {
+export const CUSTOM_THEMES_KEY = 'ui.themes';
+export const KEYBINDINGS_KEY = 'ui.keybindings';
+
+/** Applies custom themes and shortcut overrides stored in settings. */
+async function loadUserCustomizations(
+  transport: Transport,
+  themes: ThemeManager,
+  hotkeys: HotkeyRegistry,
+) {
+  try {
+    const [stored, bindings] = await Promise.all([
+      transport.call('settings.get', { key: CUSTOM_THEMES_KEY }),
+      transport.call('settings.get', { key: KEYBINDINGS_KEY }),
+    ]);
+    for (const raw of Array.isArray(stored.value) ? stored.value : []) {
+      const parsed = parseTheme(raw);
+      if (parsed.ok) {
+        try {
+          themes.addCustom(parsed.theme);
+        } catch (e) {
+          console.warn('[themes] skipped custom theme', e);
+        }
+      }
+    }
+    const overrides = (bindings.value ?? {}) as Record<string, unknown>;
+    for (const [id, combos] of Object.entries(overrides)) {
+      if (Array.isArray(combos) && combos.every((c) => typeof c === 'string')) {
+        try {
+          hotkeys.setOverride(id, combos as string[]);
+        } catch {
+          // Invalid combo from an older version: ignore.
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[settings] customizations not loaded', e);
+  }
+}
+
+/** CSS font-family value: user font first, then the built-in stack. */
+const fontStack = (user: string, fallback: string) =>
+  user.trim() ? `${JSON.stringify(user.trim())}, ${fallback}` : fallback;
+
+/** Keeps theme, locale and appearance in sync with preferences. Call inside a component. */
+export function bindPreferences(services: Services, root: HTMLElement = document.documentElement) {
   $effect(() => services.themes.setPreference(services.prefs.value.theme));
+  $effect(() => {
+    const p = services.prefs.value;
+    root.dataset.density = p.density;
+    root.style.setProperty('--font-size', `${p.uiFontSize}px`);
+    root.style.setProperty('--font-size-sm', `${p.uiFontSize - 1}px`);
+    root.style.setProperty('--font-size-xs', `${p.uiFontSize - 2}px`);
+    root.style.setProperty('--editor-font-size', `${p.editorFontSize}px`);
+    root.style.setProperty(
+      '--font-ui',
+      fontStack(
+        p.fontUi,
+        "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif",
+      ),
+    );
+    root.style.setProperty(
+      '--font-mono',
+      fontStack(
+        p.fontMono,
+        "'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+      ),
+    );
+    root.style.setProperty('zoom', p.zoom === 100 ? '' : String(p.zoom / 100));
+  });
   $effect(() => {
     const locale = services.prefs.value.locale;
     if (locale) i18n.setLocale(locale);

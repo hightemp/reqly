@@ -33,7 +33,8 @@
   let bytes = $state<Uint8Array | null>(null);
   let loading = $state(false);
   let mode = $state<Mode>('pretty');
-  let wrap = $state(true);
+  // svelte-ignore state_referenced_locally
+  let wrap = $state(services.prefs.value.editorWrap);
   let forceLarge = $state(false);
   let filterKind = $state<FilterKind>('jsonPath');
   let filterText = $state('');

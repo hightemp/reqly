@@ -32,6 +32,7 @@ impl AppState {
         let blobs = BlobStore::new(config.data_dir.join("blobs"));
         let mut ctx = AppContext::new(Platform::Server, storage, blobs);
         ctx.network_policy = Some(config.network.policy()?);
+        ctx.data_dir = Some(config.data_dir.display().to_string());
         Ok(Self::new(ctx))
     }
 

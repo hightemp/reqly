@@ -34,6 +34,8 @@ pub struct AppContext {
     pub clock: Arc<dyn Clock>,
     /// Outgoing request restrictions (server build only).
     pub network_policy: Option<reqly_http::policy::NetworkPolicy>,
+    /// Where the database and blobs live (shown in settings).
+    pub data_dir: Option<String>,
     /// Cancel tokens of requests in flight, by request id.
     pub inflight: std::sync::Mutex<
         std::collections::HashMap<reqly_core::Id, reqly_http::engine::CancelToken>,
@@ -49,6 +51,7 @@ impl AppContext {
             blobs,
             clock: Arc::new(SystemClock),
             network_policy: None,
+            data_dir: None,
             inflight: Default::default(),
         }
     }
@@ -92,6 +95,7 @@ pub struct AppInfoOutput {
     pub name: String,
     pub version: String,
     pub platform: Platform,
+    pub data_dir: Option<String>,
 }
 
 pub struct AppInfo;
@@ -106,6 +110,7 @@ impl Command<AppContext> for AppInfo {
             name: "Reqly".into(),
             version: env!("CARGO_PKG_VERSION").into(),
             platform: ctx.platform,
+            data_dir: ctx.data_dir.clone(),
         })
     }
 }
