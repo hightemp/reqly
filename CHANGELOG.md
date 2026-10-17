@@ -7,6 +7,18 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Authentication: Digest (MD5, SHA-256, `auth-int`), NTLMv2, OAuth 1.0
+  (HMAC, RSA, PLAINTEXT), OAuth 2.0, AWS Signature v4, Hawk, Atlassian ASAP,
+  generated JWTs, Akamai EdgeGrid and netrc files (desktop). Signatures are
+  checked against the published test vectors of each scheme. See
+  `docs/auth.md`.
+- OAuth 2.0: authorization code with PKCE, client credentials, password,
+  device code and implicit grants; tokens per request or folder, encrypted
+  at rest, refreshed automatically and shown in the Auth tab. Sign-in opens
+  a window on desktop and a pop-up in the browser.
+- Imports from Insomnia, Postman, Bruno and OpenAPI keep these auth schemes
+  instead of reporting them as unsupported; exports to Insomnia and Postman
+  write them back.
 - Network settings (globally, per collection, folder or request): HTTP
   version (auto, 1.1, 2, h2c prior knowledge, 3 when the build supports it),
   DNS overrides (`--resolve`), connect-to, minimum and maximum TLS version,

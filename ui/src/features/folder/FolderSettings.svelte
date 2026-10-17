@@ -88,6 +88,7 @@
         <AuthPanel
           auth={folder.auth}
           nodeId={folderId}
+          transport={services.transport}
           onchange={(auth) => edit((f) => ({ ...f, auth }))}
         />
       {:else if section === 'variables'}

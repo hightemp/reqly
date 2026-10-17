@@ -49,7 +49,10 @@ impl SignContext {
 }
 
 fn auth_error(kind: &str, message: impl Into<String>) -> CoreError {
-    CoreError::new("auth.failed", message.into()).with_param("type", kind)
+    let message = message.into();
+    CoreError::new("auth.failed", message.clone())
+        .with_param("type", kind)
+        .with_param("message", message)
 }
 
 fn set_header(req: &mut PreparedRequest, name: &str, value: String) {

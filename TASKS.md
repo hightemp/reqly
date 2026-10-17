@@ -334,14 +334,14 @@
 
 ### E4.1 Авторизация
 
-- [ ] **T4.1.1** Digest (MD5, SHA-256, qop auth и auth-int). **Тесты:** тестовый сервер с Digest.
-- [ ] **T4.1.2** OAuth 1.0 (HMAC-SHA1, HMAC-SHA256, RSA-SHA1, PLAINTEXT). **Тесты:** векторы из RFC 5849.
-- [ ] **T4.1.3** OAuth 2.0: Client Credentials, Password, Authorization Code + PKCE, Implicit, Device Code, Refresh; хранение токенов, авто-refresh, ручной сброс.
+- [x] **T4.1.1** Digest (MD5, SHA-256, qop auth и auth-int). **Тесты:** тестовый сервер с Digest.
+- [x] **T4.1.2** OAuth 1.0 (HMAC-SHA1, HMAC-SHA256, RSA-SHA1, PLAINTEXT). **Тесты:** векторы из RFC 5849.
+- [x] **T4.1.3** OAuth 2.0: Client Credentials, Password, Authorization Code + PKCE, Implicit, Device Code, Refresh; хранение токенов, авто-refresh, ручной сброс.
   - **Тесты:** мок-OAuth-сервер в `reqly-testserver` для каждого flow.
-- [ ] **T4.1.4** OAuth 2.0 UI-flow: встроенное окно логина (desktop, Tauri webview) и redirect через `public_url` сервера (web).
-- [ ] **T4.1.5** AWS SigV4. **Тесты:** официальные тест-векторы AWS.
-- [ ] **T4.1.6** NTLM (v2). **Тесты:** векторы и мок-handshake.
-- [ ] **T4.1.7** Hawk, Atlassian ASAP, Netrc, Akamai EdgeGrid, JWT Bearer (генерация и подпись HS, RS, ES).
+- [x] **T4.1.4** OAuth 2.0 UI-flow: встроенное окно логина (desktop, Tauri webview) и redirect через `public_url` сервера (web).
+- [x] **T4.1.5** AWS SigV4. **Тесты:** официальные тест-векторы AWS.
+- [x] **T4.1.6** NTLM (v2). **Тесты:** векторы и мок-handshake.
+- [x] **T4.1.7** Hawk, Atlassian ASAP, Netrc, Akamai EdgeGrid, JWT Bearer (генерация и подпись HS, RS, ES).
 
 ### E4.2 Сеть
 

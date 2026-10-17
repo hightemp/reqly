@@ -257,6 +257,7 @@
         <AuthPanel
           auth={req.auth}
           nodeId={activeId}
+          transport={services.transport}
           onchange={(auth) => edit((r) => ({ ...r, auth }))}
         />
       {:else if section === 'headers'}

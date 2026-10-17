@@ -31,6 +31,70 @@ async fn dispatch(core: State<'_, Core>, name: String, input: Value) -> Result<V
     core.registry.dispatch(&core.ctx, &name, input).await
 }
 
+/// Opens the provider's sign-in page in a window and resolves with the URL
+/// it redirects to (`redirect_uri…`), which is never loaded.
+#[tauri::command]
+async fn oauth2_sign_in<R: Runtime>(
+    app: AppHandle<R>,
+    url: String,
+    redirect_uri: String,
+    title: String,
+) -> Result<String, CoreError> {
+    use std::sync::{Arc, Mutex};
+    use tauri::{WebviewUrl, WebviewWindowBuilder, WindowEvent};
+
+    let start: tauri::Url = url.parse().map_err(|e| {
+        CoreError::new(
+            "auth.oauth2_config",
+            format!("invalid authorization URL: {e}"),
+        )
+    })?;
+    // Match on scheme, host, port and path; the query carries the answer.
+    let target = redirect_uri
+        .split(['?', '#'])
+        .next()
+        .unwrap_or("")
+        .to_string();
+    let (tx, rx) = tokio::sync::oneshot::channel::<Option<String>>();
+    let tx = Arc::new(Mutex::new(Some(tx)));
+    let send = move |tx: &Arc<Mutex<Option<tokio::sync::oneshot::Sender<Option<String>>>>>, v| {
+        if let Some(tx) = tx.lock().ok().and_then(|mut t| t.take()) {
+            let _ = tx.send(v);
+        }
+    };
+    let on_nav = tx.clone();
+    let label = format!(
+        "oauth2-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0)
+    );
+    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(start))
+        .title(title)
+        .inner_size(520.0, 720.0)
+        .on_navigation(move |nav| {
+            let current = nav.as_str();
+            let base = current.split(['?', '#']).next().unwrap_or("");
+            if base == target {
+                send(&on_nav, Some(current.to_string()));
+                return false;
+            }
+            true
+        })
+        .build()
+        .map_err(|e| CoreError::internal(e.to_string()))?;
+    let on_close = tx.clone();
+    window.on_window_event(move |event| {
+        if let WindowEvent::Destroyed = event {
+            send(&on_close, None);
+        }
+    });
+    let result = rx.await.ok().flatten();
+    let _ = window.destroy();
+    result.ok_or_else(|| CoreError::new("auth.oauth2_cancelled", "the sign-in window was closed"))
+}
+
 async fn open_core<R: Runtime>(app: &AppHandle<R>) -> Result<Core, Box<dyn std::error::Error>> {
     let data_dir = app.path().app_data_dir()?;
     let storage = Storage::open(&data_dir.join("reqly.db"), OpenOptions::default()).await?;
@@ -84,7 +148,7 @@ pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tau
         forward_events(handle, &app.state::<Core>());
         Ok(())
     })
-    .invoke_handler(tauri::generate_handler![dispatch])
+    .invoke_handler(tauri::generate_handler![dispatch, oauth2_sign_in])
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

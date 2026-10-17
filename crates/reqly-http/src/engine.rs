@@ -315,7 +315,7 @@ fn answer_challenge(
     request: &PreparedRequest,
     challenges: &[String],
 ) -> CoreResult<Option<String>> {
-    let fail = |m: String| CoreError::new("auth.failed", m);
+    let fail = |m: String| CoreError::new("auth.failed", m.clone()).with_param("message", m);
     let mut random = [0u8; 8];
     getrandom::fill(&mut random).expect("OS randomness");
     Ok(match auth {
