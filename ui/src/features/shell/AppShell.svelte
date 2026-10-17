@@ -17,6 +17,7 @@
   import ExportDialog from '../interop/ExportDialog.svelte';
   import ImportWizard from '../interop/ImportWizard.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
+  import CollectionScripts from '../scripts/CollectionScripts.svelte';
   import CookieManager from '../modals/CookieManager.svelte';
   import RequestLog from '../modals/RequestLog.svelte';
   import TrashModal from '../modals/TrashModal.svelte';
@@ -59,7 +60,9 @@
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
-  let modal = $state<'palette' | 'cookies' | 'trash' | 'log' | 'environments' | null>(null);
+  let modal = $state<
+    'palette' | 'cookies' | 'trash' | 'log' | 'environments' | 'collectionScripts' | null
+  >(null);
 
   // Desktop: custom title bar or the OS frame.
   $effect(() => {
@@ -285,6 +288,12 @@
     <RequestLog {services} onclose={() => (modal = null)} />
   {:else if modal === 'environments'}
     <EnvironmentEditor {services} onclose={() => (modal = null)} />
+  {:else if modal === 'collectionScripts' && services.workspace.activeCollection}
+    <CollectionScripts
+      {services}
+      collection={services.workspace.activeCollection}
+      onclose={() => (modal = null)}
+    />
   {/if}
   {#if interopDialogs.import}
     <ImportWizard

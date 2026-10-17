@@ -19,7 +19,7 @@
     services: Services;
     onFolderSettings: (id: string) => void;
     onCollapse: () => void;
-    onOpen: (modal: 'cookies' | 'trash' | 'log' | 'environments') => void;
+    onOpen: (modal: 'cookies' | 'trash' | 'log' | 'environments' | 'collectionScripts') => void;
     onSettings: () => void;
   }
 
@@ -150,6 +150,11 @@
             const name = await askName(t('collection.rename'), current.name);
             if (name) await ws.renameCollection(current.id, name);
           },
+        },
+        {
+          id: 'scripts',
+          label: t('scripts.collectionMenu'),
+          onSelect: () => onOpen('collectionScripts'),
         },
         { separator: true },
         {

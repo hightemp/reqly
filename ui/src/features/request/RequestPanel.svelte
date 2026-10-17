@@ -22,6 +22,7 @@
   import DocsPanel from './panels/DocsPanel.svelte';
   import SettingsPanel from './panels/SettingsPanel.svelte';
   import { streamKind } from '$lib/protocols';
+  import ScriptsPanel from '../scripts/ScriptsPanel.svelte';
   import GrpcPanel from '../stream/GrpcPanel.svelte';
   import WebSocketPanel from '../stream/WebSocketPanel.svelte';
   import UrlBar from './UrlBar.svelte';
@@ -29,7 +30,8 @@
 
   let { services }: { services: Services } = $props();
 
-  type Section = 'params' | 'body' | 'auth' | 'headers' | 'variables' | 'settings' | 'docs';
+  type Section =
+    'params' | 'body' | 'auth' | 'headers' | 'scripts' | 'variables' | 'settings' | 'docs';
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- remembered tab per request, not rendered state
   const sections = new Map<string, Section>();
 
@@ -190,6 +192,13 @@
       count: req ? req.headers.filter((h) => h.enabled && h.name).length : 0,
     },
     {
+      id: 'scripts' as const,
+      label: t('scripts.title'),
+      dot: req
+        ? req.scripts.preRequest.trim() !== '' || req.scripts.afterResponse.trim() !== ''
+        : false,
+    },
+    {
       id: 'variables' as const,
       label: t('request.variables'),
       count: req ? Object.keys(req.variables).length : 0,
@@ -290,6 +299,11 @@
           {inherited}
           {valueCell}
           onchange={(headers) => edit((r) => ({ ...r, headers }))}
+        />
+      {:else if section === 'scripts'}
+        <ScriptsPanel
+          scripts={req.scripts}
+          onchange={(scripts) => edit((r) => ({ ...r, scripts }))}
         />
       {:else if section === 'variables'}
         <VariablesEditor

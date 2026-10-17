@@ -15,6 +15,7 @@
   import AuthPanel from '../request/panels/AuthPanel.svelte';
   import DocsPanel from '../request/panels/DocsPanel.svelte';
   import SettingsPanel from '../request/panels/SettingsPanel.svelte';
+  import ScriptsPanel from '../scripts/ScriptsPanel.svelte';
   import { COMMON_HEADERS } from '../request/headers';
 
   interface Props {
@@ -25,7 +26,9 @@
 
   let { services, folderId, onclose }: Props = $props();
   let draft = $state<Draft | null>(null);
-  let section = $state<'headers' | 'auth' | 'variables' | 'settings' | 'docs'>('headers');
+  let section = $state<'headers' | 'auth' | 'scripts' | 'variables' | 'settings' | 'docs'>(
+    'headers',
+  );
   const folder = $derived(draft?.folder ?? null);
 
   onMount(() => {
@@ -67,6 +70,12 @@
         },
         { id: 'auth', label: t('request.auth'), dot: folder.auth.type !== 'inherit' },
         {
+          id: 'scripts',
+          label: t('scripts.title'),
+          dot:
+            folder.scripts.preRequest.trim() !== '' || folder.scripts.afterResponse.trim() !== '',
+        },
+        {
           id: 'variables',
           label: t('request.variables'),
           count: Object.keys(folder.variables).length,
@@ -91,6 +100,14 @@
           transport={services.transport}
           onchange={(auth) => edit((f) => ({ ...f, auth }))}
         />
+      {:else if section === 'scripts'}
+        <div class="scripts">
+          <ScriptsPanel
+            scripts={folder.scripts}
+            hint={t('scripts.folderHint')}
+            onchange={(scripts) => edit((f) => ({ ...f, scripts }))}
+          />
+        </div>
       {:else if section === 'variables'}
         <VariablesEditor
           label={t('request.variables')}
@@ -131,5 +148,8 @@
     min-height: 320px;
     max-height: 60vh;
     overflow: auto;
+  }
+  .scripts {
+    height: 420px;
   }
 </style>

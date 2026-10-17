@@ -27,15 +27,18 @@
   import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
+  import RuntimeVariables from './RuntimeVariables.svelte';
   import VariablesEditor from './VariablesEditor.svelte';
 
   let { services, onclose }: { services: Services; onclose: () => void } = $props();
   const envs = $derived(services.environments);
 
+  const RUNTIME = 'runtime';
   let selectedId = $state<string | null>(null);
   // Prefer the active environment, else the base one.
   $effect(() => {
-    if (!selectedId || !envs.find(selectedId)) selectedId = envs.activeId ?? envs.base?.id ?? null;
+    if (selectedId !== RUNTIME && (!selectedId || !envs.find(selectedId)))
+      selectedId = envs.activeId ?? envs.base?.id ?? null;
   });
   const selected = $derived(selectedId ? envs.find(selectedId) : null);
 
@@ -162,10 +165,26 @@
           {/each}
         </div>
       </div>
+      <div class="group">
+        <div role="listbox" aria-label={t('environments.runtime')}>
+          <button
+            type="button"
+            role="option"
+            class="item"
+            aria-selected={selectedId === RUNTIME}
+            onclick={() => void select(RUNTIME)}
+          >
+            <span class="dot"></span>
+            <span class="item-name">{t('environments.runtime')}</span>
+          </button>
+        </div>
+      </div>
     </nav>
 
     <section class="detail">
-      {#if selected}
+      {#if selectedId === RUNTIME}
+        <RuntimeVariables {services} />
+      {:else if selected}
         {#key selected.id}
           <header class="detail-head">
             {#if selected.kind === 'base'}

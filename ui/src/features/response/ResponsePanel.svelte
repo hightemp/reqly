@@ -19,12 +19,14 @@
   import Tabs from '$lib/ui/Tabs.svelte';
   import { parseSetCookie } from './body';
   import { streamKind } from '$lib/protocols';
+  import ScriptConsole from '../scripts/ScriptConsole.svelte';
+  import TestResults from '../scripts/TestResults.svelte';
   import StreamLog from '../stream/StreamLog.svelte';
   import BodyView from './BodyView.svelte';
 
   let { services }: { services: Services } = $props();
 
-  type Section = 'body' | 'headers' | 'cookies' | 'timeline';
+  type Section = 'body' | 'headers' | 'cookies' | 'timeline' | 'console' | 'tests';
   let section = $state<Section>('body');
   let now = $state(Date.now());
   const timer = setInterval(() => (now = Date.now()), 100);
@@ -50,6 +52,15 @@
 
   $effect(() => {
     if (requestId) void services.responses.load(requestId);
+  });
+
+  // Console and Tests exist only for responses that have them.
+  $effect(() => {
+    if (
+      (section === 'console' && !record?.scriptLogs.length) ||
+      (section === 'tests' && !record?.tests.length)
+    )
+      section = 'body';
   });
 
   const phases = $derived.by(() => {
@@ -179,6 +190,25 @@
             { id: 'headers', label: t('response.headers'), count: record.headers.length },
             { id: 'cookies', label: t('response.cookies'), count: setCookies.length },
             { id: 'timeline', label: t('response.timeline') },
+            ...(record.tests.length
+              ? [
+                  {
+                    id: 'tests' as const,
+                    label: t('scripts.tests'),
+                    count: record.tests.length,
+                    dot: record.tests.some((x) => !x.passed),
+                  },
+                ]
+              : []),
+            ...(record.scriptLogs.length
+              ? [
+                  {
+                    id: 'console' as const,
+                    label: t('scripts.console'),
+                    count: record.scriptLogs.length,
+                  },
+                ]
+              : []),
           ]}
         />
       </div>
@@ -246,6 +276,10 @@
               </tbody>
             </table>
           {/if}
+        {:else if section === 'tests'}
+          <TestResults tests={record.tests} />
+        {:else if section === 'console'}
+          <ScriptConsole logs={record.scriptLogs} />
         {:else}
           <div class="timeline selectable">
             {#each timeline as e, i (i)}
