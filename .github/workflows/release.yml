@@ -9,8 +9,48 @@ permissions:
   packages: write
 
 jobs:
+  release:
+    name: GitHub release
+    runs-on: ubuntu-24.04
+    outputs:
+      id: ${{ steps.create.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check versions
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          grep -q "^version = \"$version\"" Cargo.toml || { echo "Cargo.toml version is not $version"; exit 1; }
+          grep -q "\"version\": \"$version\"" ui/package.json || { echo "ui/package.json version is not $version"; exit 1; }
+      - name: Release notes
+        run: |
+          scripts/release-notes.sh "$GITHUB_REF_NAME" > notes.md
+          cat >> notes.md <<'NOTES'
+
+          ---
+
+          **Downloads:** desktop installers for Linux, Windows and macOS and the
+          server binary (`reqly-server-*-linux-*.tar.gz`) are attached below.
+          Docker: `docker pull ghcr.io/hightemp/reqly-server:${{ github.ref_name }}`.
+          NOTES
+          sed -i "s/reqly-server:v/reqly-server:/" notes.md
+      - name: Create release
+        id: create
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Only the highest version is marked as the latest release.
+          highest=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          latest=false
+          [ "$highest" = "$GITHUB_REF_NAME" ] && latest=true
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "Reqly $GITHUB_REF_NAME" \
+            --notes-file notes.md --latest="$latest"
+          echo "id=$(gh release view "$GITHUB_REF_NAME" --json databaseId --jq .databaseId)" >> "$GITHUB_OUTPUT"
+
   desktop:
     name: Desktop (${{ matrix.platform }})
+    needs: release
     strategy:
       fail-fast: false
       matrix:
@@ -47,14 +87,12 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         with:
           projectPath: apps/desktop
-          tagName: ${{ github.ref_name }}
-          releaseName: Reqly ${{ github.ref_name }}
-          releaseBody: See CHANGELOG.md for details.
-          releaseDraft: true
+          releaseId: ${{ needs.release.outputs.id }}
           args: ${{ matrix.args }}
 
   server:
     name: Server binary (${{ matrix.arch }})
+    needs: release
     strategy:
       matrix:
         include:
@@ -78,13 +116,14 @@ jobs:
       - run: |
           mkdir dist
           tar -C target/release -czf dist/reqly-server-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz reqly-server
-      - uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          files: dist/*
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
 
   docker:
     name: Docker image
+    needs: release
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -95,6 +134,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Is this the highest version?
+        id: latest
+        run: |
+          git fetch --tags --quiet
+          highest=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          echo "latest=$([ "$highest" = "$GITHUB_REF_NAME" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: docker/metadata-action@v5
         id: meta
         with:
@@ -102,7 +147,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ steps.latest.outputs.latest }}
       - uses: docker/build-push-action@v6
         with:
           context: .

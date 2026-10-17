@@ -24,3 +24,4 @@ apps/desktop/gen/schemas/
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
+.data/

@@ -80,6 +80,22 @@ by the server. Scripts can call the API with `Authorization: Bearer <token>`.
 Requirements: Rust (stable), Node.js 22+, pnpm 10, and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for desktop builds.
 
+Common tasks are in the `Makefile` (`make help` lists them):
+
+```sh
+make install        # dependencies, git hooks, Playwright browser
+make dev            # server + UI dev server (http://localhost:5173)
+make dev-desktop    # desktop app
+make test           # Rust + UI tests
+make e2e            # Playwright against the server
+make lint           # rustfmt, clippy, eslint, prettier, svelte-check
+make build          # release server with the UI embedded
+make docker         # server image
+make release V=x.y.z  # bump version, commit, tag (notes come from CHANGELOG.md)
+```
+
+Or directly:
+
 ```sh
 pnpm install
 
@@ -99,6 +115,13 @@ pnpm lint
 
 On Linux with NVIDIA GPUs WebKitGTK may need `WEBKIT_DISABLE_DMABUF_RENDERER=1`;
 the desktop app sets it automatically.
+
+### Releases
+
+Add a `## [x.y.z]` section to `CHANGELOG.md`, run `make release V=x.y.z` and
+`git push --follow-tags`. The release workflow publishes a GitHub release with
+that section as its description and attaches desktop installers, server
+binaries and the Docker image (`ghcr.io/hightemp/reqly-server`).
 
 ### Layout
 
