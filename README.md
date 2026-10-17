@@ -1,5 +1,13 @@
 # Reqly
 
+[![CI](https://github.com/hightemp/reqly/actions/workflows/ci.yml/badge.svg)](https://github.com/hightemp/reqly/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/hightemp/reqly?include_prereleases&sort=semver)](https://github.com/hightemp/reqly/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-stable-orange.svg?logo=rust)](https://www.rust-lang.org)
+[![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB.svg?logo=tauri)](https://v2.tauri.app)
+[![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00.svg?logo=svelte)](https://svelte.dev)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fhightemp%2Freqly--server-2496ED.svg?logo=docker)](https://github.com/hightemp/reqly/pkgs/container/reqly-server)
+
 Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS) and a
 self-hosted web version served by a single Rust binary.
 
