@@ -261,15 +261,15 @@ impl Importer {
             after.push_str(tests);
         }
         let scripts = Scripts {
-            pre_request: text(blocks, "script:pre-request").into(),
-            after_response: after,
+            pre_request: crate::commented_out(text(blocks, "script:pre-request"), "Bruno"),
+            after_response: crate::commented_out(&after, "Bruno"),
         };
         if !scripts.is_empty() {
             self.report.push(
-                ReportKind::Unsupported,
-                "script_kept",
+                ReportKind::Converted,
+                "script_commented",
                 path,
-                "scripts and tests were kept but are not executed yet",
+                "Bruno scripts use the bru/req/res API; they were kept commented out",
             );
         }
         if !dict(blocks, "assert").is_empty() {
@@ -594,6 +594,7 @@ pub fn import(sources: &[Source]) -> CoreResult<ImportBundle> {
         .find(|(n, _)| *n == "collection.bru")
         .map(|(_, c)| parse(c));
     let mut variables = Map::new();
+    let mut collection_scripts = Scripts::default();
     if let Some(blocks) = &collection_bru {
         // Collection headers / auth apply to top-level items (Reqly collections have neither).
         let headers = rows(dict(blocks, "headers"));
@@ -621,16 +622,7 @@ pub fn import(sources: &[Source]) -> CoreResult<ImportBundle> {
             );
         }
         variables = Importer::variables(blocks);
-        let scripts = importer.scripts(&name, blocks);
-        if !scripts.is_empty() {
-            importer.report.push_raw(
-                ReportKind::Unsupported,
-                "collection_scripts",
-                &name,
-                "collection-level scripts are not supported; they are listed here",
-                serde_json::json!({ "preRequest": scripts.pre_request, "afterResponse": scripts.after_response }),
-            );
-        }
+        collection_scripts = importer.scripts(&name, blocks);
     }
     let mut environments = Vec::new();
     if let Some(envs) = tree.dirs.get("environments") {
@@ -682,6 +674,7 @@ pub fn import(sources: &[Source]) -> CoreResult<ImportBundle> {
             variables,
             environments,
             items,
+            scripts: collection_scripts,
             ..ImportedCollection::default()
         }],
         report: importer.report,

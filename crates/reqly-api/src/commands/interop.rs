@@ -468,6 +468,8 @@ async fn import_history(
             request_snapshot: r.request_snapshot,
             redirects: r.redirects,
             final_url: r.final_url,
+            script_logs: r.script_logs,
+            tests: r.tests,
             remote_addr: r.remote_addr,
             error: r.error,
         })
@@ -501,6 +503,10 @@ pub async fn apply_bundle(
                 let col = tree.create_collection(workspace_id, name).await?;
                 if c.settings != Default::default() {
                     tree.update_collection_settings(col.meta.id, &c.settings)
+                        .await?;
+                }
+                if !c.scripts.is_empty() {
+                    tree.update_collection_scripts(col.meta.id, &c.scripts)
                         .await?;
                 }
                 let inserts: Vec<TreeInsert> = c.items.iter().map(|i| ids.to_insert(i)).collect();
@@ -743,6 +749,7 @@ async fn collection_data(
     let mut out = ImportedCollection {
         name: col.name,
         settings: col.settings,
+        scripts: col.scripts,
         items,
         ..ImportedCollection::default()
     };
@@ -953,6 +960,7 @@ command!(
             &input.prompt_values.unwrap_or_default(),
             &[input.request_id],
             input.resolve.unwrap_or(true),
+            None,
         )
         .await?;
         let request = reqly_interop::codegen::CodeRequest::from_prepared(&prepared);

@@ -177,5 +177,16 @@ expression: "files[0].content"
       "value": "secret-key",
       "type": "secret"
     }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.variables.set('started', Date.now());"
+        ]
+      }
+    }
   ]
 }

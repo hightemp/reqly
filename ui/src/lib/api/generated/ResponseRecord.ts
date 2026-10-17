@@ -26,4 +26,12 @@ timeline: import('./TimelineEntry').TimelineEntry[],
 /**
  * What was actually sent: method, url, headers, body preview.
  */
-requestSnapshot: import('./RequestSnapshot').RequestSnapshot, redirects: number, finalUrl: string, remoteAddr: string | null, error: CoreError | null, };
+requestSnapshot: import('./RequestSnapshot').RequestSnapshot, redirects: number, finalUrl: string, remoteAddr: string | null, error: CoreError | null, 
+/**
+ * Console output of the request's scripts (`LogEntry[]` from reqly-script).
+ */
+scriptLogs: import('./LogEntry').LogEntry[], 
+/**
+ * Test results of the request's scripts (`TestResult[]`).
+ */
+tests: import('./TestResult').TestResult[], };

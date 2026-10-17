@@ -306,6 +306,7 @@ impl<'a> TreeRepo<'a> {
             workspace_id: parse_id(r.get("workspace_id"))?,
             name: r.get("name"),
             settings: serde_json::from_str(r.get("settings")).map_err(db_err)?,
+            scripts: serde_json::from_str(r.get("scripts")).unwrap_or_default(),
         })
     }
 
@@ -345,6 +346,7 @@ impl<'a> TreeRepo<'a> {
             workspace_id,
             name: name.to_string(),
             settings: RequestSettings::default(),
+            scripts: Default::default(),
         };
         sqlx::query(
             "INSERT INTO collections (id, workspace_id, name, settings, sort_key, created_at, \
@@ -381,6 +383,16 @@ impl<'a> TreeRepo<'a> {
     ) -> CoreResult<()> {
         let json = serde_json::to_string(settings).map_err(db_err)?;
         self.touch("collections", id, Some(("settings", &json)))
+            .await
+    }
+
+    pub async fn update_collection_scripts(
+        &self,
+        id: Id,
+        scripts: &reqly_core::model::Scripts,
+    ) -> CoreResult<()> {
+        let json = serde_json::to_string(scripts).map_err(db_err)?;
+        self.touch("collections", id, Some(("scripts", &json)))
             .await
     }
 

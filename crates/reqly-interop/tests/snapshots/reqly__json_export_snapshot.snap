@@ -31,6 +31,9 @@ expression: text
           }
         }
       ],
+      "scripts": {
+        "preRequest": "pm.variables.set('started', Date.now());"
+      },
       "items": [
         {
           "kind": "request",

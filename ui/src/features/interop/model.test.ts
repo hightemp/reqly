@@ -14,6 +14,7 @@ const bundle: ImportBundle = {
       name: 'Shop',
       description: '',
       settings: {} as never,
+      scripts: { preRequest: '', afterResponse: '' },
       variables: {},
       variableSecrets: [],
       environments: [{ name: 'dev', color: null, data: {}, secrets: [] }],

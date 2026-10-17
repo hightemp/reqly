@@ -11,6 +11,7 @@ import type { CodegenOutput } from "./CodegenOutput";
 import type { Collection } from "./Collection";
 import type { CollectionCreateInput } from "./CollectionCreateInput";
 import type { CollectionIdInput } from "./CollectionIdInput";
+import type { CollectionScriptsInput } from "./CollectionScriptsInput";
 import type { CollectionSettingsInput } from "./CollectionSettingsInput";
 import type { Cookie } from "./Cookie";
 import type { CookieDeleteInput } from "./CookieDeleteInput";
@@ -68,6 +69,8 @@ import type { ResponseListInput } from "./ResponseListInput";
 import type { ResponseRecord } from "./ResponseRecord";
 import type { ResponseSaveInput } from "./ResponseSaveInput";
 import type { ResponseSummary } from "./ResponseSummary";
+import type { RuntimeVariablesInput } from "./RuntimeVariablesInput";
+import type { RuntimeVariablesOutput } from "./RuntimeVariablesOutput";
 import type { SearchInput } from "./SearchInput";
 import type { SettingsGetInput } from "./SettingsGetInput";
 import type { SettingsGetOutput } from "./SettingsGetOutput";
@@ -103,6 +106,7 @@ export type Commands = {
   "collection.create": { input: CollectionCreateInput; output: Collection };
   "collection.rename": { input: RenameInput; output: Empty };
   "collection.updateSettings": { input: CollectionSettingsInput; output: Empty };
+  "collection.updateScripts": { input: CollectionScriptsInput; output: Empty };
   "collection.delete": { input: IdInput; output: Empty };
   "tree.list": { input: CollectionIdInput; output: Array<NodeSummary> };
   "node.get": { input: IdInput; output: Node };
@@ -170,6 +174,8 @@ export type Commands = {
   "stream.log": { input: StreamIdInput; output: Array<StreamMessage> };
   "stream.clearLog": { input: StreamIdInput; output: Empty };
   "stream.end": { input: StreamIdInput; output: Empty };
+  "variables.runtime": { input: RuntimeVariablesInput; output: RuntimeVariablesOutput };
+  "variables.clearRuntime": { input: RuntimeVariablesInput; output: Empty };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

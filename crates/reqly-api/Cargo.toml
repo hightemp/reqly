@@ -11,6 +11,7 @@ reqly-core.workspace = true
 reqly-storage.workspace = true
 reqly-http.workspace = true
 reqly-protocols.workspace = true
+reqly-script.workspace = true
 reqly-template.workspace = true
 reqly-interop.workspace = true
 hostname = "0.4"

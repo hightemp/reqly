@@ -5,6 +5,7 @@ pub mod grpc;
 pub mod http;
 pub mod interop;
 pub mod oauth2;
+pub mod scripts;
 pub mod stream;
 pub mod template;
 pub mod tree;
@@ -50,6 +51,10 @@ pub struct AppContext {
     pub oauth2_flows: std::sync::Mutex<std::collections::HashMap<String, oauth2::PendingFlow>>,
     /// Open WebSocket, SSE and GraphQL subscription connections.
     pub streams: stream::Streams,
+    /// Runtime variables set by scripts, per collection (cleared on restart).
+    pub runtime_vars: std::sync::Mutex<
+        std::collections::HashMap<reqly_core::Id, serde_json::Map<String, serde_json::Value>>,
+    >,
 }
 
 impl AppContext {
@@ -65,7 +70,19 @@ impl AppContext {
             inflight: Default::default(),
             oauth2_flows: Default::default(),
             streams: Default::default(),
+            runtime_vars: Default::default(),
         }
+    }
+
+    pub fn runtime_variables(
+        &self,
+        collection_id: reqly_core::Id,
+    ) -> serde_json::Map<String, serde_json::Value> {
+        self.runtime_vars
+            .lock()
+            .ok()
+            .and_then(|m| m.get(&collection_id).cloned())
+            .unwrap_or_default()
     }
 
     /// In-memory database and a throwaway blob dir, for tests.
@@ -98,6 +115,7 @@ pub fn registry() -> Registry<AppContext> {
     graphql::register(&mut r);
     grpc::register(&mut r);
     stream::register(&mut r);
+    scripts::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

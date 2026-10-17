@@ -90,7 +90,7 @@ fmt: ## Format Rust and UI code
 	$(PNPM) -C ui format
 
 types: ## Regenerate TypeScript types from Rust (ui/src/lib/api/generated)
-	$(CARGO) test -p reqly-api --lib
+	$(CARGO) test -p reqly-api -p reqly-script --lib
 	$(PNPM) -C ui exec prettier --write src/lib/api/generated
 
 check: lint test e2e ## Everything CI runs (except desktop builds)

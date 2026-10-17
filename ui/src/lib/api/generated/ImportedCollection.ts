@@ -2,6 +2,7 @@
 import type { ImportedEnvironment } from "./ImportedEnvironment";
 import type { ImportedItem } from "./ImportedItem";
 import type { RequestSettings } from "./RequestSettings";
+import type { Scripts } from "./Scripts";
 
 export type ImportedCollection = { name: string, description: string, settings: RequestSettings, 
 /**
@@ -11,4 +12,8 @@ variables: Record<string, unknown>, variableSecrets: Array<string>,
 /**
  * Switchable environments of the collection.
  */
-environments: Array<ImportedEnvironment>, items: Array<ImportedItem>, };
+environments: Array<ImportedEnvironment>, 
+/**
+ * Collection-level scripts.
+ */
+scripts: Scripts, items: Array<ImportedItem>, };

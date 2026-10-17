@@ -40,7 +40,14 @@ export class FakeTransport implements Transport {
     this.handle('workspace.ensureDefault', () => [{ id: 'w1', name: 'My Workspace', ...meta }]);
     this.handle('workspace.list', () => [{ id: 'w1', name: 'My Workspace', ...meta }]);
     this.handle('collection.list', () => [
-      { id: 'c1', workspaceId: 'w1', name: 'My Collection', settings: {} as never, ...meta },
+      {
+        id: 'c1',
+        workspaceId: 'w1',
+        name: 'My Collection',
+        settings: {} as never,
+        scripts: { preRequest: '', afterResponse: '' },
+        ...meta,
+      },
     ]);
     this.handle('tree.list', () => []);
     this.handle('environment.list', () => ({

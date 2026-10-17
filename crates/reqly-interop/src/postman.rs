@@ -250,14 +250,7 @@ impl Importer {
             pre_request: text("prerequest"),
             after_response: text("test"),
         };
-        if !scripts.is_empty() {
-            self.report.push(
-                ReportKind::Unsupported,
-                "script_kept",
-                path,
-                "Postman scripts were kept but are not executed (scripting arrives in stage 6)",
-            );
-        }
+        crate::report_scripts(&mut self.report, path, &scripts);
         scripts
     }
 
@@ -595,17 +588,9 @@ impl Importer {
                 "collection authentication was applied to the top-level folders and requests",
             );
         }
-        let scripts = self.scripts_raw(arr(value, "event"));
-        if let Some(raw) = scripts {
-            self.report.push_raw(
-                ReportKind::Unsupported,
-                "collection_scripts",
-                &name,
-                "collection-level scripts are not supported; they are listed here",
-                raw,
-            );
-        }
+        let scripts = self.scripts(&name, arr(value, "event"));
         ImportedCollection {
+            scripts,
             name,
             description: description(info.get("description")),
             variables,
@@ -613,25 +598,6 @@ impl Importer {
             items,
             ..ImportedCollection::default()
         }
-    }
-
-    /// Non-empty collection events, for the report.
-    fn scripts_raw(&self, events: &[Value]) -> Option<Value> {
-        let non_empty: Vec<&Value> = events
-            .iter()
-            .filter(|e| {
-                e.get("script")
-                    .and_then(|s| s.get("exec"))
-                    .is_some_and(|exec| match exec {
-                        Value::Array(lines) => lines
-                            .iter()
-                            .any(|l| l.as_str().is_some_and(|l| !l.trim().is_empty())),
-                        Value::String(s) => !s.trim().is_empty(),
-                        _ => false,
-                    })
-            })
-            .collect();
-        (!non_empty.is_empty()).then(|| json!(non_empty))
     }
 
     fn environment(&mut self, value: &Value) -> ImportedEnvironment {
@@ -926,6 +892,10 @@ pub fn collection_out(c: &ImportedCollection) -> Value {
     }
     if !c.variables.is_empty() {
         v["variable"] = json!(vars_out(&c.variables, &c.variable_secrets));
+    }
+    let events = events_out(&c.scripts);
+    if !events.is_empty() {
+        v["event"] = json!(events);
     }
     v
 }

@@ -27,6 +27,9 @@ pub struct Collection {
     pub name: String,
     /// Collection-level defaults for request settings.
     pub settings: RequestSettings,
+    /// Run before the scripts of folders and requests.
+    #[serde(default)]
+    pub scripts: super::request::Scripts,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]

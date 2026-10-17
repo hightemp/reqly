@@ -101,6 +101,8 @@ fn full_collection() {
         matches!(&request(&c.items, "Signed call").auth, Auth::AwsSigV4 { access_key, region, .. } if access_key == "AKIA" && region == "eu-west-1")
     );
 
+    assert!(!c.scripts.is_empty(), "collection scripts are imported");
+
     let codes: Vec<_> = bundle
         .report
         .entries
@@ -108,7 +110,6 @@ fn full_collection() {
         .map(|e| (e.kind, e.code.as_str(), e.path.as_str()))
         .collect();
     for expected in [
-        (ReportKind::Unsupported, "collection_scripts", "Shop API"),
         (ReportKind::Converted, "collection_auth", "Shop API"),
         (
             ReportKind::Info,
@@ -116,11 +117,6 @@ fn full_collection() {
             "Shop API / Products / List products",
         ),
         (ReportKind::Info, "variable_disabled", "Shop API"),
-        (
-            ReportKind::Unsupported,
-            "script_kept",
-            "Shop API / Create order",
-        ),
     ] {
         assert!(codes.contains(&expected), "{expected:?} in {codes:#?}");
     }

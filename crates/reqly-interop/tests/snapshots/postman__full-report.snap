@@ -20,42 +20,11 @@ expression: bundle.report
       "raw": null
     },
     {
-      "kind": "unsupported",
-      "code": "script_kept",
-      "path": "Shop API / Products / List products",
-      "message": "Postman scripts were kept but are not executed (scripting arrives in stage 6)",
-      "raw": null
-    },
-    {
-      "kind": "unsupported",
-      "code": "script_kept",
-      "path": "Shop API / Create order",
-      "message": "Postman scripts were kept but are not executed (scripting arrives in stage 6)",
-      "raw": null
-    },
-    {
       "kind": "converted",
       "code": "collection_auth",
       "path": "Shop API",
       "message": "collection authentication was applied to the top-level folders and requests",
       "raw": null
-    },
-    {
-      "kind": "unsupported",
-      "code": "collection_scripts",
-      "path": "Shop API",
-      "message": "collection-level scripts are not supported; they are listed here",
-      "raw": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "console.log('collection');"
-            ]
-          }
-        }
-      ]
     }
   ]
 }

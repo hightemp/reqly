@@ -706,6 +706,7 @@ export const ru: Translation<Messages> = {
       sub: 'Окружение',
       folder: 'Папка',
       request: 'Запрос',
+      runtime: 'Runtime (скрипты)',
     },
   },
   tagEditor: {

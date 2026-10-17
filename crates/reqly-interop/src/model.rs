@@ -169,6 +169,8 @@ pub struct ImportedCollection {
     pub variable_secrets: Vec<String>,
     /// Switchable environments of the collection.
     pub environments: Vec<ImportedEnvironment>,
+    /// Collection-level scripts.
+    pub scripts: reqly_core::model::Scripts,
     pub items: Vec<ImportedItem>,
 }
 

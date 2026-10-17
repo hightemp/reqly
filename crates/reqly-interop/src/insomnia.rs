@@ -431,14 +431,7 @@ impl<'a> Converter<'a> {
             pre_request: s(r, "preRequestScript").into(),
             after_response: s(r, "afterResponseScript").into(),
         };
-        if !scripts.is_empty() {
-            self.report.push(
-                ReportKind::Unsupported,
-                "script_kept",
-                path,
-                "scripts were kept but are not executed (scripting is not available yet)",
-            );
-        }
+        crate::report_scripts(&mut self.report, path, &scripts);
         scripts
     }
 

@@ -21,6 +21,8 @@ fn record(request_id: Id, size: u64, hash: &str) -> NewResponse {
         final_url: "http://x".into(),
         remote_addr: None,
         error: None,
+        script_logs: serde_json::json!([]),
+        tests: serde_json::json!([]),
     }
 }
 

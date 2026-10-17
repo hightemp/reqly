@@ -7,7 +7,7 @@ use std::time::Instant;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use reqly_core::model::{
-    FolderData, NodeData, NodeKind, RequestSettings, ResponseRecord, ResponseSummary,
+    FolderData, HttpRequest, NodeData, NodeKind, RequestSettings, ResponseRecord, ResponseSummary,
 };
 use reqly_core::{CoreError, CoreResult, Id};
 use reqly_http::engine::{CancelToken, ClientIdentity, ExecOptions, HttpResponse, ResponseBody};
@@ -109,7 +109,7 @@ impl From<HistoryLimitSettings> for HistoryLimits {
     }
 }
 
-async fn setting<T: serde::de::DeserializeOwned + Default>(
+pub(crate) async fn setting<T: serde::de::DeserializeOwned + Default>(
     ctx: &AppContext,
     key: &str,
 ) -> CoreResult<T> {
@@ -273,7 +273,7 @@ pub(crate) async fn prepare_stored(
     prompts: &HashMap<String, String>,
     chain: &[Id],
 ) -> CoreResult<(PreparedRequest, Id)> {
-    prepare_stored_with(ctx, request_id, prompts, chain, true).await
+    prepare_stored_with(ctx, request_id, prompts, chain, true, None).await
 }
 
 /// Like [`prepare_stored`]; with `render: false` templates stay as written.
@@ -283,12 +283,15 @@ pub(crate) async fn prepare_stored_with(
     prompts: &HashMap<String, String>,
     chain: &[Id],
     render: bool,
+    // The request as changed by pre-request scripts.
+    override_http: Option<&HttpRequest>,
 ) -> CoreResult<(PreparedRequest, Id)> {
     let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
     let node = tree.get_node(request_id).await?;
     // WebSocket handshakes and gRPC calls are prepared like HTTP requests.
     let converted;
     let http = match &node.data {
+        NodeData::Request(_) if override_http.is_some() => override_http.expect("checked"),
         NodeData::Request(r) => r,
         NodeData::WebSocket(w) => {
             converted = w.as_http();
@@ -447,6 +450,50 @@ pub(crate) async fn execute(
     }
 }
 
+/// A history record for a request stopped by its scripts (error or skip).
+async fn script_failure(
+    ctx: &AppContext,
+    node: &reqly_core::model::Node,
+    err: CoreError,
+    logs: Value,
+    tests: Value,
+) -> CoreResult<ResponseRecord> {
+    let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
+    let workspace_id = tree.get_collection(node.collection_id).await?.workspace_id;
+    let (method, url) = node.data.method_and_url();
+    let record = HistoryRepo::new(&ctx.storage, ctx.clock.as_ref())
+        .insert(NewResponse {
+            request_id: node.meta.id,
+            workspace_id,
+            status: None,
+            status_text: String::new(),
+            http_version: String::new(),
+            headers: Vec::new(),
+            body_hash: None,
+            body_size: 0,
+            headers_size: 0,
+            content_type: None,
+            timings: serde_json::json!({ "totalMs": 0.0 }),
+            timeline: Value::Array(Vec::new()),
+            request_snapshot: serde_json::json!({ "method": method.unwrap_or("GET"), "url": url.unwrap_or(""), "headers": [] }),
+            redirects: 0,
+            final_url: url.unwrap_or("").to_string(),
+            remote_addr: None,
+            error: Some(err),
+            script_logs: logs,
+            tests,
+        })
+        .await?;
+    ctx.events.publish(Event::new(
+        "request.finished",
+        RequestFinished {
+            request_id: node.meta.id,
+            response_id: Some(record.id),
+        },
+    ));
+    Ok(record)
+}
+
 pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<ResponseRecord> {
     send_request_with(ctx, request_id, &HashMap::new(), &[request_id]).await
 }
@@ -468,7 +515,44 @@ pub async fn send_request_with(
             "this request opens a connection; connect instead",
         ));
     }
-    let (mut prepared, workspace_id) = prepare_stored(ctx, request_id, prompts, chain).await?;
+    // Pre-request scripts edit the unrendered request; it is rendered after.
+    let mut scripted: Option<reqly_core::model::HttpRequest> = None;
+    let mut pre = super::scripts::PhaseResult::default();
+    if let NodeData::Request(r) = &node.data
+        && super::scripts::has_scripts(ctx, request_id, reqly_script::Phase::Pre).await?
+    {
+        let mut edited = r.clone();
+        match super::scripts::run_pre(ctx, request_id, &mut edited).await {
+            Ok(result) => {
+                pre = result;
+                scripted = Some(edited);
+            }
+            Err(mut err) => {
+                let logs = err
+                    .params
+                    .remove("logs")
+                    .unwrap_or(Value::Array(Vec::new()));
+                let tests = err
+                    .params
+                    .remove("tests")
+                    .unwrap_or(Value::Array(Vec::new()));
+                return script_failure(ctx, &node, err, logs, tests).await;
+            }
+        }
+        if pre.skip {
+            let err = CoreError::new("script.skipped", "a pre-request script skipped the request");
+            return script_failure(
+                ctx,
+                &node,
+                err,
+                serde_json::to_value(&pre.logs).unwrap_or_default(),
+                serde_json::to_value(&pre.tests).unwrap_or_default(),
+            )
+            .await;
+        }
+    }
+    let (mut prepared, workspace_id) =
+        prepare_stored_with(ctx, request_id, prompts, chain, true, scripted.as_ref()).await?;
     let snapshot = serde_json::to_value(RequestSnapshot::from(&prepared)).unwrap_or_default();
     resolve_blobs(ctx, &mut prepared)?;
 
@@ -541,6 +625,27 @@ pub async fn send_request_with(
                 .iter()
                 .find(|(k, _)| k.eq_ignore_ascii_case("content-type"))
                 .map(|(_, v)| v.clone());
+            let mut phase = pre;
+            if let NodeData::Request(r) = &node.data
+                && super::scripts::has_scripts(ctx, request_id, reqly_script::Phase::Post).await?
+            {
+                let response = reqly_script::ScriptResponse {
+                    code: status,
+                    status: status_text.clone(),
+                    headers: headers.clone(),
+                    body: body
+                        .to_vec()
+                        .map(|b| String::from_utf8_lossy(&b).into_owned())
+                        .unwrap_or_default(),
+                    time_ms: timings.total_ms,
+                    size: body_size,
+                    error: None,
+                };
+                let request = scripted.as_ref().unwrap_or(r);
+                let post = super::scripts::run_post(ctx, request_id, request, response).await;
+                phase.logs.extend(post.logs);
+                phase.tests.extend(post.tests);
+            }
             let body_hash = store_body(ctx, body).await?;
             history
                 .insert(NewResponse {
@@ -561,6 +666,8 @@ pub async fn send_request_with(
                     final_url,
                     remote_addr,
                     error: None,
+                    script_logs: serde_json::to_value(&phase.logs).unwrap_or_default(),
+                    tests: serde_json::to_value(&phase.tests).unwrap_or_default(),
                 })
                 .await?
         }
@@ -603,6 +710,8 @@ pub async fn send_request_with(
                     final_url: url,
                     remote_addr: None,
                     error: Some(err),
+                    script_logs: serde_json::to_value(&pre.logs).unwrap_or_default(),
+                    tests: serde_json::to_value(&pre.tests).unwrap_or_default(),
                 })
                 .await?
         }

@@ -677,6 +677,7 @@ export const en = {
       sub: 'Environment',
       folder: 'Folder',
       request: 'Request',
+      runtime: 'Runtime (scripts)',
     },
   },
   tagEditor: {

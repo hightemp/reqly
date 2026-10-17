@@ -162,12 +162,13 @@ fn check_full(bundle: &reqly_interop::ImportBundle) {
         .iter()
         .map(|e| (e.kind, e.code.as_str()))
         .collect();
-    for expected in [
-        (ReportKind::Unsupported, "script_kept"),
-        (ReportKind::Converted, "proto_missing"),
-    ] {
-        assert!(codes.contains(&expected), "{expected:?} in {codes:?}");
-    }
+    let expected = (ReportKind::Converted, "proto_missing");
+    assert!(codes.contains(&expected), "{expected:?} in {codes:?}");
+    // Scripts run now: nothing to report for supported calls.
+    assert!(
+        !codes.iter().any(|c| c.1.starts_with("script_")),
+        "{codes:?}"
+    );
     assert!(
         !codes.iter().any(|c| c.1 == "auth_unsupported"),
         "{codes:?}"
@@ -289,6 +290,8 @@ fn round_trip_through_insomnia_formats() {
         }
     }
     lossy(&mut expected[0].items);
+    // Insomnia has no collection-level scripts.
+    expected[0].scripts = Default::default();
     for format in [ExportFormat::Insomnia4, ExportFormat::Insomnia5] {
         let text = export(&data, format, 1_700_000_000_000, "test", "x")
             .unwrap()

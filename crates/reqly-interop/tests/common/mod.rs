@@ -82,6 +82,10 @@ pub fn sample() -> ExportData {
             settings: RequestSettings::default(),
             variables,
             variable_secrets: vec!["key".into()],
+            scripts: reqly_core::model::Scripts {
+                pre_request: "pm.variables.set('started', Date.now());".into(),
+                after_response: String::new(),
+            },
             environments: vec![ImportedEnvironment {
                 name: "prod".into(),
                 color: Some("#e5484d".into()),

@@ -260,3 +260,93 @@ pub(crate) fn graphql_json(body: &reqly_core::model::Body) -> serde_json::Value 
     }
     v
 }
+
+/// Script API calls Reqly does not implement, found by a plain text scan.
+pub fn unsupported_script_calls(script: &str) -> Vec<&'static str> {
+    const UNSUPPORTED: &[(&str, &str)] = &[
+        ("pm.vault", "pm.vault"),
+        ("pm.visualizer", "pm.visualizer"),
+        ("pm.cookies.jar", "pm.cookies.jar"),
+        ("pm.require(", "pm.require"),
+        ("xml2Json(", "xml2Json"),
+        ("insomnia.parentFolders", "insomnia.parentFolders"),
+        ("'cheerio'", "require('cheerio')"),
+        ("\"cheerio\"", "require('cheerio')"),
+        ("'xml2js'", "require('xml2js')"),
+        ("\"xml2js\"", "require('xml2js')"),
+        ("'tv4'", "require('tv4')"),
+        ("\"tv4\"", "require('tv4')"),
+        ("'ajv'", "require('ajv')"),
+        ("\"ajv\"", "require('ajv')"),
+        ("'csv-parse", "require('csv-parse')"),
+        ("\"csv-parse", "require('csv-parse')"),
+    ];
+    let mut out: Vec<&'static str> = UNSUPPORTED
+        .iter()
+        .filter(|(needle, _)| script.contains(needle))
+        .map(|(_, name)| *name)
+        .collect();
+    out.dedup();
+    out
+}
+
+/// Report entries for imported scripts that run in Reqly.
+pub(crate) fn report_scripts(
+    report: &mut report::ImportReport,
+    path: &str,
+    scripts: &reqly_core::model::Scripts,
+) {
+    let mut calls = unsupported_script_calls(&scripts.pre_request);
+    calls.extend(unsupported_script_calls(&scripts.after_response));
+    calls.sort_unstable();
+    calls.dedup();
+    if !calls.is_empty() {
+        report.push(
+            report::ReportKind::Unsupported,
+            "script_unsupported_calls",
+            path,
+            format!(
+                "scripts use APIs Reqly does not provide: {}",
+                calls.join(", ")
+            ),
+        );
+    }
+}
+
+/// Scripts written for another tool's API, kept commented out so they do
+/// not fail every send.
+pub(crate) fn commented_out(script: &str, tool: &str) -> String {
+    if script.trim().is_empty() {
+        return String::new();
+    }
+    let mut out =
+        format!("// {tool} script (uses its own API); adapt it to rq / pm and uncomment.\n");
+    for line in script.lines() {
+        out.push_str("// ");
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+
+#[cfg(test)]
+mod script_tests {
+    use super::{commented_out, unsupported_script_calls};
+
+    #[test]
+    fn finds_unsupported_calls() {
+        let found = unsupported_script_calls(
+            "pm.visualizer.set(t); const $ = require('cheerio'); pm.environment.set('a', 1)",
+        );
+        assert_eq!(found, ["pm.visualizer", "require('cheerio')"]);
+        assert!(unsupported_script_calls("pm.test('x', () => pm.expect(1).to.eql(1))").is_empty());
+    }
+
+    #[test]
+    fn foreign_scripts_are_commented_out() {
+        assert_eq!(commented_out("", "Bruno"), "");
+        let out = commented_out("bru.setVar('a', 1);\nres.getBody();", "Bruno");
+        assert!(out.lines().all(|l| l.starts_with("//")), "{out}");
+        assert!(out.contains("// bru.setVar('a', 1);"));
+    }
+}

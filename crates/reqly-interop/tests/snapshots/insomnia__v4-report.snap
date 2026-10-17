@@ -6,20 +6,6 @@ expression: bundle.report
   "format": "insomnia",
   "entries": [
     {
-      "kind": "unsupported",
-      "code": "script_kept",
-      "path": "Example API / Auth / Login",
-      "message": "scripts were kept but are not executed (scripting is not available yet)",
-      "raw": null
-    },
-    {
-      "kind": "unsupported",
-      "code": "script_kept",
-      "path": "Example API / Users",
-      "message": "scripts were kept but are not executed (scripting is not available yet)",
-      "raw": null
-    },
-    {
       "kind": "converted",
       "code": "proto_missing",
       "path": "Example API / Ping",

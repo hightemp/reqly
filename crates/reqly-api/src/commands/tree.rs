@@ -23,6 +23,7 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<CollectionCreate>()
         .register::<CollectionRename>()
         .register::<CollectionUpdateSettings>()
+        .register::<CollectionUpdateScripts>()
         .register::<CollectionDelete>()
         .register::<TreeList>()
         .register::<NodeGet>()
@@ -311,6 +312,27 @@ command!(
         repo(ctx)
             .update_collection_settings(input.id, &input.settings)
             .await?;
+        Ok(Empty {})
+    }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub struct CollectionScriptsInput {
+    pub id: Id,
+    pub scripts: reqly_core::model::Scripts,
+}
+
+command!(
+    CollectionUpdateScripts,
+    "collection.updateScripts",
+    CollectionScriptsInput,
+    Empty,
+    |ctx, input| {
+        let repo = repo(ctx);
+        repo.update_collection_scripts(input.id, &input.scripts)
+            .await?;
+        collections_changed(ctx, repo.get_collection(input.id).await?.workspace_id);
         Ok(Empty {})
     }
 );

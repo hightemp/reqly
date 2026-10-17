@@ -121,9 +121,10 @@
   // ----- property lists (headers, query, form fields) --------------------------
 
   class PropertyList {
-    constructor(items, onChange) {
+    constructor(items, onChange, parse = parseHeader) {
       this.items = items;
       this.onChange = onChange;
+      this.parse = parse;
     }
     find(key) {
       const k = String(key).toLowerCase();
@@ -147,7 +148,7 @@
       return this.all().length;
     }
     add(item, value) {
-      if (typeof item === 'string') item = parseHeader(item, value);
+      if (typeof item === 'string') item = this.parse(item, value);
       this.items.push({ key: String(item.key), value: String(item.value ?? ''), disabled: !!item.disabled });
       this.onChange();
     }
@@ -155,7 +156,7 @@
       this.add(item, value);
     }
     upsert(item, value) {
-      if (typeof item === 'string') item = parseHeader(item, value);
+      if (typeof item === 'string') item = this.parse(item, value);
       const existing = this.find(item.key);
       if (existing) existing.value = String(item.value ?? '');
       else this.items.push({ key: String(item.key), value: String(item.value ?? ''), disabled: false });
@@ -195,6 +196,12 @@
         .map((i) => `${i.key}: ${i.value}`)
         .join('\n');
     }
+  }
+
+  function parseQuery(text, value) {
+    if (value !== undefined) return { key: text, value };
+    const i = text.indexOf('=');
+    return i < 0 ? { key: decode(text), value: '' } : { key: decode(text.slice(0, i)), value: decode(text.slice(i + 1)) };
   }
 
   function parseHeader(text, value) {
@@ -237,7 +244,7 @@
   function makeRequest() {
     const r = state.request;
     const headers = new PropertyList(r.headers, () => {});
-    const query = new PropertyList(r.query, () => {});
+    const query = new PropertyList(r.query, () => {}, parseQuery);
     const url = {
       query,
       toString() {
@@ -290,8 +297,8 @@
       set raw(v) {
         r.body.raw = String(v);
       },
-      urlencoded: new PropertyList(r.body.fields, () => {}),
-      formdata: new PropertyList(r.body.fields, () => {}),
+      urlencoded: new PropertyList(r.body.fields, () => {}, parseQuery),
+      formdata: new PropertyList(r.body.fields, () => {}, parseQuery),
       update(value) {
         if (typeof value === 'string') {
           r.body.raw = value;

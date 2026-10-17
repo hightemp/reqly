@@ -9,7 +9,7 @@ rust-version.workspace = true
 [dependencies]
 reqly-core.workspace = true
 reqly-template.workspace = true
-rquickjs = { version = "0.14", features = ["futures", "macro", "loader"] }
+rquickjs = { version = "0.14", features = ["futures", "macro", "loader", "parallel"] }
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

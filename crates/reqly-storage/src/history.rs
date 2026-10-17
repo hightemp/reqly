@@ -29,6 +29,8 @@ pub struct NewResponse {
     pub final_url: String,
     pub remote_addr: Option<String>,
     pub error: Option<CoreError>,
+    pub script_logs: Value,
+    pub tests: Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,6 +87,8 @@ fn record_from_row(row: &SqliteRow) -> CoreResult<ResponseRecord> {
             .map(|e| serde_json::from_str(&e))
             .transpose()
             .map_err(db_err)?,
+        script_logs: json(row, "script_logs")?,
+        tests: json(row, "tests")?,
     })
 }
 
@@ -135,8 +139,9 @@ impl<'a> HistoryRepo<'a> {
         sqlx::query(
             "INSERT INTO response_records (id, request_id, workspace_id, created_at, status, \
              status_text, http_version, headers, body_hash, body_size, headers_size, content_type, \
-             timings, timeline, request_snapshot, redirects, final_url, remote_addr, error, method, url) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             timings, timeline, request_snapshot, redirects, final_url, remote_addr, error, method, url, \
+             script_logs, tests) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(id.to_string())
         .bind(r.request_id.to_string())
@@ -159,6 +164,8 @@ impl<'a> HistoryRepo<'a> {
         .bind(r.error.as_ref().map(serde_json::to_string).transpose().map_err(db_err)?)
         .bind(method)
         .bind(url)
+        .bind(if r.script_logs.is_null() { "[]".to_string() } else { r.script_logs.to_string() })
+        .bind(if r.tests.is_null() { "[]".to_string() } else { r.tests.to_string() })
         .execute(self.storage.pool())
         .await
         .map_err(db_err)?;

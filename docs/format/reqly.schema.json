@@ -40,6 +40,7 @@
         "variables": { "$ref": "#/$defs/variables", "description": "Base environment." },
         "variableSecrets": { "type": "array", "items": { "type": "string" } },
         "environments": { "type": "array", "items": { "$ref": "#/$defs/environment" } },
+        "scripts": { "$ref": "#/$defs/scripts" },
         "items": { "type": "array", "items": { "$ref": "#/$defs/item" } }
       }
     },

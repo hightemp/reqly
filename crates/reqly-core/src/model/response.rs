@@ -38,6 +38,14 @@ pub struct ResponseRecord {
     pub final_url: String,
     pub remote_addr: Option<String>,
     pub error: Option<CoreError>,
+    /// Console output of the request's scripts (`LogEntry[]` from reqly-script).
+    #[serde(default)]
+    #[ts(type = "import('./LogEntry').LogEntry[]")]
+    pub script_logs: Value,
+    /// Test results of the request's scripts (`TestResult[]`).
+    #[serde(default)]
+    #[ts(type = "import('./TestResult').TestResult[]")]
+    pub tests: Value,
 }
 
 /// Row in the response history dropdown / workspace log.

@@ -71,7 +71,7 @@ pub struct EnvironmentsChanged {
     pub collection_id: Option<Id>,
 }
 
-fn changed(ctx: &AppContext, env: &Environment) {
+pub(crate) fn changed(ctx: &AppContext, env: &Environment) {
     ctx.events.publish(Event::new(
         "environments.changed",
         EnvironmentsChanged {
@@ -81,14 +81,14 @@ fn changed(ctx: &AppContext, env: &Environment) {
     ));
 }
 
-async fn get_id(ctx: &AppContext, key: &str) -> CoreResult<Option<Id>> {
+pub(crate) async fn get_id(ctx: &AppContext, key: &str) -> CoreResult<Option<Id>> {
     Ok(SettingsRepo::new(&ctx.storage)
         .get(key)
         .await?
         .and_then(|v| v.as_str().and_then(|s| s.parse().ok())))
 }
 
-async fn set_id(ctx: &AppContext, key: &str, id: Option<Id>) -> CoreResult<()> {
+pub(crate) async fn set_id(ctx: &AppContext, key: &str, id: Option<Id>) -> CoreResult<()> {
     let repo = SettingsRepo::new(&ctx.storage);
     match id {
         Some(id) => repo.set(key, &json!(id), ctx.clock.as_ref()).await,
@@ -107,6 +107,8 @@ pub enum VariableSource {
     Sub,
     Folder,
     Request,
+    /// Set by scripts (`pm.variables.set`) for this session.
+    Runtime,
 }
 
 #[derive(Debug, Clone, Serialize, TS)]
@@ -198,6 +200,11 @@ impl Scope {
                     Vec::new(),
                 )),
             }
+        }
+
+        let runtime = ctx.runtime_variables(collection_id);
+        if !runtime.is_empty() {
+            layers.push((VariableSource::Runtime, String::new(), runtime, Vec::new()));
         }
 
         let mut vars = Map::new();
