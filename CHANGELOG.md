@@ -40,6 +40,9 @@ Ships in 0.7.0 together with stage 7.
 
 ### Changed
 
+- SQLite: write transactions start with `BEGIN IMMEDIATE` and wait in a
+  queue, and WAL commits use `synchronous=NORMAL`; concurrent edits no
+  longer fail with "database is locked" (ADR-011).
 - The faker locale setting accepts any faker-js locale; the data follows
   faker-js (for `ru`, phone numbers use national formats; ask for
   `phone.number({ style: 'international' })` to get `+7`).
