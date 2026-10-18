@@ -59,6 +59,19 @@ curl -X POST https://reqly.example.com/api/v1/cmd/workspace.list \
 A token is shown once when created; the server keeps only its SHA-256.
 Tokens can expire and can be deleted at any time.
 
+## Invitation links
+
+**Workspace actions → Members… → Create link** makes a link that adds
+whoever opens it to the workspace with the chosen role. A new person
+creates an account on the way (also when `registration` is `invite`); a
+signed-in user just joins. A link works once and expires after 7 days;
+open links are listed in the same dialog and can be revoked. The server
+stores only a hash of the link's token. An invitation never lowers a role
+someone already has.
+
+Administrators can also create links that only create an account
+(`admin.invite`), for servers where registration is by invitation.
+
 ## Workspaces and roles
 
 Everyone gets a workspace of their own on first sign-in. **Workspace
