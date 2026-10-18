@@ -5,6 +5,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Ships in 0.7.0 together with stage 7.
+
 ### Added
 
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
