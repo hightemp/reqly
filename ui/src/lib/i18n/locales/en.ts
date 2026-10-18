@@ -530,6 +530,13 @@ export const en = {
     leaveTitle: 'Leave “{name}”?',
     leaveMessage: 'An owner has to add you again to get access back.',
     readOnly: 'View only: you can open and send requests, but changes are not saved.',
+    inviteTitle: 'Invitation links',
+    inviteHint:
+      'Anyone who opens the link joins with this role, creating an account if needed. A link works once and for 7 days.',
+    inviteRole: 'Role for the link',
+    createInvite: 'Create link',
+    inviteExpires: 'until {date}',
+    revokeInvite: 'Revoke',
   },
   account: {
     displayName: 'Display name',
@@ -579,6 +586,10 @@ export const en = {
     userExists: 'This user name is taken',
     weakPassword: 'Use at least 8 characters',
     invalidUsername: 'Use 2–64 letters, digits, “.”, “_”, “-” or “@”',
+    invitedTo: '{name} invited you to “{workspace}” as {role}.',
+    invitedServer: '{name} invited you to Reqly.',
+    inviteInvalid: 'This invitation is invalid, used or expired.',
+    inviteAccepted: 'You joined the workspace',
   },
   window: {
     minimize: 'Minimize',

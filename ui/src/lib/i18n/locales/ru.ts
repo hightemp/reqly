@@ -568,6 +568,13 @@ export const ru: Translation<Messages> = {
     leaveTitle: 'Покинуть «{name}»?',
     leaveMessage: 'Вернуть доступ сможет только владелец.',
     readOnly: 'Только просмотр: запросы можно открывать и отправлять, но изменения не сохраняются.',
+    inviteTitle: 'Ссылки-приглашения',
+    inviteHint:
+      'Открывший ссылку присоединится с этой ролью, при необходимости создав учётную запись. Ссылка одноразовая и действует 7 дней.',
+    inviteRole: 'Роль для ссылки',
+    createInvite: 'Создать ссылку',
+    inviteExpires: 'до {date}',
+    revokeInvite: 'Отозвать',
   },
   account: {
     displayName: 'Отображаемое имя',
@@ -617,6 +624,10 @@ export const ru: Translation<Messages> = {
     userExists: 'Это имя пользователя занято',
     weakPassword: 'Пароль должен быть не короче 8 символов',
     invalidUsername: 'Используйте 2–64 символа: буквы, цифры, «.», «_», «-» или «@»',
+    invitedTo: '{name} приглашает вас в «{workspace}» с ролью «{role}».',
+    invitedServer: '{name} приглашает вас в Reqly.',
+    inviteInvalid: 'Приглашение недействительно, уже использовано или истекло.',
+    inviteAccepted: 'Вы присоединились к workspace',
   },
   window: {
     minimize: 'Свернуть',

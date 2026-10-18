@@ -8,7 +8,8 @@
 
   import { TRANSPORT_TOPICS } from '$lib/api/transport';
   import LoginScreen from '$features/auth/LoginScreen.svelte';
-  import { authStatus, type AuthStatus } from '$features/auth/status';
+  import { authStatus, forgetInvite, inviteToken, type AuthStatus } from '$features/auth/status';
+  import { toasts } from '$lib/ui/overlay/toasts.svelte';
 
   type Boot =
     | { kind: 'login'; status: AuthStatus }
@@ -32,6 +33,17 @@
         }));
     });
     const services = await createServices(transport);
+    const invite = isTauri() ? null : inviteToken();
+    if (invite && services.account.user) {
+      forgetInvite();
+      try {
+        await transport.call('invites.accept', { token: invite });
+        await services.workspace.load();
+        toasts.show({ message: t('login.inviteAccepted'), kind: 'success' });
+      } catch (e) {
+        toasts.error(errorMessage(e));
+      }
+    }
     const windowController = isTauri() && !isMobile() ? await tauriWindow() : undefined;
     return { kind: 'app', services, windowController };
   }

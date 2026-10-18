@@ -1,6 +1,7 @@
 <!-- Members of the active workspace and their roles (multi-user server). -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { Invite } from '$lib/api/generated/Invite';
   import type { Member } from '$lib/api/generated/Member';
   import type { Role } from '$lib/api/generated/Role';
   import { errorMessage } from '$lib/errors';
@@ -12,6 +13,7 @@
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
+  import { inviteLink } from '../auth/status';
 
   let { services, onclose }: { services: Services; onclose: () => void } = $props();
   const workspace = $derived(services.workspace.activeWorkspace);
@@ -23,6 +25,9 @@
   let username = $state('');
   let role = $state<Role>('editor');
   let busy = $state(false);
+  let invites = $state<Invite[]>([]);
+  let inviteRole = $state<Role>('editor');
+  let link = $state<string | null>(null);
 
   const roles = $derived<{ value: Role; label: string; hint: string }[]>([
     { value: 'viewer', label: t('members.viewer'), hint: t('members.viewerHint') },
@@ -44,8 +49,34 @@
 
   const load = () =>
     run(async () => {
-      if (workspaceId) members = await services.transport.call('members.list', { workspaceId });
+      if (!workspaceId) return;
+      members = await services.transport.call('members.list', { workspaceId });
+      if (manage) invites = await services.transport.call('members.invites', { workspaceId });
     });
+
+  const createInvite = () =>
+    run(async () => {
+      if (!workspaceId) return;
+      const out = await services.transport.call('members.invite', {
+        workspaceId,
+        role: inviteRole,
+      });
+      link = inviteLink(out.token);
+      invites = [...invites, out.invite];
+    });
+
+  const revokeInvite = (invite: Invite) =>
+    run(async () => {
+      if (!workspaceId) return;
+      await services.transport.call('members.revokeInvite', { workspaceId, inviteId: invite.id });
+      invites = invites.filter((i) => i.id !== invite.id);
+    });
+
+  async function copyLink() {
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+    toasts.show({ message: t('account.copied'), kind: 'success' });
+  }
 
   const setRole = (name: string, r: Role) =>
     run(async () => {
@@ -141,6 +172,40 @@
         >{t('members.add')}</Button
       >
     </form>
+
+    <h3>{t('members.inviteTitle')}</h3>
+    <p class="hint">{t('members.inviteHint')}</p>
+    <div class="add">
+      <Select compact label={t('members.inviteRole')} bind:value={inviteRole} options={roles} />
+      <Button size="sm" disabled={busy} onclick={() => void createInvite()}
+        >{t('members.createInvite')}</Button
+      >
+    </div>
+    {#if link}
+      <div class="link" role="status">
+        <code class="selectable">{link}</code>
+        <Button size="sm" onclick={() => void copyLink()}>{t('account.copy')}</Button>
+      </div>
+    {/if}
+    {#if invites.length}
+      <ul class="list">
+        {#each invites as invite (invite.id)}
+          <li>
+            <div class="who">
+              <span>{roleLabel(invite.role ?? 'viewer')}</span>
+              <span class="user"
+                >{t('members.inviteExpires', {
+                  date: new Date(invite.expiresAt).toLocaleDateString(),
+                })}</span
+              >
+            </div>
+            <Button size="sm" variant="ghost" onclick={() => void revokeInvite(invite)}
+              >{t('members.revokeInvite')}</Button
+            >
+          </li>
+        {/each}
+      </ul>
+    {/if}
   {:else}
     <div class="footer">
       <Button size="sm" variant="danger" onclick={() => void leave()}>{t('members.leave')}</Button>
@@ -177,6 +242,30 @@
     gap: var(--space-2);
     align-items: center;
     margin-top: var(--space-3);
+  }
+  h3 {
+    margin-top: var(--space-4);
+    font-size: var(--font-size);
+    font-weight: 600;
+  }
+  .hint {
+    color: var(--c-fg-subtle);
+    font-size: var(--font-size-sm);
+  }
+  .link {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    margin-top: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--c-bg-sunken);
+  }
+  .link code {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    word-break: break-all;
   }
   .footer {
     display: flex;

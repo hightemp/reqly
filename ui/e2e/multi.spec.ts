@@ -46,7 +46,7 @@ test('users register, share a workspace and viewers cannot change it', async ({ 
   await admin.getByRole('menuitem', { name: 'Members…' }).click();
   const members = admin.getByRole('dialog');
   await members.getByRole('textbox', { name: 'User name' }).fill('bob');
-  await members.getByRole('combobox', { name: 'Role' }).last().click();
+  await members.getByRole('combobox', { name: 'Role', exact: true }).last().click();
   await admin.getByRole('option', { name: /Viewer/ }).click();
   await members.getByRole('button', { name: 'Add' }).click();
   await expect(members.getByText('@bob')).toBeVisible();
@@ -74,5 +74,32 @@ test('users register, share a workspace and viewers cannot change it', async ({ 
   expect(rename.map((r) => r.status()).sort()).toEqual([200, 403]);
 
   await bobContext.close();
+  await adminContext.close();
+});
+
+test('an invitation link adds a new user to the workspace', async ({ browser }) => {
+  const adminContext = await browser.newContext();
+  const admin = await adminContext.newPage();
+  await signIn(admin, E2E_ADMIN.username, E2E_ADMIN.password);
+  await admin.getByRole('button', { name: 'Workspace actions' }).click();
+  await admin.getByRole('menuitem', { name: 'Members…' }).click();
+  const members = admin.getByRole('dialog');
+  await members.getByRole('button', { name: 'Create link' }).click();
+  const link = (await members.locator('.link code').textContent())!;
+  expect(link).toContain('?invite=inv_');
+
+  const guestContext = await browser.newContext();
+  const guest = await guestContext.newPage();
+  await guest.goto(link);
+  await expect(guest.getByText(/invited you to “Team” as Editor/)).toBeVisible();
+  await guest.getByRole('textbox', { name: 'User name' }).fill('carol');
+  await guest.getByRole('textbox', { name: 'Password' }).fill('carol-password');
+  await guest.getByRole('button', { name: 'Create account' }).click();
+  await guest.getByRole('combobox', { name: 'Workspace' }).click();
+  await guest.getByRole('option', { name: 'Team' }).click();
+  await expect(guest.getByRole('button', { name: 'Create' })).toBeEnabled();
+  expect(new URL(guest.url()).searchParams.get('invite')).toBeNull();
+
+  await guestContext.close();
   await adminContext.close();
 });
