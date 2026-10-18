@@ -552,3 +552,103 @@ async fn insert_tree_and_list_nodes() {
         3
     );
 }
+
+#[tokio::test]
+async fn patches_merge_fields_and_report_overwrites() {
+    let fx = Fx::new().await;
+    let col = fx.collection().await;
+    let repo = fx.repo();
+    let node = repo
+        .create_node(
+            col,
+            None,
+            "R",
+            NodeData::Request(HttpRequest::default()),
+            Placement::End,
+        )
+        .await
+        .unwrap();
+    let (ann, bob) = (Some(Id::new()), Some(Id::new()));
+    let base = node.meta.version;
+    let fields = |v: serde_json::Value| v.as_object().unwrap().clone();
+    use serde_json::json;
+
+    // Both start from the same version and change different fields.
+    let a = repo
+        .patch_node(
+            node.meta.id,
+            ann,
+            base,
+            None,
+            fields(json!({ "url": "https://a" })),
+        )
+        .await
+        .unwrap();
+    assert!(a.overwritten.is_empty());
+    let b = repo
+        .patch_node(
+            node.meta.id,
+            bob,
+            base,
+            Some("Renamed"),
+            fields(json!({ "method": "POST" })),
+        )
+        .await
+        .unwrap();
+    assert!(b.overwritten.is_empty());
+    let NodeData::Request(r) = &b.node.data else {
+        panic!()
+    };
+    assert_eq!(
+        (r.url.as_str(), r.method.as_str(), b.node.name.as_str()),
+        ("https://a", "POST", "Renamed")
+    );
+
+    // Bob changes the URL Ann set after his base version: Ann is told.
+    let c = repo
+        .patch_node(
+            node.meta.id,
+            bob,
+            base,
+            None,
+            fields(json!({ "url": "https://b" })),
+        )
+        .await
+        .unwrap();
+    assert_eq!(c.overwritten, [("url".to_string(), ann.unwrap())]);
+    // Not when Bob had seen her change, nor for his own fields.
+    let d = repo
+        .patch_node(
+            node.meta.id,
+            ann,
+            c.node.meta.version,
+            None,
+            fields(json!({ "url": "https://c" })),
+        )
+        .await
+        .unwrap();
+    assert!(d.overwritten.is_empty());
+    let e = repo
+        .patch_node(
+            node.meta.id,
+            bob,
+            base,
+            Some("Again"),
+            fields(json!({ "method": "PUT" })),
+        )
+        .await
+        .unwrap();
+    assert!(e.overwritten.is_empty());
+
+    let err = repo
+        .patch_node(
+            node.meta.id,
+            ann,
+            base,
+            None,
+            fields(json!({ "kind": "folder" })),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(err.code, "tree.kind_change");
+}

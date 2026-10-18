@@ -7,4 +7,13 @@ export type NodeUpdateInput = { id: Id, name?: string, data?: NodeData,
 /**
  * Reject the update if the node changed since this version.
  */
-expectedVersion?: Version, };
+expectedVersion?: Version, 
+/**
+ * Field-level update (T7.2.2): only these top-level fields of `data`
+ * change, merged onto the current version; `data` is then ignored.
+ */
+fields?: Record<string, unknown>, 
+/**
+ * The version the client's edits are based on (with `fields`).
+ */
+baseVersion?: Version, };

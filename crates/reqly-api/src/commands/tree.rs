@@ -124,6 +124,44 @@ pub(crate) fn tree_changed(
     ));
 }
 
+/// Tells each user whose newer change was overwritten.
+async fn notify_overwritten(
+    ctx: &AppContext,
+    node: &Node,
+    actor: Option<Id>,
+    overwritten: Vec<(String, Id)>,
+) {
+    if overwritten.is_empty() {
+        return;
+    }
+    let by = match actor {
+        Some(id) => reqly_storage::users::UserRepo::new(&ctx.storage, ctx.clock.as_ref())
+            .get(id)
+            .await
+            .map(|u| u.display_name)
+            .unwrap_or_default(),
+        None => String::new(),
+    };
+    let mut per_user: std::collections::BTreeMap<Id, Vec<String>> = Default::default();
+    for (field, user) in overwritten {
+        per_user.entry(user).or_default().push(field);
+    }
+    for (user, fields) in per_user {
+        ctx.events.publish(
+            Event::new(
+                "node.overwritten",
+                NodeOverwritten {
+                    node_id: node.meta.id,
+                    name: node.name.clone(),
+                    fields,
+                    by: by.clone(),
+                },
+            )
+            .by(Some(user)),
+        );
+    }
+}
+
 async fn collections_of(ctx: &AppContext, ids: &[Id]) -> CoreResult<Vec<Id>> {
     let mut out = Vec::new();
     for &id in ids {
@@ -410,6 +448,25 @@ pub struct NodeUpdateInput {
     /// Reject the update if the node changed since this version.
     #[ts(optional)]
     pub expected_version: Option<Version>,
+    /// Field-level update (T7.2.2): only these top-level fields of `data`
+    /// change, merged onto the current version; `data` is then ignored.
+    #[ts(optional, type = "Record<string, unknown>")]
+    pub fields: Option<serde_json::Map<String, serde_json::Value>>,
+    /// The version the client's edits are based on (with `fields`).
+    #[ts(optional)]
+    pub base_version: Option<Version>,
+}
+
+/// Someone overwrote the receiver's newer change to these fields.
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct NodeOverwritten {
+    pub node_id: Id,
+    pub name: String,
+    pub fields: Vec<String>,
+    /// Display name of the user who overwrote them.
+    pub by: String,
 }
 
 #[derive(Debug, Deserialize, TS)]
@@ -461,15 +518,29 @@ command!(
     NodeUpdateInput,
     Node,
     |ctx, input| {
-        let node = repo(ctx)
-            .update_node(
-                input.id,
-                input.name.as_deref(),
-                input.data,
-                input.expected_version,
-            )
+        let Some(fields) = input.fields else {
+            let node = repo(ctx)
+                .update_node(
+                    input.id,
+                    input.name.as_deref(),
+                    input.data,
+                    input.expected_version,
+                )
+                .await?;
+            tree_changed(ctx, [node.collection_id], vec![node.meta.id]);
+            return Ok(node);
+        };
+        let actor = crate::access::current().user_id();
+        let base = match input.base_version {
+            Some(v) => v,
+            None => repo(ctx).get_node(input.id).await?.meta.version,
+        };
+        let patched = repo(ctx)
+            .patch_node(input.id, actor, base, input.name.as_deref(), fields)
             .await?;
+        let node = patched.node;
         tree_changed(ctx, [node.collection_id], vec![node.meta.id]);
+        notify_overwritten(ctx, &node, actor, patched.overwritten).await;
         Ok(node)
     }
 );

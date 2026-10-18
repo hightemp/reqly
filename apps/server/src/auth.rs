@@ -92,6 +92,19 @@ const MAX_ATTEMPTS: u32 = 10;
 const WINDOW: Duration = Duration::from_secs(60);
 
 impl LoginLimiter {
+    /// Whether the client used up its failed attempts in this window.
+    fn blocked(&self, client: &str) -> bool {
+        let map = self.attempts.lock().expect("limiter lock");
+        map.get(client)
+            .is_some_and(|(n, since)| since.elapsed() <= WINDOW && *n >= MAX_ATTEMPTS)
+    }
+
+    /// Counts a failed attempt.
+    fn fail(&self, client: &str) {
+        let _ = self.check_and_count(client);
+    }
+
+    /// Counts an attempt (registrations count whether or not they succeed).
     fn check_and_count(&self, client: &str) -> bool {
         let mut map = self.attempts.lock().expect("limiter lock");
         let entry = map.entry(client.to_string()).or_insert((0, Instant::now()));
@@ -334,27 +347,26 @@ async fn login(State(state): State<AppState>, request: Request) -> Response {
     let Some(input) = json_body::<LoginInput>(request).await else {
         return invalid_input("expected {\"token\"} or {\"username\", \"password\"}");
     };
-    if !state.login_limiter.check_and_count(&client) {
+    // Only failures count: many people behind one address may sign in.
+    if state.login_limiter.blocked(&client) {
         return error(
             StatusCode::TOO_MANY_REQUESTS,
             "auth.rate_limited",
             "too many attempts, try again later",
         );
     }
-    match (state.auth.mode, input) {
-        (AuthMode::Token, LoginInput::Token { token }) => {
-            let Some(expected) = state.auth.token.as_deref() else {
-                return error(
-                    StatusCode::BAD_REQUEST,
-                    "auth.disabled",
-                    "token login is not enabled",
-                );
-            };
-            if !token_matches(expected, &token) {
-                return error(StatusCode::UNAUTHORIZED, "auth.invalid", "invalid token");
+    let response = match (state.auth.mode, input) {
+        (AuthMode::Token, LoginInput::Token { token }) => match state.auth.token.as_deref() {
+            None => error(
+                StatusCode::BAD_REQUEST,
+                "auth.disabled",
+                "token login is not enabled",
+            ),
+            Some(expected) if !token_matches(expected, &token) => {
+                error(StatusCode::UNAUTHORIZED, "auth.invalid", "invalid token")
             }
-            start_session(&state, None).await
-        }
+            Some(_) => start_session(&state, None).await,
+        },
         (AuthMode::Multi, LoginInput::Password { username, password }) => {
             match users(&state).verify_login(&username, &password).await {
                 Ok(user) => start_session(&state, Some(user.id.to_string())).await,
@@ -366,7 +378,11 @@ async fn login(State(state): State<AppState>, request: Request) -> Response {
             "auth.disabled",
             "this login method is not enabled",
         ),
+    };
+    if !response.status().is_success() {
+        state.login_limiter.fail(&client);
     }
+    response
 }
 
 async fn register(State(state): State<AppState>, request: Request) -> Response {

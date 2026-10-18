@@ -502,3 +502,11 @@ async fn websocket_events_follow_membership() {
     root_ws.close(None).await.unwrap();
     bob_ws.close(None).await.unwrap();
 }
+
+#[tokio::test]
+async fn successful_logins_are_not_rate_limited() {
+    let app = router(state(Registration::Admin).await);
+    for _ in 0..15 {
+        session(&app, "root", "root-password").await;
+    }
+}

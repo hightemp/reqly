@@ -464,3 +464,36 @@ async fn invitations_add_members() {
     let listed = fx.ok(fx.admin, "admin.invites", json!({})).await;
     assert_eq!(listed[0]["id"], signup["invite"]["id"]);
 }
+
+#[tokio::test]
+async fn field_level_updates_merge_and_notify() {
+    let fx = Fx::new().await;
+    let mut events = fx.ctx.events.subscribe();
+    let base = fx.ok(fx.owner, "node.get", json!({ "id": fx.req })).await["version"].clone();
+    fx.ok(
+        fx.owner,
+        "node.update",
+        json!({ "id": fx.req, "baseVersion": base, "fields": { "url": "https://owner" } }),
+    )
+    .await;
+    let merged = fx
+        .ok(
+            fx.editor,
+            "node.update",
+            json!({ "id": fx.req, "baseVersion": base, "fields": { "method": "POST", "url": "https://editor" } }),
+        )
+        .await;
+    assert_eq!(merged["data"]["method"], "POST");
+    assert_eq!(merged["data"]["url"], "https://editor");
+
+    let mut overwritten = None;
+    while let Ok(e) = events.try_recv() {
+        if e.topic == "node.overwritten" {
+            overwritten = Some(e);
+        }
+    }
+    let e = overwritten.expect("node.overwritten");
+    assert_eq!(e.actor, fx.owner.user_id());
+    assert_eq!(e.payload["fields"], json!(["url"]));
+    assert_eq!(e.payload["by"], "editor");
+}

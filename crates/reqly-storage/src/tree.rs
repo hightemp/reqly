@@ -17,6 +17,21 @@ use sqlx::{Row, SqliteConnection};
 use crate::Storage;
 use crate::db::db_err;
 
+/// Who changed a node field last, in which version.
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+struct FieldVersion {
+    v: u64,
+    by: Option<Id>,
+}
+
+/// The result of [`TreeRepo::patch_node`].
+#[derive(Debug, Clone)]
+pub struct Patched {
+    pub node: Node,
+    /// Fields that overwrote another user's newer change, with that user.
+    pub overwritten: Vec<(String, Id)>,
+}
+
 /// Where to put nodes among their new siblings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Placement {
@@ -675,6 +690,94 @@ impl<'a> TreeRepo<'a> {
         .map_err(db_err)?;
         tx.commit().await.map_err(db_err)?;
         Ok(node)
+    }
+
+    /// Field-level last-writer-wins update (T7.2.2): sets only the given
+    /// top-level fields of the node's data (and the name), on top of the
+    /// current version. A field another user changed after `base_version`
+    /// is overwritten and reported in [`Patched::overwritten`].
+    pub async fn patch_node(
+        &self,
+        id: Id,
+        actor: Option<Id>,
+        base_version: Version,
+        name: Option<&str>,
+        fields: serde_json::Map<String, serde_json::Value>,
+    ) -> CoreResult<Patched> {
+        let mut tx = self.begin().await?;
+        let mut node = fetch_node(&mut tx, id).await?;
+        let raw: String = sqlx::query_scalar("SELECT field_versions FROM nodes WHERE id = ?")
+            .bind(id.to_string())
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db_err)?;
+        let mut versions: HashMap<String, FieldVersion> =
+            serde_json::from_str(&raw).unwrap_or_default();
+        let next = Version(node.meta.version.0 + 1);
+        let mut overwritten: Vec<(String, Id)> = Vec::new();
+        let mut record = |field: &str, changed: bool| {
+            if !changed {
+                return;
+            }
+            if let Some(prev) = versions.get(field)
+                && prev.v > base_version.0
+                && let Some(by) = prev.by
+                && actor.is_some_and(|a| a != by)
+            {
+                overwritten.push((field.to_string(), by));
+            }
+            versions.insert(
+                field.to_string(),
+                FieldVersion {
+                    v: next.0,
+                    by: actor,
+                },
+            );
+        };
+
+        if let Some(name) = name {
+            record("name", node.name != name);
+            node.name = name.to_string();
+        }
+        let mut data = serde_json::to_value(&node.data).map_err(db_err)?;
+        let obj = data
+            .as_object_mut()
+            .ok_or_else(|| CoreError::internal("node data is not an object"))?;
+        for (field, value) in fields {
+            if field == "kind" {
+                if obj.get("kind") != Some(&value) {
+                    return Err(CoreError::new(
+                        "tree.kind_change",
+                        "cannot change node kind",
+                    ));
+                }
+                continue;
+            }
+            record(&field, obj.get(&field) != Some(&value));
+            obj.insert(field, value);
+        }
+        node.data = serde_json::from_value(data)
+            .map_err(|e| CoreError::new("command.invalid_input", e.to_string()))?;
+        node.meta.touch(self.clock);
+        let (method, url) = request_columns(&node.data);
+        sqlx::query(
+            "UPDATE nodes SET name = ?, protocol = ?, method = ?, url = ?, data = ?, \
+             field_versions = ?, updated_at = ?, version = ? WHERE id = ?",
+        )
+        .bind(&node.name)
+        .bind(node.data.protocol().map(Protocol::as_str))
+        .bind(method)
+        .bind(url)
+        .bind(serde_json::to_string(&node.data).map_err(db_err)?)
+        .bind(serde_json::to_string(&versions).map_err(db_err)?)
+        .bind(node.meta.updated_at.0)
+        .bind(node.meta.version.0 as i64)
+        .bind(id.to_string())
+        .execute(&mut *tx)
+        .await
+        .map_err(db_err)?;
+        tx.commit().await.map_err(db_err)?;
+        Ok(Patched { node, overwritten })
     }
 
     /// Drops ids whose ancestor is also selected and orders the rest in
