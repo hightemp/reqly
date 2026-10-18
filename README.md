@@ -43,9 +43,13 @@ self-hosted web version served by a single Rust binary.
   Postman, HAR and cURL; code generation for 26 languages and libraries —
   see [docs/import-export.md](docs/import-export.md)
 - Command palette (`Ctrl+K`), request log, cookie manager, copy as cURL
-- Server mode: token login or user accounts with workspace roles (owner,
-  editor, viewer) and API tokens — see [docs/server.md](docs/server.md);
-  SSRF protection for requests sent by the server, Docker image
+- Server mode: token login or a team server with user accounts, workspace
+  roles (owner, editor, viewer), invitation links, API tokens and an admin
+  panel — see [docs/server.md](docs/server.md); SSRF protection for
+  requests sent by the server, Docker image
+- Collaboration on a team server: live updates, field-level merging of
+  concurrent edits, real-time co-editing of bodies and scripts with
+  others' cursors, presence avatars, personal or shared response history
 
 ## Run with Docker
 
