@@ -36,6 +36,7 @@ Ships in 0.7.0 together with stage 7.
   scripts with other people's cursors (Yjs and `yrs`, ADR-012).
 - Presence: avatars of the people in the workspace, and of those who have a
   request open in the tree and on the tabs.
+- Personal or shared response history per workspace (personal by default).
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
   bundled and run in QuickJS (ADR-009, `docs/templates.md`).
 - Template arguments can be arrays and objects:
@@ -66,6 +67,8 @@ Ships in 0.7.0 together with stage 7.
 
 ### Fixed
 
+- `{% response %}` tags could read and send requests of another workspace
+  on a multi-user server.
 - The server counts only failed sign-ins against the per-address limit;
   successful sign-ins of many people behind one address are no longer
   refused.
