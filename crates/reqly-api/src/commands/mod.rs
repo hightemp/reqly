@@ -1,5 +1,6 @@
 //! Built-in commands and the shared application context.
 
+pub mod collab;
 pub mod graphql;
 pub mod grpc;
 pub mod http;
@@ -52,6 +53,8 @@ pub struct AppContext {
     >,
     /// Interactive OAuth 2.0 sign-ins in progress, by flow id.
     pub oauth2_flows: std::sync::Mutex<std::collections::HashMap<String, oauth2::PendingFlow>>,
+    /// Live documents of collaboratively edited text fields (ADR-012).
+    pub collab: collab::Collab,
     /// Open WebSocket, SSE and GraphQL subscription connections.
     pub streams: stream::Streams,
     /// Runtime variables set by scripts, per collection (cleared on restart).
@@ -75,6 +78,7 @@ impl AppContext {
             server_info: None,
             inflight: Default::default(),
             oauth2_flows: Default::default(),
+            collab: Default::default(),
             streams: Default::default(),
             runtime_vars: Default::default(),
         }
@@ -123,6 +127,7 @@ pub fn registry() -> Registry<AppContext> {
     stream::register(&mut r);
     scripts::register(&mut r);
     users::register(&mut r);
+    collab::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

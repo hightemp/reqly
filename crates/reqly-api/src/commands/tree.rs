@@ -518,7 +518,7 @@ command!(
     NodeUpdateInput,
     Node,
     |ctx, input| {
-        let Some(fields) = input.fields else {
+        let Some(mut fields) = input.fields else {
             let node = repo(ctx)
                 .update_node(
                     input.id,
@@ -528,6 +528,7 @@ command!(
                 )
                 .await?;
             tree_changed(ctx, [node.collection_id], vec![node.meta.id]);
+            ctx.collab.sync_from_node(ctx, &node);
             return Ok(node);
         };
         let actor = crate::access::current().user_id();
@@ -535,11 +536,13 @@ command!(
             Some(v) => v,
             None => repo(ctx).get_node(input.id).await?.meta.version,
         };
+        ctx.collab.keep_live_text(input.id, &mut fields);
         let patched = repo(ctx)
             .patch_node(input.id, actor, base, input.name.as_deref(), fields)
             .await?;
         let node = patched.node;
         tree_changed(ctx, [node.collection_id], vec![node.meta.id]);
+        ctx.collab.sync_from_node(ctx, &node);
         notify_overwritten(ctx, &node, actor, patched.overwritten).await;
         Ok(node)
     }

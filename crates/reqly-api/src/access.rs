@@ -151,6 +151,8 @@ pub const RULES: &[(&str, Need)] = {
         ("variables.runtime", Read),
         ("members.list", Read),
         ("members.leave", Read),
+        ("collab.join", Read),
+        ("collab.awareness", Read),
         // Changing a workspace.
         ("collection.create", Write),
         ("collection.rename", Write),
@@ -159,6 +161,7 @@ pub const RULES: &[(&str, Need)] = {
         ("collection.delete", Write),
         ("node.create", Write),
         ("node.update", Write),
+        ("collab.update", Write),
         ("tree.move", Write),
         ("tree.copy", Write),
         ("tree.duplicate", Write),
@@ -208,7 +211,15 @@ pub fn need(command: &str) -> Need {
 }
 
 /// Input fields that hold handles or users, not workspace entities.
-const NOT_ENTITIES: &[&str] = &["connectionId", "flowId", "userId", "tokenId", "inviteId"];
+const NOT_ENTITIES: &[&str] = &[
+    "connectionId",
+    "flowId",
+    "userId",
+    "tokenId",
+    "inviteId",
+    "docId",
+    "clientId",
+];
 
 fn is_id_field(key: &str) -> bool {
     !NOT_ENTITIES.contains(&key)
@@ -320,6 +331,8 @@ const SHARED_EVENTS: &[&str] = &[
     "environments.changed",
     "cookies.changed",
     "variables.runtimeChanged",
+    "collab.update",
+    "collab.awareness",
 ];
 
 /// Whether `caller` may receive `event`. `member_of` holds the caller's

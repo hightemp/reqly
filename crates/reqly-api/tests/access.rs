@@ -497,3 +497,120 @@ async fn field_level_updates_merge_and_notify() {
     assert_eq!(e.payload["fields"], json!(["url"]));
     assert_eq!(e.payload["by"], "editor");
 }
+
+mod collab {
+    use base64::Engine;
+    use base64::engine::general_purpose::STANDARD;
+    use yrs::updates::decoder::Decode;
+    use yrs::{Doc, GetString, OffsetKind, Options, ReadTxn, Text, Transact, Update};
+
+    use super::*;
+
+    /// A browser-like Yjs client joined to a field.
+    fn client(joined: &Value) -> (Doc, yrs::TextRef) {
+        let doc = Doc::with_options(Options {
+            offset_kind: OffsetKind::Utf16,
+            ..Options::default()
+        });
+        let text = doc.get_or_insert_text("t");
+        let bytes = STANDARD.decode(joined["update"].as_str().unwrap()).unwrap();
+        doc.transact_mut()
+            .apply_update(Update::decode_v1(&bytes).unwrap())
+            .unwrap();
+        (doc, text)
+    }
+
+    fn insert(doc: &Doc, text: &yrs::TextRef, at: u32, s: &str) -> String {
+        let before = doc.transact().state_vector();
+        text.insert(&mut doc.transact_mut(), at, s);
+        STANDARD.encode(doc.transact().encode_state_as_update_v1(&before))
+    }
+
+    #[tokio::test]
+    async fn text_fields_are_edited_together() {
+        let fx = Fx::new().await;
+        let field = json!({ "nodeId": fx.req, "field": "url" });
+        let a = fx.ok(fx.owner, "collab.join", field.clone()).await;
+        let b = fx.ok(fx.viewer, "collab.join", field.clone()).await;
+        assert_eq!(a["docId"], b["docId"]);
+        let (doc, text) = client(&a);
+        assert_eq!(text.get_string(&doc.transact()), "http://127.0.0.1:9/");
+        assert_eq!(
+            fx.code(fx.outsider, "collab.join", field.clone()).await,
+            "not_found"
+        );
+
+        let mut events = fx.ctx.events.subscribe();
+        let update = insert(&doc, &text, 19, "users");
+        let input = json!({ "nodeId": fx.req, "field": "url", "docId": a["docId"],
+                            "update": update, "clientId": doc.client_id() });
+        assert_eq!(
+            fx.code(fx.viewer, "collab.update", input.clone()).await,
+            "access.denied"
+        );
+        fx.ok(fx.editor, "collab.update", input.clone()).await;
+        let node = fx.ok(fx.owner, "node.get", json!({ "id": fx.req })).await;
+        assert_eq!(node["data"]["url"], "http://127.0.0.1:9/users");
+        let event = events.recv().await.unwrap();
+        assert_eq!(event.topic, "collab.update");
+        assert_eq!(event.payload["clientId"], json!(doc.client_id()));
+
+        let mut stale = input.clone();
+        stale["docId"] = json!("gone");
+        assert_eq!(
+            fx.code(fx.editor, "collab.update", stale).await,
+            "collab.stale"
+        );
+
+        // A change made another way reaches the document as an edit.
+        fx.ok(
+            fx.owner,
+            "node.update",
+            json!({ "id": fx.req, "fields": { "url": "https://x/users" } }),
+        )
+        .await;
+        let again = fx.ok(fx.owner, "collab.join", field).await;
+        let (doc2, text2) = client(&again);
+        assert_eq!(again["docId"], a["docId"]);
+        assert_eq!(text2.get_string(&doc2.transact()), "https://x/users");
+
+        assert_eq!(
+            fx.code(
+                fx.owner,
+                "collab.join",
+                json!({ "nodeId": fx.req, "field": "method" })
+            )
+            .await,
+            "collab.field"
+        );
+    }
+
+    #[tokio::test]
+    async fn live_text_survives_whole_object_updates() {
+        let fx = Fx::new().await;
+        let field = json!({ "nodeId": fx.req, "field": "body.text" });
+        let joined = fx.ok(fx.owner, "collab.join", field).await;
+        let (doc, text) = client(&joined);
+        let update = insert(&doc, &text, 0, "{\"a\":1}");
+        fx.ok(
+            fx.owner,
+            "collab.update",
+            json!({ "nodeId": fx.req, "field": "body.text", "docId": joined["docId"],
+                    "update": update, "clientId": doc.client_id() }),
+        )
+        .await;
+        let node = fx.ok(fx.editor, "node.get", json!({ "id": fx.req })).await;
+        let mut body = node["data"]["body"].clone();
+        body["kind"] = json!("json");
+        body["text"] = json!("stale");
+        let saved = fx
+            .ok(
+                fx.editor,
+                "node.update",
+                json!({ "id": fx.req, "baseVersion": node["version"], "fields": { "body": body } }),
+            )
+            .await;
+        assert_eq!(saved["data"]["body"]["kind"], "json");
+        assert_eq!(saved["data"]["body"]["text"], "{\"a\":1}");
+    }
+}

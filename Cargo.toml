@@ -24,6 +24,7 @@ reqly-faker = { path = "crates/reqly-faker" }
 
 anyhow = "1"
 argon2 = "0.6"
+yrs = "0.28"
 async-trait = "0.1"
 axum = { version = "0.8", features = ["ws", "macros"] }
 futures = "0.3"

@@ -17,6 +17,10 @@ import type { ChangePasswordInput } from "./ChangePasswordInput";
 import type { CleanupOutput } from "./CleanupOutput";
 import type { CodegenInput } from "./CodegenInput";
 import type { CodegenOutput } from "./CodegenOutput";
+import type { CollabAwarenessInput } from "./CollabAwarenessInput";
+import type { CollabJoinInput } from "./CollabJoinInput";
+import type { CollabJoinOutput } from "./CollabJoinOutput";
+import type { CollabUpdateInput } from "./CollabUpdateInput";
 import type { Collection } from "./Collection";
 import type { CollectionCreateInput } from "./CollectionCreateInput";
 import type { CollectionIdInput } from "./CollectionIdInput";
@@ -223,6 +227,9 @@ export type Commands = {
   "admin.deleteUser": { input: UserIdInput; output: Empty };
   "admin.workspaces": { input: Empty; output: Array<AdminWorkspace> };
   "admin.server": { input: Empty; output: AdminServerOutput };
+  "collab.join": { input: CollabJoinInput; output: CollabJoinOutput };
+  "collab.update": { input: CollabUpdateInput; output: Empty };
+  "collab.awareness": { input: CollabAwarenessInput; output: Empty };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 
