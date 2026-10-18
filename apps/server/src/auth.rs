@@ -21,6 +21,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use reqly_api::access::Caller;
 use reqly_core::CoreError;
+use reqly_storage::invites::InviteRepo;
 use reqly_storage::sessions::SessionRepo;
 use reqly_storage::users::{User, UserRepo, random_token};
 use serde::{Deserialize, Serialize};
@@ -267,6 +268,9 @@ struct RegisterInput {
     password: String,
     #[serde(default)]
     display_name: String,
+    /// An invitation token: needed when registration is by invitation.
+    #[serde(default)]
+    invite: Option<String>,
 }
 
 fn client_of(request: &Request) -> String {
@@ -370,12 +374,23 @@ async fn register(State(state): State<AppState>, request: Request) -> Response {
     let Some(input) = json_body::<RegisterInput>(request).await else {
         return invalid_input("expected {\"username\", \"password\"}");
     };
-    if state.auth.mode != AuthMode::Multi || state.auth.registration != Registration::Open {
+    let allowed = match state.auth.registration {
+        Registration::Open => true,
+        Registration::Invite => input.invite.is_some(),
+        Registration::Admin => false,
+    };
+    if state.auth.mode != AuthMode::Multi || !allowed {
         return error(
             StatusCode::FORBIDDEN,
             "auth.registration_closed",
             "registration is closed",
         );
+    }
+    let invites = InviteRepo::new(&state.ctx.storage, state.ctx.clock.as_ref());
+    if let Some(token) = &input.invite
+        && let Err(e) = invites.preview(token).await
+    {
+        return core_error(e);
     }
     if !state.login_limiter.check_and_count(&client) {
         return error(
@@ -388,7 +403,30 @@ async fn register(State(state): State<AppState>, request: Request) -> Response {
         .create(&input.username, &input.display_name, &input.password, false)
         .await
     {
-        Ok(user) => start_session(&state, Some(user.id.to_string())).await,
+        Ok(user) => {
+            if let Some(token) = &input.invite
+                && let Err(e) = invites.accept(token, user.id).await
+            {
+                // Used by someone else meanwhile: the account stays.
+                tracing::info!(error = %e, "invitation not accepted");
+            }
+            start_session(&state, Some(user.id.to_string())).await
+        }
+        Err(e) => core_error(e),
+    }
+}
+
+/// What an invitation offers (public, for the sign-up screen).
+async fn invite_preview(
+    State(state): State<AppState>,
+    axum::extract::Path(token): axum::extract::Path<String>,
+) -> Response {
+    match InviteRepo::new(&state.ctx.storage, state.ctx.clock.as_ref())
+        .preview(&token)
+        .await
+    {
+        Ok(preview) => Json(preview).into_response(),
+        Err(e) if e.code == "invite.invalid" => (StatusCode::NOT_FOUND, Json(e)).into_response(),
         Err(e) => core_error(e),
     }
 }
@@ -412,6 +450,7 @@ pub fn router() -> Router<AppState> {
         .route("/status", get(status))
         .route("/login", post(login))
         .route("/register", post(register))
+        .route("/invite/{token}", get(invite_preview))
         .route("/logout", post(logout))
 }
 

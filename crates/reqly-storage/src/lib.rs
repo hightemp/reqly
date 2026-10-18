@@ -7,6 +7,7 @@ mod db;
 pub mod environments;
 pub mod graphql;
 pub mod history;
+pub mod invites;
 pub mod oauth2;
 pub mod search;
 pub mod sessions;

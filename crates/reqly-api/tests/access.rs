@@ -402,3 +402,65 @@ async fn accounts_and_tokens() {
     );
     assert_eq!(need("account.me"), Need::Account);
 }
+
+#[tokio::test]
+async fn invitations_add_members() {
+    let fx = Fx::new().await;
+    let created = fx
+        .ok(
+            fx.owner,
+            "members.invite",
+            json!({ "workspaceId": fx.ws, "role": "editor" }),
+        )
+        .await;
+    let token = created["token"].clone();
+    assert_eq!(
+        fx.code(
+            fx.editor,
+            "members.invite",
+            json!({ "workspaceId": fx.ws, "role": "owner" })
+        )
+        .await,
+        "access.denied"
+    );
+    let open = fx
+        .ok(fx.owner, "members.invites", json!({ "workspaceId": fx.ws }))
+        .await;
+    assert_eq!(open.as_array().unwrap().len(), 1);
+
+    fx.ok(fx.outsider, "invites.accept", json!({ "token": token }))
+        .await;
+    fx.ok(
+        fx.outsider,
+        "node.update",
+        json!({ "id": fx.req, "name": "Mine" }),
+    )
+    .await;
+    assert_eq!(
+        fx.code(fx.viewer, "invites.accept", json!({ "token": token }))
+            .await,
+        "invite.invalid"
+    );
+
+    let other = fx
+        .ok(
+            fx.owner,
+            "members.invite",
+            json!({ "workspaceId": fx.ws, "role": "viewer" }),
+        )
+        .await;
+    fx.ok(
+        fx.owner,
+        "members.revokeInvite",
+        json!({ "workspaceId": fx.ws, "inviteId": other["invite"]["id"] }),
+    )
+    .await;
+
+    assert_eq!(
+        fx.code(fx.owner, "admin.invite", json!({})).await,
+        "access.denied"
+    );
+    let signup = fx.ok(fx.admin, "admin.invite", json!({})).await;
+    let listed = fx.ok(fx.admin, "admin.invites", json!({})).await;
+    assert_eq!(listed[0]["id"], signup["invite"]["id"]);
+}

@@ -2,6 +2,7 @@
 //! server, ADR-010). Access rules are in [`crate::access::RULES`].
 
 use reqly_core::{CoreError, CoreResult, Id, Timestamp};
+use reqly_storage::invites::{Invite, InviteRepo};
 use reqly_storage::users::{ApiToken, Member, MemberRepo, Role, User, UserRepo};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -21,6 +22,13 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<MembersSet>()
         .register::<MembersRemove>()
         .register::<MembersLeave>()
+        .register::<MembersInvite>()
+        .register::<MembersInvites>()
+        .register::<MembersRevokeInvite>()
+        .register::<InvitesAccept>()
+        .register::<AdminInvite>()
+        .register::<AdminInvites>()
+        .register::<AdminRevokeInvite>()
         .register::<AdminUsers>()
         .register::<AdminCreateUser>()
         .register::<AdminUpdateUser>()
@@ -277,6 +285,153 @@ command!(
     |ctx, input| {
         members(ctx).remove(input.workspace_id, me()?).await?;
         workspaces_changed(ctx);
+        Ok(Empty {})
+    }
+);
+
+// ----- invitations ----------------------------------------------------------
+
+/// Invitations last a week unless asked otherwise.
+const DEFAULT_INVITE_DAYS: u32 = 7;
+
+fn invites(ctx: &AppContext) -> InviteRepo<'_> {
+    InviteRepo::new(&ctx.storage, ctx.clock.as_ref())
+}
+
+fn ttl_ms(days: Option<u32>) -> i64 {
+    i64::from(days.unwrap_or(DEFAULT_INVITE_DAYS).clamp(1, 365)) * 86_400_000
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct MembersInviteInput {
+    pub workspace_id: Id,
+    pub role: Role,
+    #[serde(default)]
+    #[ts(optional)]
+    pub expires_in_days: Option<u32>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[ts(export)]
+pub struct InviteCreated {
+    pub invite: Invite,
+    /// The secret part of the link, shown once.
+    pub token: String,
+}
+
+command!(
+    /// Creates a link that adds whoever opens it to the workspace.
+    MembersInvite,
+    "members.invite",
+    MembersInviteInput,
+    InviteCreated,
+    |ctx, input| {
+        let (invite, token) = invites(ctx)
+            .create(
+                me()?,
+                Some((input.workspace_id, input.role)),
+                ttl_ms(input.expires_in_days),
+            )
+            .await?;
+        Ok(InviteCreated { invite, token })
+    }
+);
+
+command!(
+    MembersInvites,
+    "members.invites",
+    MembersListInput,
+    Vec<Invite>,
+    |ctx, input| { invites(ctx).list(Some(input.workspace_id)).await }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct RevokeInviteInput {
+    pub workspace_id: Id,
+    pub invite_id: Id,
+}
+
+command!(
+    MembersRevokeInvite,
+    "members.revokeInvite",
+    RevokeInviteInput,
+    Empty,
+    |ctx, input| {
+        invites(ctx)
+            .revoke(Some(input.workspace_id), input.invite_id)
+            .await?;
+        Ok(Empty {})
+    }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub struct InviteTokenInput {
+    pub token: String,
+}
+
+command!(
+    /// A signed-in user joins the workspace of an invitation.
+    InvitesAccept,
+    "invites.accept",
+    InviteTokenInput,
+    Invite,
+    |ctx, input| {
+        let invite = invites(ctx).accept(&input.token, me()?).await?;
+        workspaces_changed(ctx);
+        Ok(invite)
+    }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AdminInviteInput {
+    #[serde(default)]
+    #[ts(optional)]
+    pub expires_in_days: Option<u32>,
+}
+
+command!(
+    /// A link to create an account (when registration is by invitation).
+    AdminInvite,
+    "admin.invite",
+    AdminInviteInput,
+    InviteCreated,
+    |ctx, input| {
+        let (invite, token) = invites(ctx)
+            .create(me()?, None, ttl_ms(input.expires_in_days))
+            .await?;
+        Ok(InviteCreated { invite, token })
+    }
+);
+
+command!(
+    AdminInvites,
+    "admin.invites",
+    Empty,
+    Vec<Invite>,
+    |ctx, _input| { invites(ctx).list(None).await }
+);
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct InviteIdInput {
+    pub invite_id: Id,
+}
+
+command!(
+    AdminRevokeInvite,
+    "admin.revokeInvite",
+    InviteIdInput,
+    Empty,
+    |ctx, input| {
+        invites(ctx).revoke(None, input.invite_id).await?;
         Ok(Empty {})
     }
 );

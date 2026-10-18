@@ -292,3 +292,77 @@ async fn bootstraps_the_first_admin() {
     let users = UserRepo::new(&state.ctx.storage, state.ctx.clock.as_ref());
     assert_eq!(users.count().await.unwrap(), 1);
 }
+
+#[tokio::test]
+async fn invitations_open_registration_and_workspaces() {
+    let state = state(Registration::Invite).await;
+    let app = router(state);
+    let root = session(&app, "root", "root-password").await;
+    let ws = send(&app, cmd("workspace.ensureDefault", json!({}), &root)).await;
+    let ws_id = ws.body[0]["id"].clone();
+
+    // Without an invitation registration is closed.
+    let res = send(
+        &app,
+        json_post(
+            "/api/v1/auth/register",
+            json!({ "username": "cy", "password": "cy-password" }),
+        ),
+    )
+    .await;
+    assert_eq!(res.body["code"], "auth.registration_closed");
+
+    let created = send(
+        &app,
+        cmd(
+            "members.invite",
+            json!({ "workspaceId": ws_id, "role": "viewer" }),
+            &root,
+        ),
+    )
+    .await;
+    let token = created.body["token"].as_str().unwrap().to_string();
+    let preview = send(
+        &app,
+        Request::get(format!("/api/v1/auth/invite/{token}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(preview.status, StatusCode::OK);
+    assert_eq!(preview.body["workspaceName"], "My Workspace");
+    assert_eq!(preview.body["role"], "viewer");
+    assert_eq!(preview.body["invitedBy"], "Root");
+
+    let bad = send(
+        &app,
+        json_post(
+            "/api/v1/auth/register",
+            json!({ "username": "cy", "password": "cy-password", "invite": "inv_nope" }),
+        ),
+    )
+    .await;
+    assert_eq!(bad.body["code"], "invite.invalid");
+
+    let res = send(
+        &app,
+        json_post(
+            "/api/v1/auth/register",
+            json!({ "username": "cy", "password": "cy-password", "invite": token }),
+        ),
+    )
+    .await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.body);
+    let cy = res.cookie.unwrap();
+    let me = send(&app, cmd("account.me", json!({}), &cy)).await;
+    assert_eq!(me.body["roles"][ws_id.as_str().unwrap()], "viewer");
+
+    let used = send(
+        &app,
+        Request::get(format!("/api/v1/auth/invite/{token}"))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(used.status, StatusCode::NOT_FOUND);
+}

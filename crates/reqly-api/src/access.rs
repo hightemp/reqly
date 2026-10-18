@@ -112,6 +112,7 @@ pub const RULES: &[(&str, Need)] = {
         ("account.tokens", Account),
         ("account.createToken", Account),
         ("account.deleteToken", Account),
+        ("invites.accept", Account),
         // Reading and using a workspace.
         ("collection.list", Read),
         ("collection.get", Read),
@@ -182,6 +183,9 @@ pub const RULES: &[(&str, Need)] = {
         ("workspace.delete", Manage),
         ("members.set", Manage),
         ("members.remove", Manage),
+        ("members.invite", Manage),
+        ("members.invites", Manage),
+        ("members.revokeInvite", Manage),
         // Administration.
         ("maintenance.cleanup", Admin),
         ("admin.users", Admin),
@@ -189,6 +193,9 @@ pub const RULES: &[(&str, Need)] = {
         ("admin.updateUser", Admin),
         ("admin.deleteUser", Admin),
         ("admin.workspaces", Admin),
+        ("admin.invite", Admin),
+        ("admin.invites", Admin),
+        ("admin.revokeInvite", Admin),
     ]
 };
 
@@ -200,7 +207,7 @@ pub fn need(command: &str) -> Need {
 }
 
 /// Input fields that hold handles or users, not workspace entities.
-const NOT_ENTITIES: &[&str] = &["connectionId", "flowId", "userId", "tokenId"];
+const NOT_ENTITIES: &[&str] = &["connectionId", "flowId", "userId", "tokenId", "inviteId"];
 
 fn is_id_field(key: &str) -> bool {
     !NOT_ENTITIES.contains(&key)
