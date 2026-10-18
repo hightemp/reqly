@@ -193,6 +193,7 @@ pub const RULES: &[(&str, Need)] = {
         ("admin.updateUser", Admin),
         ("admin.deleteUser", Admin),
         ("admin.workspaces", Admin),
+        ("admin.server", Admin),
         ("admin.invite", Admin),
         ("admin.invites", Admin),
         ("admin.revokeInvite", Admin),

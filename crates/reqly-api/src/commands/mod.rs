@@ -44,6 +44,8 @@ pub struct AppContext {
     pub network_policy: Option<reqly_http::policy::NetworkPolicy>,
     /// Where the database and blobs live (shown in settings).
     pub data_dir: Option<String>,
+    /// Server configuration shown in the admin panel (server build only).
+    pub server_info: Option<users::ServerInfo>,
     /// Cancel tokens of requests in flight, by request id.
     pub inflight: std::sync::Mutex<
         std::collections::HashMap<reqly_core::Id, reqly_http::engine::CancelToken>,
@@ -70,6 +72,7 @@ impl AppContext {
             clock: Arc::new(SystemClock),
             network_policy: None,
             data_dir: None,
+            server_info: None,
             inflight: Default::default(),
             oauth2_flows: Default::default(),
             streams: Default::default(),

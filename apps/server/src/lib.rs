@@ -41,6 +41,7 @@ impl AppState {
         let mut ctx = AppContext::new(Platform::Server, storage, blobs);
         ctx.network_policy = Some(config.network.policy()?);
         ctx.data_dir = Some(config.data_dir.display().to_string());
+        ctx.server_info = Some(config.info());
         let mut state = Self::new(ctx);
         state.auth = config.auth.clone();
         state.bootstrap_admin().await?;

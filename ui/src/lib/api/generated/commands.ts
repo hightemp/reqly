@@ -4,6 +4,7 @@ import type { AccountMeOutput } from "./AccountMeOutput";
 import type { AccountUpdateInput } from "./AccountUpdateInput";
 import type { AdminCreateUserInput } from "./AdminCreateUserInput";
 import type { AdminInviteInput } from "./AdminInviteInput";
+import type { AdminServerOutput } from "./AdminServerOutput";
 import type { AdminUpdateUserInput } from "./AdminUpdateUserInput";
 import type { AdminWorkspace } from "./AdminWorkspace";
 import type { ApiToken } from "./ApiToken";
@@ -221,6 +222,7 @@ export type Commands = {
   "admin.updateUser": { input: AdminUpdateUserInput; output: User };
   "admin.deleteUser": { input: UserIdInput; output: Empty };
   "admin.workspaces": { input: Empty; output: Array<AdminWorkspace> };
+  "admin.server": { input: Empty; output: AdminServerOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

@@ -366,3 +366,26 @@ async fn invitations_open_registration_and_workspaces() {
     .await;
     assert_eq!(used.status, StatusCode::NOT_FOUND);
 }
+
+#[tokio::test]
+async fn admin_panel_shows_the_server() {
+    let dir = tempfile::tempdir().unwrap();
+    let env = |k: &str| match k {
+        "REQLY_DATA_DIR" => Some(dir.path().display().to_string()),
+        "REQLY_AUTH_MODE" => Some("multi".into()),
+        "REQLY_ADMIN_USERNAME" => Some("boss".into()),
+        "REQLY_ADMIN_PASSWORD" => Some("boss-password".into()),
+        "REQLY_BLOCK_PRIVATE" => Some("1".into()),
+        _ => None,
+    };
+    let config = reqly_server::Config::load(None, env).unwrap();
+    let app = router(AppState::from_config(&config).await.unwrap());
+    let cookie = session(&app, "boss", "boss-password").await;
+    let res = send(&app, cmd("admin.server", json!({}), &cookie)).await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.body);
+    assert_eq!(res.body["info"]["authMode"], "multi");
+    assert_eq!(res.body["info"]["registration"], "admin");
+    assert_eq!(res.body["info"]["blockPrivate"], true);
+    assert_eq!(res.body["users"], 1);
+    assert!(!res.body.to_string().contains("boss-password"));
+}

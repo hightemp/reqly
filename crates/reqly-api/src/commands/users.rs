@@ -33,7 +33,8 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<AdminCreateUser>()
         .register::<AdminUpdateUser>()
         .register::<AdminDeleteUser>()
-        .register::<AdminWorkspaces>();
+        .register::<AdminWorkspaces>()
+        .register::<AdminServer>();
 }
 
 fn users(ctx: &AppContext) -> UserRepo<'_> {
@@ -537,6 +538,48 @@ command!(
         users(ctx).delete(input.user_id).await?;
         workspaces_changed(ctx);
         Ok(Empty {})
+    }
+);
+
+/// The server's configuration, as the admin panel shows it.
+#[derive(Debug, Clone, Default, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ServerInfo {
+    pub auth_mode: String,
+    pub registration: String,
+    pub secure_cookie: bool,
+    pub block_private: bool,
+    pub block_loopback: bool,
+    pub allow_hosts: Vec<String>,
+    pub deny: Vec<String>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AdminServerOutput {
+    pub version: String,
+    pub data_dir: Option<String>,
+    pub info: Option<ServerInfo>,
+    pub users: i64,
+    pub workspaces: usize,
+}
+
+command!(
+    AdminServer,
+    "admin.server",
+    Empty,
+    AdminServerOutput,
+    |ctx, _input| {
+        let tree = reqly_storage::tree::TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
+        Ok(AdminServerOutput {
+            version: env!("CARGO_PKG_VERSION").into(),
+            data_dir: ctx.data_dir.clone(),
+            info: ctx.server_info.clone(),
+            users: users(ctx).count().await?,
+            workspaces: tree.list_workspaces().await?.len(),
+        })
     }
 );
 

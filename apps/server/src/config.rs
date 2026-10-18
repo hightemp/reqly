@@ -129,6 +129,25 @@ impl Config {
         Ok(cfg)
     }
 
+    /// What the admin panel shows; never includes secrets.
+    pub fn info(&self) -> reqly_api::commands::users::ServerInfo {
+        // Both enums serialize as lowercase names.
+        let name = |v: serde_json::Result<serde_json::Value>| {
+            v.ok()
+                .and_then(|v| v.as_str().map(str::to_string))
+                .unwrap_or_default()
+        };
+        reqly_api::commands::users::ServerInfo {
+            auth_mode: name(serde_json::to_value(self.auth.mode)),
+            registration: name(serde_json::to_value(self.auth.registration)),
+            secure_cookie: self.auth.secure_cookie,
+            block_private: self.network.block_private,
+            block_loopback: self.network.block_loopback,
+            allow_hosts: self.network.allow_hosts.clone(),
+            deny: self.network.deny.clone(),
+        }
+    }
+
     pub fn database_path(&self) -> PathBuf {
         self.data_dir.join("reqly.db")
     }
