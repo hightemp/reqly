@@ -81,13 +81,13 @@ importers:
         specifier: ^16.14.2
         version: 16.14.2
       y-codemirror.next:
-        specifier: 0.3.6
+        specifier: ^0.3.6
         version: 0.3.6(@codemirror/state@6.7.6)(@codemirror/view@6.43.14)(yjs@13.6.33)
       y-protocols:
-        specifier: 1.0.7
+        specifier: ^1.0.7
         version: 1.0.7(yjs@13.6.33)
       yjs:
-        specifier: 13.6.33
+        specifier: ^13.6.33
         version: 13.6.33
     devDependencies:
       '@eslint/js':
