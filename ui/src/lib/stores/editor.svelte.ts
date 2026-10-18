@@ -10,6 +10,7 @@ import type { WebSocketRequest } from '$lib/api/generated/WebSocketRequest';
 import type { Transport } from '$lib/api/transport';
 import { SvelteMap } from 'svelte/reactivity';
 import { errorMessage } from '$lib/errors';
+import { t } from '$lib/i18n';
 import { toasts } from '$lib/ui/overlay/toasts.svelte';
 
 const AUTOSAVE_DELAY_MS = 500;
@@ -19,8 +20,35 @@ type FolderNodeData = FolderData & { kind: 'folder' };
 export type WebSocketData = WebSocketRequest & { kind: 'webSocket' };
 export type GrpcData = GrpcRequest & { kind: 'grpc' };
 
+/** Same JSON value (field values are plain data). */
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Top-level fields of `data` (and whether the name) changed from `base`. */
+export function changes(base: Node, node: Node) {
+  const before = base.data as Record<string, unknown>;
+  const after = node.data as Record<string, unknown>;
+  const fields: Record<string, unknown> = {};
+  const keys = [...Object.keys(before), ...Object.keys(after)];
+  for (const key of keys.filter((k, i) => keys.indexOf(k) === i)) {
+    if (key !== 'kind' && !same(before[key], after[key])) fields[key] = after[key];
+  }
+  return { fields, name: node.name !== base.name ? node.name : undefined };
+}
+
+/** `fresh` from the server with the local edits (made since `base`) on top. */
+export function rebase(local: Node, base: Node, fresh: Node): Node {
+  const { fields, name } = changes(base, local);
+  return {
+    ...fresh,
+    name: name ?? fresh.name,
+    data: { ...fresh.data, ...fields } as NodeData,
+  };
+}
+
 export class Draft {
   node = $state<Node | null>(null);
+  /** The last version from the server; local edits are relative to it. */
+  base: Node | null = null;
   dirty = $state(false);
   saving = $state(false);
   /** Local edit counter; a save only clears `dirty` if nothing changed meanwhile. */
@@ -60,11 +88,19 @@ export class EditorStore {
     readonly readonly: () => boolean = () => false,
   ) {
     this.unsubscribe = transport.subscribe((e) => {
+      if (e.topic === 'node.overwritten') {
+        const p = e.payload as { name: string; fields: string[]; by: string };
+        toasts.show({
+          message: t('editor.overwritten', { by: p.by, name: p.name, fields: p.fields.join(', ') }),
+          kind: 'info',
+        });
+        return;
+      }
       if (e.topic !== 'tree.changed') return;
       const ids = (e.payload as { nodeIds?: string[] } | null)?.nodeIds ?? [];
       for (const id of ids) {
         const draft = this.drafts.get(id);
-        if (draft && !draft.dirty && !draft.saving) void this.refresh(draft);
+        if (draft && !draft.saving) void this.refresh(draft);
       }
     });
   }
@@ -81,6 +117,7 @@ export class EditorStore {
     const load = (async () => {
       const draft = new Draft(id);
       draft.node = await this.transport.call('node.get', { id });
+      draft.base = draft.node;
       this.drafts.set(id, draft);
       return draft;
     })();
@@ -92,10 +129,13 @@ export class EditorStore {
     }
   }
 
+  /** Takes others' changes; unsaved local edits stay on top. */
   private async refresh(draft: Draft) {
     try {
       const fresh = await this.transport.call('node.get', { id: draft.id });
-      if (!draft.dirty && (!draft.node || fresh.version > draft.node.version)) draft.node = fresh;
+      if (draft.saving || !draft.node || !draft.base || fresh.version <= draft.base.version) return;
+      draft.node = draft.dirty ? rebase(draft.node, draft.base, fresh) : fresh;
+      draft.base = fresh;
     } catch {
       // Deleted nodes are cleaned up by the tabs store.
     }
@@ -146,19 +186,27 @@ export class EditorStore {
     if (!draft) return Promise.resolve();
     clearTimeout(draft.timer);
     draft.chain = draft.chain.then(async () => {
-      if (!draft.dirty || !draft.node || this.readonly()) return;
+      if (!draft.dirty || !draft.node || !draft.base || this.readonly()) return;
       const revision = draft.revision;
-      const { name, data } = draft.node;
+      const base = draft.base;
+      const { fields, name } = changes(base, draft.node);
       draft.saving = true;
       try {
-        const saved = await this.transport.call('node.update', { id: draft.id, name, data });
+        // Only the changed fields: others' edits to other fields survive.
+        const saved = await this.transport.call('node.update', {
+          id: draft.id,
+          baseVersion: base.version,
+          fields,
+          ...(name !== undefined ? { name } : {}),
+        });
         if (draft.revision === revision) {
           draft.node = saved;
           draft.dirty = false;
         } else if (draft.node) {
-          // Newer local edits stay; only adopt the server's version number.
-          draft.node = { ...draft.node, version: saved.version, updatedAt: saved.updatedAt };
+          // Newer local edits stay on top of the saved version.
+          draft.node = rebase(draft.node, base, saved);
         }
+        draft.base = saved;
       } catch (e) {
         toasts.error(errorMessage(e));
       } finally {

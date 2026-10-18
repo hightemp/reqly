@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FakeTransport } from '$lib/testing/fakeTransport';
-import { EditorStore } from './editor.svelte';
+import { EditorStore, changes, rebase } from './editor.svelte';
 
 function node(id: string, version = 1, url = 'http://a') {
   return {
@@ -31,15 +31,17 @@ function node(id: string, version = 1, url = 'http://a') {
 function setup(autosave = true, readonly = false) {
   const t = new FakeTransport();
   let stored = node('r1');
-  const update = vi.fn(async (input: { id: string; name?: string; data?: unknown }) => {
-    stored = {
-      ...stored,
-      version: stored.version + 1,
-      name: input.name ?? stored.name,
-      data: (input.data as never) ?? stored.data,
-    };
-    return stored as never;
-  });
+  const update = vi.fn(
+    async (input: { id: string; name?: string; fields?: Record<string, unknown> }) => {
+      stored = {
+        ...stored,
+        version: stored.version + 1,
+        name: input.name ?? stored.name,
+        data: { ...stored.data, ...input.fields } as never,
+      };
+      return stored as never;
+    },
+  );
   t.handle('node.get', () => stored as never);
   t.handle('node.update', update as never);
   const store = new EditorStore(
@@ -71,7 +73,11 @@ describe('EditorStore', () => {
     expect(d.dirty).toBe(true);
     await vi.advanceTimersByTimeAsync(600);
     expect(update).toHaveBeenCalledOnce();
-    expect(update.mock.calls[0]![0]).toMatchObject({ id: 'r1', data: { url: 'http://c' } });
+    expect(update.mock.calls[0]![0]).toEqual({
+      id: 'r1',
+      baseVersion: 1,
+      fields: { url: 'http://c' },
+    });
     expect(d.dirty).toBe(false);
     expect(d.node?.version).toBe(2);
     vi.useRealTimers();
@@ -132,7 +138,7 @@ describe('EditorStore', () => {
     await first;
     await vi.advanceTimersByTimeAsync(600);
     expect(update).toHaveBeenCalledTimes(2);
-    expect(update.mock.calls[1]![0]).toMatchObject({ data: { url: 'http://2' } });
+    expect(update.mock.calls[1]![0]).toMatchObject({ baseVersion: 2, fields: { url: 'http://2' } });
     vi.useRealTimers();
   });
 
@@ -152,5 +158,52 @@ describe('EditorStore', () => {
     t.emit({ topic: 'tree.changed', payload: { collectionIds: ['c1'], nodeIds: ['r1'] } });
     await new Promise((r) => setTimeout(r, 0));
     expect(d.request?.url).toBe('http://mine');
+  });
+
+  it("merges others' changes to other fields into a dirty draft", async () => {
+    const { store, t, setStored, update } = setup(false);
+    const d = await store.open('r1');
+    store.editRequest('r1', (r) => ({ ...r, url: 'http://mine' }));
+    const remote = node('r1', 5);
+    setStored({ ...remote, data: { ...remote.data, method: 'POST' } });
+    t.emit({ topic: 'tree.changed', payload: { collectionIds: ['c1'], nodeIds: ['r1'] } });
+    await vi.waitFor(() => expect(d.request?.method).toBe('POST'));
+    expect(d.request?.url).toBe('http://mine');
+    await store.save('r1');
+    // Only the local change is sent, based on the merged version.
+    expect(update).toHaveBeenCalledWith({
+      id: 'r1',
+      baseVersion: 5,
+      fields: { url: 'http://mine' },
+    });
+    expect(d.request?.method).toBe('POST');
+  });
+
+  it('shows who overwrote a change', async () => {
+    const { t } = setup();
+    const { toasts } = await import('$lib/ui/overlay/toasts.svelte');
+    const show = vi.spyOn(toasts, 'show');
+    t.emit({
+      topic: 'node.overwritten',
+      payload: { nodeId: 'r1', name: 'Req', fields: ['url'], by: 'Bob' },
+    });
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ kind: 'info' }));
+    expect(show.mock.calls[0]![0].message).toContain('Bob');
+  });
+});
+
+describe('changes and rebase', () => {
+  it('diffs top-level fields and replays them on a fresh node', () => {
+    const base = node('r1', 1, 'http://a');
+    const local = { ...base, name: 'Mine', data: { ...base.data, url: 'http://b' } };
+    expect(changes(base as never, local as never)).toEqual({
+      fields: { url: 'http://b' },
+      name: 'Mine',
+    });
+    const fresh = { ...node('r1', 3, 'http://a'), data: { ...base.data, method: 'PUT' } };
+    const merged = rebase(local as never, base as never, fresh as never) as never as typeof local;
+    expect(merged.version).toBe(3);
+    expect(merged.name).toBe('Mine');
+    expect(merged.data).toMatchObject({ url: 'http://b', method: 'PUT' });
   });
 });

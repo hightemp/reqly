@@ -170,3 +170,67 @@ test('changes by one member appear for the others without reloading', async ({ b
   await ownerContext.close();
   await otherContext.close();
 });
+
+test('edits to different fields merge and overwrites are announced', async ({ browser }) => {
+  const ownerContext = await browser.newContext();
+  const owner = await ownerContext.newPage();
+  await signIn(owner, E2E_ADMIN.username, E2E_ADMIN.password);
+  const call = (page: Page, name: string, data: unknown) =>
+    page.request
+      .post(`${base}/api/v1/cmd/${name}`, { data })
+      .then((r) => r.json() as Promise<Record<string, never> & { id: string; version: number }>);
+  const ws = await call(owner, 'workspace.create', { name: 'Merge' });
+  const col = await call(owner, 'collection.create', { workspaceId: ws.id, name: 'Merge API' });
+  const req = await call(owner, 'node.create', {
+    collectionId: col.id,
+    parentId: null,
+    name: 'Shared request',
+    data: { kind: 'request', method: 'GET', url: 'https://example.com/a' },
+  });
+  const invite = (await call(owner, 'members.invite', {
+    workspaceId: ws.id,
+    role: 'editor',
+  })) as unknown as { token: string };
+
+  const otherContext = await browser.newContext();
+  const other = await otherContext.newPage();
+  await other.request.post(`${base}/api/v1/auth/register`, {
+    data: {
+      username: 'frank',
+      password: 'frank-password',
+      displayName: 'Frank',
+      invite: invite.token,
+    },
+  });
+
+  await owner.reload();
+  await owner.getByRole('combobox', { name: 'Workspace' }).click();
+  await owner.getByRole('option', { name: 'Merge' }).click();
+  await owner.getByRole('treeitem', { name: /Shared request/ }).click();
+  const url = owner.getByRole('textbox', { name: 'URL' });
+  await expect(url).toHaveText('https://example.com/a');
+
+  // Frank changes the method; the owner's open editor picks it up.
+  await call(other, 'node.update', { id: req.id, baseVersion: 1, fields: { method: 'POST' } });
+  await expect(owner.getByRole('combobox', { name: 'Method' })).toHaveValue('POST');
+
+  // The owner edits the URL: only that field is saved, the method stays.
+  await url.fill('https://example.com/owner');
+  await expect
+    .poll(async () => (await call(other, 'node.get', { id: req.id })).data)
+    .toMatchObject({ method: 'POST', url: 'https://example.com/owner' });
+
+  // Frank, still on an old version, overwrites the URL: the owner is told.
+  // (The URL bar keeps its own text while focused.)
+  await url.blur();
+  await call(other, 'node.update', {
+    id: req.id,
+    baseVersion: 2,
+    fields: { url: 'https://example.com/frank' },
+  });
+  await expect(owner.getByText(/Frank overwrote your change to url/)).toBeVisible();
+  await expect(url).toHaveText('https://example.com/frank');
+
+  await ownerContext.close();
+  await otherContext.close();
+});

@@ -539,6 +539,9 @@ export const en = {
     secureCookie: 'Secure cookie',
     network: 'Outgoing requests',
   },
+  editor: {
+    overwritten: '{by} overwrote your change to {fields} in “{name}”',
+  },
   members: {
     menu: 'Members…',
     title: 'Members of “{name}”',
