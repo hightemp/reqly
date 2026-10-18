@@ -95,3 +95,19 @@ them.
 The server checks every command against the caller's role in the
 workspaces it touches (ADR-010), so the rules hold for the API as well as
 for the UI.
+
+## Administration
+
+Administrators get **Settings → Administration**:
+
+- **Users**: create accounts, make users administrators, disable them
+  (which signs them out), reset passwords, delete users; sign-up links for
+  servers where registration is by invitation. The last active
+  administrator cannot be demoted, disabled or deleted, and a user who is
+  the only owner of a workspace cannot be deleted.
+- **Workspaces**: every workspace with its owners and member count;
+  administrators can delete any of them.
+- **Server**: version, data directory, the number of users and
+  workspaces, authentication, registration and outgoing request settings.
+  These come from `reqly.toml` and environment variables and are shown
+  read-only; secrets are never shown.

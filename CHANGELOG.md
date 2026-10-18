@@ -22,6 +22,9 @@ Ships in 0.7.0 together with stage 7.
 - Invitation links: one-time, expiring links that add a user to a
   workspace with a role, creating the account when needed;
   `REQLY_REGISTRATION=invite` allows registration only with a link.
+- Settings → Administration for administrators: users (create, promote,
+  disable, reset password, delete), all workspaces, sign-up links and the
+  server configuration.
 - Per-user settings and active environments on a multi-user server.
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
   bundled and run in QuickJS (ADR-009, `docs/templates.md`).
