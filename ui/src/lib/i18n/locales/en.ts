@@ -566,6 +566,9 @@ export const en = {
     leaveTitle: 'Leave “{name}”?',
     leaveMessage: 'An owner has to add you again to get access back.',
     readOnly: 'View only: you can open and send requests, but changes are not saved.',
+    shareHistory: 'Share response history',
+    shareHistoryHint:
+      'Off: each member sees only the responses they received. On: everyone sees all responses of the workspace.',
     inviteTitle: 'Invitation links',
     inviteHint:
       'Anyone who opens the link joins with this role, creating an account if needed. A link works once and for 7 days.',

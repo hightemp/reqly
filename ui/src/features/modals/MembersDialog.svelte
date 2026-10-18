@@ -8,6 +8,7 @@
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
   import Button from '$lib/ui/Button.svelte';
+  import Checkbox from '$lib/ui/Checkbox.svelte';
   import Input from '$lib/ui/Input.svelte';
   import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
@@ -28,6 +29,7 @@
   let invites = $state<Invite[]>([]);
   let inviteRole = $state<Role>('editor');
   let link = $state<string | null>(null);
+  let historyShared = $state(false);
 
   const roles = $derived<{ value: Role; label: string; hint: string }[]>([
     { value: 'viewer', label: t('members.viewer'), hint: t('members.viewerHint') },
@@ -51,6 +53,7 @@
     run(async () => {
       if (!workspaceId) return;
       members = await services.transport.call('members.list', { workspaceId });
+      historyShared = (await services.transport.call('history.sharing', { workspaceId })).shared;
       if (manage) invites = await services.transport.call('members.invites', { workspaceId });
     });
 
@@ -70,6 +73,13 @@
       if (!workspaceId) return;
       await services.transport.call('members.revokeInvite', { workspaceId, inviteId: invite.id });
       invites = invites.filter((i) => i.id !== invite.id);
+    });
+
+  const setHistoryShared = (shared: boolean) =>
+    run(async () => {
+      if (!workspaceId) return;
+      historyShared = (await services.transport.call('history.setSharing', { workspaceId, shared }))
+        .shared;
     });
 
   async function copyLink() {
@@ -173,6 +183,17 @@
       >
     </form>
 
+    <div class="history">
+      <Checkbox
+        checked={historyShared}
+        disabled={busy}
+        label={t('members.shareHistory')}
+        showLabel
+        onchange={(v) => void setHistoryShared(v)}
+      />
+      <p class="hint">{t('members.shareHistoryHint')}</p>
+    </div>
+
     <h3>{t('members.inviteTitle')}</h3>
     <p class="hint">{t('members.inviteHint')}</p>
     <div class="add">
@@ -266,6 +287,9 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
     word-break: break-all;
+  }
+  .history {
+    margin-top: var(--space-3);
   }
   .footer {
     display: flex;

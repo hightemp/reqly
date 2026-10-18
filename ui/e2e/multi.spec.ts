@@ -361,3 +361,27 @@ test('members see who is in the workspace and on which request', async ({ browse
   await expect(owner.getByRole('img', { name: 'Also here: Hana Lee' })).toHaveCount(0);
   await ownerContext.close();
 });
+
+test('owners share the response history of a workspace', async ({ browser }) => {
+  const context = await browser.newContext();
+  const owner = await context.newPage();
+  await signIn(owner, E2E_ADMIN.username, E2E_ADMIN.password);
+  await owner.getByRole('button', { name: 'Workspace actions' }).click();
+  await owner.getByRole('menuitem', { name: 'Members…' }).click();
+  const share = owner.getByRole('dialog').getByRole('checkbox', { name: 'Share response history' });
+  await expect(share).not.toBeChecked();
+  await share.click();
+  await expect(share).toBeChecked();
+  await owner.keyboard.press('Escape');
+  const active = await owner.getByRole('combobox', { name: 'Workspace' }).textContent();
+  const ws = (
+    (await (
+      await owner.request.post(`${base}/api/v1/cmd/workspace.list`, { data: {} })
+    ).json()) as { id: string; name: string }[]
+  ).find((w) => w.name === active?.trim());
+  const sharing = await owner.request.post(`${base}/api/v1/cmd/history.sharing`, {
+    data: { workspaceId: ws!.id },
+  });
+  expect(await sharing.json()).toEqual({ shared: true });
+  await context.close();
+});
