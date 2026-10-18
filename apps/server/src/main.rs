@@ -25,8 +25,22 @@ async fn main() -> anyhow::Result<()> {
         .map(PathBuf::from)
         .or_else(|| Some(PathBuf::from("reqly.toml")).filter(|p| p.exists()));
     let config = Config::load(config_file.as_deref(), |k| std::env::var(k).ok())?;
-    if std::env::args().nth(1).as_deref() == Some("healthcheck") {
-        return healthcheck(&config.bind);
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        Some("healthcheck") => return healthcheck(&config.bind),
+        Some("admin") => {
+            let password = std::env::var("REQLY_ADMIN_PASSWORD").ok().or_else(|| {
+                let mut line = String::new();
+                std::io::stdin().read_line(&mut line).ok().map(|_| line)
+            });
+            println!(
+                "{}",
+                reqly_server::cli::admin(&config, &args[1..], password).await?
+            );
+            return Ok(());
+        }
+        Some(other) => anyhow::bail!("unknown command {other}\n{}", reqly_server::cli::USAGE),
+        None => {}
     }
 
     tracing_subscriber::fmt()

@@ -2,6 +2,7 @@
 
 mod api;
 pub mod auth;
+pub mod cli;
 mod config;
 mod static_files;
 
@@ -10,9 +11,10 @@ use std::sync::Arc;
 use reqly_api::Registry;
 use reqly_api::commands::{AppContext, Platform};
 use reqly_storage::blobs::BlobStore;
+use reqly_storage::users::UserRepo;
 use reqly_storage::{OpenOptions, Storage};
 
-pub use auth::{AuthConfig, AuthMode};
+pub use auth::{AuthConfig, AuthMode, Registration};
 pub use config::Config;
 
 #[derive(Clone)]
@@ -41,7 +43,24 @@ impl AppState {
         ctx.data_dir = Some(config.data_dir.display().to_string());
         let mut state = Self::new(ctx);
         state.auth = config.auth.clone();
+        state.bootstrap_admin().await?;
         Ok(state)
+    }
+
+    /// Creates the configured first administrator when there are no users.
+    async fn bootstrap_admin(&self) -> anyhow::Result<()> {
+        let (Some(name), Some(password)) = (
+            self.auth.admin_username.as_deref(),
+            self.auth.admin_password.as_deref(),
+        ) else {
+            return Ok(());
+        };
+        let users = UserRepo::new(&self.ctx.storage, self.ctx.clock.as_ref());
+        if self.auth.mode == AuthMode::Multi && users.count().await? == 0 {
+            users.create(name, "", password, true).await?;
+            tracing::info!(username = name, "created the first administrator");
+        }
+        Ok(())
     }
 
     pub async fn for_tests() -> Self {

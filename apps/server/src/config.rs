@@ -86,8 +86,27 @@ impl Config {
             cfg.auth.mode = match v.to_lowercase().as_str() {
                 "token" => crate::auth::AuthMode::Token,
                 "none" => crate::auth::AuthMode::None,
-                other => anyhow::bail!("REQLY_AUTH_MODE must be none or token, got {other}"),
+                "multi" => crate::auth::AuthMode::Multi,
+                other => {
+                    anyhow::bail!("REQLY_AUTH_MODE must be none, token or multi, got {other}")
+                }
             };
+        }
+        if let Some(v) = env("REQLY_REGISTRATION") {
+            cfg.auth.registration = match v.to_lowercase().as_str() {
+                "open" => crate::auth::Registration::Open,
+                "invite" => crate::auth::Registration::Invite,
+                "admin" => crate::auth::Registration::Admin,
+                other => {
+                    anyhow::bail!("REQLY_REGISTRATION must be open, invite or admin, got {other}")
+                }
+            };
+        }
+        if let Some(v) = env("REQLY_ADMIN_USERNAME") {
+            cfg.auth.admin_username = Some(v);
+        }
+        if let Some(v) = env("REQLY_ADMIN_PASSWORD") {
+            cfg.auth.admin_password = Some(v);
         }
         if let Some(v) = env("REQLY_AUTH_TOKEN") {
             cfg.auth.token = Some(v);

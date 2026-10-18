@@ -1,3 +1,4 @@
+use axum::Extension;
 use axum::Router;
 use axum::body::Bytes;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
@@ -5,6 +6,8 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{any, get, post};
+use reqly_api::access::Caller;
+use reqly_api::commands::dispatch_as;
 use reqly_core::CoreError;
 use serde_json::{Value, json};
 use tokio::sync::broadcast::error::RecvError;
@@ -24,6 +27,7 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = match self.0.code.as_str() {
             "command.unknown" | "not_found" => StatusCode::NOT_FOUND,
+            "access.denied" => StatusCode::FORBIDDEN,
             "command.invalid_input" => StatusCode::BAD_REQUEST,
             "internal" | "storage.error" => StatusCode::INTERNAL_SERVER_ERROR,
             _ => StatusCode::UNPROCESSABLE_ENTITY,
@@ -34,9 +38,11 @@ impl IntoResponse for ApiError {
 
 async fn command(
     State(state): State<AppState>,
+    caller: Option<Extension<Caller>>,
     Path(name): Path<String>,
     body: Bytes,
 ) -> Result<axum::Json<Value>, ApiError> {
+    let caller = caller.map(|Extension(c)| c).unwrap_or_default();
     let input: Value = if body.is_empty() {
         json!({})
     } else {
@@ -47,9 +53,7 @@ async fn command(
             )
         })?
     };
-    let output = state
-        .registry
-        .dispatch(&state.ctx, &name, input)
+    let output = dispatch_as(&state.registry, &state.ctx, caller, &name, input)
         .await
         .map_err(ApiError)?;
     Ok(axum::Json(output))

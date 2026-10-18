@@ -1,0 +1,294 @@
+//! Multi-user mode: password logins, registration, API tokens, lockout and
+//! per-user command access (ADR-010).
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode, header};
+use reqly_server::{AppState, AuthConfig, AuthMode, Registration, router};
+use reqly_storage::users::UserRepo;
+use serde_json::{Value, json};
+use tower::ServiceExt;
+
+async fn state(registration: Registration) -> AppState {
+    let mut state = AppState::for_tests().await;
+    state.auth = AuthConfig {
+        mode: AuthMode::Multi,
+        registration,
+        ..AuthConfig::default()
+    };
+    UserRepo::new(&state.ctx.storage, state.ctx.clock.as_ref())
+        .create("root", "Root", "root-password", true)
+        .await
+        .unwrap();
+    state
+}
+
+struct Res {
+    status: StatusCode,
+    cookie: Option<String>,
+    body: Value,
+}
+
+async fn send(app: &axum::Router, req: Request<Body>) -> Res {
+    let res = app.clone().oneshot(req).await.unwrap();
+    let status = res.status();
+    let cookie = res
+        .headers()
+        .get(header::SET_COOKIE)
+        .map(|v| v.to_str().unwrap().split(';').next().unwrap().to_string());
+    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    Res {
+        status,
+        cookie,
+        body: serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+    }
+}
+
+fn post(path: &str) -> axum::http::request::Builder {
+    Request::post(path).header("content-type", "application/json")
+}
+
+fn json_post(path: &str, body: Value) -> Request<Body> {
+    post(path).body(Body::from(body.to_string())).unwrap()
+}
+
+fn cmd(name: &str, input: Value, cookie: &str) -> Request<Body> {
+    post(&format!("/api/v1/cmd/{name}"))
+        .header(header::COOKIE, cookie)
+        .body(Body::from(input.to_string()))
+        .unwrap()
+}
+
+async fn login(app: &axum::Router, username: &str, password: &str) -> Res {
+    send(
+        app,
+        json_post(
+            "/api/v1/auth/login",
+            json!({ "username": username, "password": password }),
+        ),
+    )
+    .await
+}
+
+async fn session(app: &axum::Router, username: &str, password: &str) -> String {
+    let res = login(app, username, password).await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.body);
+    res.cookie.unwrap()
+}
+
+#[tokio::test]
+async fn password_login_and_status() {
+    let app = router(state(Registration::Admin).await);
+    let status = send(
+        &app,
+        Request::get("/api/v1/auth/status")
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(
+        status.body,
+        json!({ "mode": "multi", "authenticated": false, "registration": "admin" })
+    );
+
+    let wrong = login(&app, "root", "nope").await;
+    assert_eq!(wrong.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(wrong.body["code"], "auth.invalid");
+    let unknown = login(&app, "ghost", "nope").await;
+    assert_eq!(unknown.body["code"], "auth.invalid");
+
+    let cookie = session(&app, "root", "root-password").await;
+    let status = send(
+        &app,
+        Request::get("/api/v1/auth/status")
+            .header(header::COOKIE, &cookie)
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(status.body["authenticated"], true);
+    assert_eq!(status.body["user"]["username"], "root");
+    assert_eq!(status.body["user"]["isAdmin"], true);
+
+    let me = send(&app, cmd("account.me", json!({}), &cookie)).await;
+    assert_eq!(me.body["user"]["username"], "root");
+
+    // The single-user token login does not exist here.
+    let res = send(
+        &app,
+        json_post("/api/v1/auth/login", json!({ "token": "x" })),
+    )
+    .await;
+    assert_eq!(res.status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn registration_follows_the_policy() {
+    let closed = router(state(Registration::Admin).await);
+    let body = json!({ "username": "ann", "password": "ann-password" });
+    let res = send(&closed, json_post("/api/v1/auth/register", body.clone())).await;
+    assert_eq!(res.status, StatusCode::FORBIDDEN);
+    assert_eq!(res.body["code"], "auth.registration_closed");
+
+    let open = router(state(Registration::Open).await);
+    let res = send(&open, json_post("/api/v1/auth/register", body.clone())).await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.body);
+    let cookie = res.cookie.unwrap();
+    let me = send(&open, cmd("account.me", json!({}), &cookie)).await;
+    assert_eq!(me.body["user"]["username"], "ann");
+    assert_eq!(me.body["user"]["isAdmin"], false);
+
+    let again = send(&open, json_post("/api/v1/auth/register", body)).await;
+    assert_eq!(again.status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(again.body["code"], "user.exists");
+}
+
+#[tokio::test]
+async fn users_see_only_their_workspaces() {
+    let state = state(Registration::Open).await;
+    let app = router(state);
+    let root = session(&app, "root", "root-password").await;
+    let res = send(
+        &app,
+        json_post(
+            "/api/v1/auth/register",
+            json!({ "username": "bob", "password": "bob-password" }),
+        ),
+    )
+    .await;
+    let bob = res.cookie.unwrap();
+
+    let root_ws = send(&app, cmd("workspace.ensureDefault", json!({}), &root)).await;
+    let bob_ws = send(&app, cmd("workspace.ensureDefault", json!({}), &bob)).await;
+    assert_ne!(root_ws.body[0]["id"], bob_ws.body[0]["id"]);
+
+    let root_col = send(
+        &app,
+        cmd(
+            "collection.list",
+            json!({ "workspaceId": root_ws.body[0]["id"] }),
+            &root,
+        ),
+    )
+    .await;
+    let col = root_col.body[0]["id"].clone();
+    let res = send(&app, cmd("tree.list", json!({ "collectionId": col }), &bob)).await;
+    assert_eq!(res.status, StatusCode::NOT_FOUND);
+
+    let res = send(&app, cmd("admin.users", json!({}), &bob)).await;
+    assert_eq!(res.status, StatusCode::FORBIDDEN);
+    assert_eq!(res.body["code"], "access.denied");
+    let res = send(&app, cmd("admin.users", json!({}), &root)).await;
+    assert_eq!(res.body.as_array().unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn api_tokens_authorize_as_their_user() {
+    let app = router(state(Registration::Admin).await);
+    let cookie = session(&app, "root", "root-password").await;
+    let created = send(
+        &app,
+        cmd("account.createToken", json!({ "name": "cli" }), &cookie),
+    )
+    .await;
+    let secret = created.body["secret"].as_str().unwrap().to_string();
+    let me = |token: String| {
+        Request::post("/api/v1/cmd/account.me")
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .body(Body::from("{}"))
+            .unwrap()
+    };
+    let res = send(&app, me(secret.clone())).await;
+    assert_eq!(res.body["user"]["username"], "root");
+    let res = send(&app, me("rq_wrong".into())).await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED);
+
+    send(
+        &app,
+        cmd(
+            "account.deleteToken",
+            json!({ "tokenId": created.body["token"]["id"] }),
+            &cookie,
+        ),
+    )
+    .await;
+    assert_eq!(
+        send(&app, me(secret)).await.status,
+        StatusCode::UNAUTHORIZED
+    );
+}
+
+#[tokio::test]
+async fn accounts_lock_and_disabled_users_lose_access() {
+    let state = state(Registration::Admin).await;
+    UserRepo::new(&state.ctx.storage, state.ctx.clock.as_ref())
+        .create("ann", "", "ann-password", false)
+        .await
+        .unwrap();
+    let app = router(state);
+    let ann = session(&app, "ann", "ann-password").await;
+    let root = session(&app, "root", "root-password").await;
+
+    for _ in 0..reqly_storage::users::MAX_FAILED_LOGINS {
+        login(&app, "ann", "wrong").await;
+    }
+    let locked = login(&app, "ann", "ann-password").await;
+    assert_eq!(locked.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(locked.body["code"], "auth.locked");
+
+    let users = send(&app, cmd("admin.users", json!({}), &root)).await;
+    let ann_id = users.body.as_array().unwrap()[0]["id"].clone();
+    send(
+        &app,
+        cmd(
+            "admin.updateUser",
+            json!({ "userId": ann_id, "disabled": true }),
+            &root,
+        ),
+    )
+    .await;
+    let res = send(&app, cmd("account.me", json!({}), &ann)).await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn logout_ends_the_session() {
+    let app = router(state(Registration::Admin).await);
+    let cookie = session(&app, "root", "root-password").await;
+    send(
+        &app,
+        post("/api/v1/auth/logout")
+            .header(header::COOKIE, &cookie)
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    let res = send(&app, cmd("account.me", json!({}), &cookie)).await;
+    assert_eq!(res.status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn bootstraps_the_first_admin() {
+    let dir = tempfile::tempdir().unwrap();
+    let env = |k: &str| match k {
+        "REQLY_DATA_DIR" => Some(dir.path().display().to_string()),
+        "REQLY_AUTH_MODE" => Some("multi".into()),
+        "REQLY_REGISTRATION" => Some("open".into()),
+        "REQLY_ADMIN_USERNAME" => Some("boss".into()),
+        "REQLY_ADMIN_PASSWORD" => Some("boss-password".into()),
+        _ => None,
+    };
+    let config = reqly_server::Config::load(None, env).unwrap();
+    assert_eq!(config.auth.registration, Registration::Open);
+    let state = AppState::from_config(&config).await.unwrap();
+    let users = UserRepo::new(&state.ctx.storage, state.ctx.clock.as_ref());
+    let all = users.list().await.unwrap();
+    assert_eq!(all.len(), 1);
+    assert!(all[0].is_admin);
+    drop(state);
+    // Not again once users exist.
+    let state = AppState::from_config(&config).await.unwrap();
+    let users = UserRepo::new(&state.ctx.storage, state.ctx.clock.as_ref());
+    assert_eq!(users.count().await.unwrap(), 1);
+}
