@@ -97,6 +97,13 @@ cookies) appear for the other members of the workspace at once, without
 reloading. Responses, stream messages and settings are seen only by the
 user they belong to.
 
+When two people edit the same request, each save sends only the fields
+that person changed (method, URL, headers, body, auth, settings…), so
+edits to different fields both survive. For the same field the last save
+wins, and the person whose newer change was overwritten gets a
+notification naming who did it. Unsaved edits stay on top of changes
+arriving from others.
+
 The server checks every command against the caller's role in the
 workspaces it touches (ADR-010), so the rules hold for the API as well as
 for the UI.

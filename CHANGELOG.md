@@ -29,6 +29,9 @@ Ships in 0.7.0 together with stage 7.
 - Live updates between users: changes to a shared workspace reach its
   other members at once; private events (responses, streams, settings)
   reach only their user.
+- Field-level merging of request and folder edits: concurrent changes to
+  different fields both survive, and whoever loses a change to the same
+  field is notified (`node.update` with `fields` and `baseVersion`).
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
   bundled and run in QuickJS (ADR-009, `docs/templates.md`).
 - Template arguments can be arrays and objects:
@@ -56,6 +59,12 @@ Ships in 0.7.0 together with stage 7.
 ### Removed
 
 - The built-in Rust faker (ADR-005).
+
+### Fixed
+
+- The server counts only failed sign-ins against the per-address limit;
+  successful sign-ins of many people behind one address are no longer
+  refused.
 
 ## [0.6.0] — 2026-10-18
 
