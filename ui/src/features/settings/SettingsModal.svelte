@@ -5,6 +5,7 @@
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import About from './sections/About.svelte';
   import Account from './sections/Account.svelte';
+  import Admin from './sections/Admin.svelte';
   import Appearance from './sections/Appearance.svelte';
   import Certificates from './sections/Certificates.svelte';
   import CustomThemes from './sections/CustomThemes.svelte';
@@ -24,6 +25,7 @@
     | 'history'
     | 'keybindings'
     | 'account'
+    | 'admin'
     | 'about';
 
   let {
@@ -89,6 +91,15 @@
           },
         ]
       : []),
+    ...(services.account.user?.isAdmin
+      ? [
+          {
+            id: 'admin' as const,
+            label: t('settings.admin'),
+            keywords: [t('admin.users'), t('admin.workspaces'), t('admin.server')].join(' '),
+          },
+        ]
+      : []),
     {
       id: 'about',
       label: t('settings.about'),
@@ -144,6 +155,8 @@
         <History {services} />
       {:else if section === 'account'}
         <Account {services} />
+      {:else if section === 'admin'}
+        <Admin {services} />
       {:else if section === 'keybindings'}
         <Keybindings {services} filter={query} />
       {:else}

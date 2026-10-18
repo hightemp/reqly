@@ -103,3 +103,31 @@ test('an invitation link adds a new user to the workspace', async ({ browser }) 
   await guestContext.close();
   await adminContext.close();
 });
+
+test('administrators manage users in the admin panel', async ({ browser }) => {
+  const context = await browser.newContext();
+  const admin = await context.newPage();
+  await signIn(admin, E2E_ADMIN.username, E2E_ADMIN.password);
+  await admin.getByRole('complementary').getByRole('button', { name: 'Settings' }).click();
+  const settings = admin.getByRole('dialog');
+  await settings.getByRole('button', { name: 'Administration' }).click();
+  await settings.getByPlaceholder('User name').fill('dave');
+  await settings.getByPlaceholder('Password').fill('dave-password');
+  await settings.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(settings.getByText('@dave')).toBeVisible();
+  await settings.getByRole('checkbox', { name: 'dave can sign in' }).click();
+  await expect(settings.getByRole('checkbox', { name: 'dave can sign in' })).not.toBeChecked();
+
+  await settings.getByRole('tab', { name: 'Server' }).click();
+  await expect(settings.getByText('multi', { exact: true })).toBeVisible();
+
+  const guest = await (await browser.newContext()).newPage();
+  await guest.goto('/');
+  await guest.getByRole('textbox', { name: 'User name' }).fill('dave');
+  await guest.getByRole('textbox', { name: 'Password' }).fill('dave-password');
+  await guest.getByRole('button', { name: 'Sign in' }).click();
+  await expect(guest.getByRole('alert')).toHaveText(
+    'This account is disabled. Ask an administrator.',
+  );
+  await context.close();
+});
