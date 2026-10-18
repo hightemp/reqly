@@ -34,6 +34,8 @@ Ships in 0.7.0 together with stage 7.
   field is notified (`node.update` with `fields` and `baseVersion`).
 - Real-time co-editing of the request body, GraphQL query and variables and
   scripts with other people's cursors (Yjs and `yrs`, ADR-012).
+- Presence: avatars of the people in the workspace, and of those who have a
+  request open in the tree and on the tabs.
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
   bundled and run in QuickJS (ADR-009, `docs/templates.md`).
 - Template arguments can be arrays and objects:

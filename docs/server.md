@@ -109,6 +109,10 @@ together in real time: everyone types into the same text, sees the others'
 cursors with their names, and undo takes back only their own typing
 (ADR-012).
 
+Avatars next to the workspace picker show who else is in the workspace;
+smaller ones in the tree and on the tabs show who has a request open.
+People disappear when they close the tab.
+
 The server checks every command against the caller's role in the
 workspaces it touches (ADR-010), so the rules hold for the API as well as
 for the UI.
