@@ -19,6 +19,7 @@
   import FolderSettings from '../folder/FolderSettings.svelte';
   import CollectionScripts from '../scripts/CollectionScripts.svelte';
   import CookieManager from '../modals/CookieManager.svelte';
+  import MembersDialog from '../modals/MembersDialog.svelte';
   import RequestLog from '../modals/RequestLog.svelte';
   import TrashModal from '../modals/TrashModal.svelte';
   import CommandPalette, { type PaletteCommand } from '../palette/CommandPalette.svelte';
@@ -61,7 +62,14 @@
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
   let modal = $state<
-    'palette' | 'cookies' | 'trash' | 'log' | 'environments' | 'collectionScripts' | null
+    | 'palette'
+    | 'cookies'
+    | 'trash'
+    | 'log'
+    | 'environments'
+    | 'collectionScripts'
+    | 'members'
+    | null
   >(null);
 
   // Desktop: custom title bar or the OS frame.
@@ -252,6 +260,9 @@
       {/snippet}
       {#snippet second()}
         <div class="workspace">
+          {#if !services.account.canEdit(services.workspace.activeWorkspaceId)}
+            <div class="read-only" role="status">{t('members.readOnly')}</div>
+          {/if}
           <RequestTabs {services} />
           <div class="editor">
             <SplitPane
@@ -288,6 +299,8 @@
     <RequestLog {services} onclose={() => (modal = null)} />
   {:else if modal === 'environments'}
     <EnvironmentEditor {services} onclose={() => (modal = null)} />
+  {:else if modal === 'members'}
+    <MembersDialog {services} onclose={() => (modal = null)} />
   {:else if modal === 'collectionScripts' && services.workspace.activeCollection}
     <CollectionScripts
       {services}
@@ -383,6 +396,13 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+  }
+  .read-only {
+    padding: var(--space-1) var(--space-3);
+    border-bottom: 1px solid var(--c-border);
+    background: var(--c-bg-sunken);
+    color: var(--c-fg-subtle);
+    font-size: var(--font-size-sm);
   }
   .editor {
     flex: 1;

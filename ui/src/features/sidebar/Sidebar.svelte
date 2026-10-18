@@ -19,13 +19,17 @@
     services: Services;
     onFolderSettings: (id: string) => void;
     onCollapse: () => void;
-    onOpen: (modal: 'cookies' | 'trash' | 'log' | 'environments' | 'collectionScripts') => void;
+    onOpen: (
+      modal: 'cookies' | 'trash' | 'log' | 'environments' | 'collectionScripts' | 'members',
+    ) => void;
     onSettings: () => void;
   }
 
   let { services, onFolderSettings, onCollapse, onOpen, onSettings }: Props = $props();
   const ws = $derived(services.workspace);
   const prefs = $derived(services.prefs);
+  const canEdit = $derived(services.account.canEdit(ws.activeWorkspaceId));
+  const canManage = $derived(services.account.canManage(ws.activeWorkspaceId));
 
   let query = $state('');
   let searchInput: HTMLInputElement | null = $state(null);
@@ -77,11 +81,18 @@
       { id: 'log', label: t('log.title'), onSelect: () => onOpen('log') },
       { separator: true },
     );
+    if (current && services.account.user) {
+      entries.push(
+        { id: 'members', label: t('members.menu'), onSelect: () => onOpen('members') },
+        { separator: true },
+      );
+    }
     if (current) {
       entries.push(
         {
           id: 'rename',
           label: t('workspace.rename'),
+          disabled: !canManage,
           onSelect: async () => {
             const name = await askName(t('workspace.rename'), current.name);
             if (name) await ws.renameWorkspace(current.id, name);
@@ -92,7 +103,7 @@
           id: 'delete',
           label: t('workspace.delete'),
           danger: true,
-          disabled: ws.workspaces.length < 2,
+          disabled: !canManage || ws.workspaces.length < 2,
           onSelect: async () => {
             const ok = await dialogs.confirm({
               title: t('workspace.deleteTitle', { name: current.name }),
@@ -114,6 +125,7 @@
       {
         id: 'new',
         label: t('collection.new'),
+        disabled: !canEdit,
         onSelect: async () => {
           const name = await askName(t('collection.new'));
           if (name) await ws.createCollection(name);
@@ -124,6 +136,7 @@
       {
         id: 'import',
         label: t('import.intoCollection'),
+        disabled: !canEdit,
         onSelect: () => interopDialogs.openImport(current?.id ?? null),
       },
       {
@@ -146,6 +159,7 @@
         {
           id: 'rename',
           label: t('collection.rename'),
+          disabled: !canEdit,
           onSelect: async () => {
             const name = await askName(t('collection.rename'), current.name);
             if (name) await ws.renameCollection(current.id, name);
@@ -161,7 +175,7 @@
           id: 'delete',
           label: t('collection.delete'),
           danger: true,
-          disabled: ws.collections.length < 2,
+          disabled: !canEdit || ws.collections.length < 2,
           onSelect: async () => {
             const ok = await dialogs.confirm({
               title: t('collection.deleteTitle', { name: current.name }),
@@ -253,6 +267,7 @@
     <IconButton
       icon="plus"
       label={t('sidebar.create')}
+      disabled={!canEdit}
       onclick={(e) => createMenu(e.currentTarget)}
     />
     <IconButton

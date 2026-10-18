@@ -1,35 +1,79 @@
-<!-- Token login for the server build. -->
+<!-- Sign-in for the server build: an access token (`token` mode) or a user
+     name and password, with registration when the server allows it (`multi`). -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { t } from '$lib/i18n';
+  import { t, type Key } from '$lib/i18n';
   import Button from '$lib/ui/Button.svelte';
   import Input from '$lib/ui/Input.svelte';
 
-  let { onsuccess }: { onsuccess: () => void } = $props();
+  import type { AuthStatus } from './status';
+
+  let {
+    status,
+    onsuccess,
+  }: { status: Pick<AuthStatus, 'mode' | 'registration'>; onsuccess: () => void } = $props();
+  const multi = $derived(status.mode === 'multi');
+  const canRegister = $derived(multi && status.registration === 'open');
+
+  let registering = $state(false);
   let token = $state('');
+  let username = $state('');
+  let password = $state('');
+  let displayName = $state('');
   let error = $state<string | null>(null);
   let busy = $state(false);
   let input: HTMLInputElement | null = $state(null);
 
+  const ERRORS: Record<string, Key> = {
+    'auth.invalid': 'login.invalidPassword',
+    'auth.locked': 'login.locked',
+    'auth.disabled': 'login.disabled',
+    'auth.rate_limited': 'login.tooMany',
+    'auth.registration_closed': 'login.registrationClosed',
+    'user.exists': 'login.userExists',
+    'user.weak_password': 'login.weakPassword',
+    'user.invalid_username': 'login.invalidUsername',
+  };
+
+  function messageFor(code: string | undefined, status: number): string {
+    if (!multi) return status === 429 ? t('login.tooMany') : t('login.invalid');
+    const key = code ? ERRORS[code] : undefined;
+    return key ? t(key) : t('login.failed');
+  }
+
   async function submit(e: SubmitEvent) {
     e.preventDefault();
-    if (!token.trim()) return;
+    const body = !multi
+      ? { token: token.trim() }
+      : registering
+        ? { username: username.trim(), password, displayName: displayName.trim() }
+        : { username: username.trim(), password };
+    if (multi ? !username.trim() || !password : !token.trim()) return;
     busy = true;
     error = null;
     try {
-      const res = await fetch('/api/v1/auth/login', {
+      const res = await fetch(registering ? '/api/v1/auth/register' : '/api/v1/auth/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ token: token.trim() }),
+        body: JSON.stringify(body),
       });
-      if (res.ok) onsuccess();
-      else error = res.status === 429 ? t('login.tooMany') : t('login.invalid');
+      if (res.ok) {
+        onsuccess();
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as { code?: string } | null;
+      error = messageFor(data?.code, res.status);
     } catch {
       error = t('errors.transport.network');
     } finally {
       busy = false;
     }
+  }
+
+  function toggleMode() {
+    registering = !registering;
+    error = null;
   }
 
   onMount(() => input?.focus());
@@ -38,18 +82,52 @@
 <div class="screen">
   <form class="card" onsubmit={submit}>
     <img class="logo" src="/favicon.svg" alt="" width="48" height="48" />
-    <h1>{t('login.title')}</h1>
-    <p class="hint">{t('login.hint')}</p>
-    <Input
-      bind:inputRef={input}
-      bind:value={token}
-      type="password"
-      aria-label={t('login.token')}
-      placeholder={t('login.token')}
-      invalid={error !== null}
-    />
+    <h1>{registering ? t('login.registerTitle') : t('login.title')}</h1>
+    <p class="hint">{multi ? t('login.hintUser') : t('login.hint')}</p>
+    {#if multi}
+      <Input
+        bind:inputRef={input}
+        bind:value={username}
+        autocomplete="username"
+        aria-label={t('login.username')}
+        placeholder={t('login.username')}
+        invalid={error !== null}
+      />
+      {#if registering}
+        <Input
+          bind:value={displayName}
+          autocomplete="name"
+          aria-label={t('login.displayName')}
+          placeholder={t('login.displayName')}
+        />
+      {/if}
+      <Input
+        bind:value={password}
+        type="password"
+        autocomplete={registering ? 'new-password' : 'current-password'}
+        aria-label={t('login.password')}
+        placeholder={t('login.password')}
+        invalid={error !== null}
+      />
+    {:else}
+      <Input
+        bind:inputRef={input}
+        bind:value={token}
+        type="password"
+        aria-label={t('login.token')}
+        placeholder={t('login.token')}
+        invalid={error !== null}
+      />
+    {/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
-    <Button type="submit" variant="primary" loading={busy}>{t('login.submit')}</Button>
+    <Button type="submit" variant="primary" loading={busy}>
+      {registering ? t('login.register') : t('login.submit')}
+    </Button>
+    {#if canRegister}
+      <button type="button" class="link" onclick={toggleMode}>
+        {registering ? t('login.haveAccount') : t('login.noAccount')}
+      </button>
+    {/if}
   </form>
 </div>
 
@@ -86,5 +164,17 @@
   .error {
     color: var(--c-danger);
     font-size: var(--font-size-sm);
+  }
+  .link {
+    align-self: center;
+    border: none;
+    background: none;
+    color: var(--c-accent);
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--font-size-sm);
+  }
+  .link:hover {
+    text-decoration: underline;
   }
 </style>

@@ -28,7 +28,7 @@ function node(id: string, version = 1, url = 'http://a') {
   };
 }
 
-function setup(autosave = true) {
+function setup(autosave = true, readonly = false) {
   const t = new FakeTransport();
   let stored = node('r1');
   const update = vi.fn(async (input: { id: string; name?: string; data?: unknown }) => {
@@ -42,7 +42,11 @@ function setup(autosave = true) {
   });
   t.handle('node.get', () => stored as never);
   t.handle('node.update', update as never);
-  const store = new EditorStore(t, () => autosave);
+  const store = new EditorStore(
+    t,
+    () => autosave,
+    () => readonly,
+  );
   return { t, store, update, setStored: (n: ReturnType<typeof node>) => (stored = n) };
 }
 
@@ -84,6 +88,18 @@ describe('EditorStore', () => {
     await store.save('r1');
     expect(update).toHaveBeenCalledWith(expect.objectContaining({ name: 'Renamed' }));
     expect(d.dirty).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('never saves for viewers', async () => {
+    vi.useFakeTimers();
+    const { store, update } = setup(true, true);
+    const d = await store.open('r1');
+    store.editRequest('r1', (r) => ({ ...r, url: 'http://b' }));
+    await vi.advanceTimersByTimeAsync(1000);
+    await store.flush('r1');
+    expect(update).not.toHaveBeenCalled();
+    expect(d.request?.url).toBe('http://b');
     vi.useRealTimers();
   });
 

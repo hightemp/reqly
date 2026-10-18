@@ -56,6 +56,8 @@ export class EditorStore {
   constructor(
     private readonly transport: Transport,
     private readonly autosave: () => boolean,
+    /** Viewers may try edits locally; nothing is saved. */
+    readonly readonly: () => boolean = () => false,
   ) {
     this.unsubscribe = transport.subscribe((e) => {
       if (e.topic !== 'tree.changed') return;
@@ -103,7 +105,7 @@ export class EditorStore {
     draft.dirty = true;
     draft.revision += 1;
     clearTimeout(draft.timer);
-    if (this.autosave())
+    if (this.autosave() && !this.readonly())
       draft.timer = setTimeout(() => void this.save(draft.id), AUTOSAVE_DELAY_MS);
   }
 
@@ -144,7 +146,7 @@ export class EditorStore {
     if (!draft) return Promise.resolve();
     clearTimeout(draft.timer);
     draft.chain = draft.chain.then(async () => {
-      if (!draft.dirty || !draft.node) return;
+      if (!draft.dirty || !draft.node || this.readonly()) return;
       const revision = draft.revision;
       const { name, data } = draft.node;
       draft.saving = true;

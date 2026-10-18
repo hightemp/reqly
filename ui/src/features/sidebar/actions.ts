@@ -247,23 +247,67 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
       onSelect: () => void s.tree.remove(ids),
     },
   );
-  return entries;
+  return s.account.canEdit(s.workspace.activeWorkspaceId) ? entries : readOnly(entries);
+}
+
+/** Entries that change the tree; viewers do not get them. */
+const EDITS = /^(new-|rename$|duplicate$|cut$|paste$|delete$|sort$)/;
+
+/** Drops editing entries, then headings and separators left without items. */
+export function readOnly(entries: MenuEntry[]): MenuEntry[] {
+  const out: MenuEntry[] = [];
+  let pending: MenuEntry | null = null;
+  for (const e of entries) {
+    if ('id' in e && e.id && EDITS.test(e.id)) continue;
+    // A heading or separator only shows when an item follows it; a
+    // separator never starts the menu.
+    if ('heading' in e) {
+      pending = e;
+      continue;
+    }
+    if ('separator' in e) {
+      pending = out.length ? e : null;
+      continue;
+    }
+    if (pending) out.push(pending);
+    pending = null;
+    out.push(e);
+  }
+  return out;
 }
 
 /** Binds tree-scope hotkeys to the current selection. Returns an unbind function. */
 export function bindTreeHotkeys(s: Services, hooks: TreeActionHooks): () => void {
   const sel = () => s.tree.selected;
   const one = () => (s.tree.selected.length === 1 ? s.tree.selected[0]! : null);
+  const edit = (run: () => void) => () => {
+    if (s.account.canEdit(s.workspace.activeWorkspaceId)) run();
+  };
   const offs = [
-    s.hotkeys.on('tree.rename', () => {
-      const id = one();
-      if (id) s.tree.renaming = id;
-    }),
-    s.hotkeys.on('tree.delete', () => void s.tree.remove(sel())),
-    s.hotkeys.on('tree.duplicate', () => void s.tree.duplicate(sel())),
-    s.hotkeys.on('tree.cut', () => s.tree.cut(sel())),
+    s.hotkeys.on(
+      'tree.rename',
+      edit(() => {
+        const id = one();
+        if (id) s.tree.renaming = id;
+      }),
+    ),
+    s.hotkeys.on(
+      'tree.delete',
+      edit(() => void s.tree.remove(sel())),
+    ),
+    s.hotkeys.on(
+      'tree.duplicate',
+      edit(() => void s.tree.duplicate(sel())),
+    ),
+    s.hotkeys.on(
+      'tree.cut',
+      edit(() => s.tree.cut(sel())),
+    ),
     s.hotkeys.on('tree.copy', () => s.tree.copy(sel())),
-    s.hotkeys.on('tree.paste', () => void s.tree.paste(one())),
+    s.hotkeys.on(
+      'tree.paste',
+      edit(() => void s.tree.paste(one())),
+    ),
   ];
   void hooks;
   return () => offs.forEach((off) => off());

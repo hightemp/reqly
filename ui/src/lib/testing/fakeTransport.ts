@@ -76,6 +76,7 @@ export class FakeTransport implements Transport {
       dynamicVariables: [],
     }));
     this.handle('template.prompts', () => []);
+    this.handle('account.me', () => ({ user: null, roles: {} }));
     return this;
   }
 

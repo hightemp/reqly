@@ -4,6 +4,7 @@
   import type { Services } from '$lib/services.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import About from './sections/About.svelte';
+  import Account from './sections/Account.svelte';
   import Appearance from './sections/Appearance.svelte';
   import Certificates from './sections/Certificates.svelte';
   import CustomThemes from './sections/CustomThemes.svelte';
@@ -22,6 +23,7 @@
     | 'certificates'
     | 'history'
     | 'keybindings'
+    | 'account'
     | 'about';
 
   let {
@@ -78,6 +80,15 @@
     },
     { id: 'history', label: t('settings.history'), keywords: t('settings.historyPerRequest') },
     { id: 'keybindings', label: t('settings.keybindings'), keywords: t('hotkeys.change') },
+    ...(services.account.user
+      ? [
+          {
+            id: 'account' as const,
+            label: t('settings.account'),
+            keywords: [t('account.password'), t('account.tokens')].join(' '),
+          },
+        ]
+      : []),
     {
       id: 'about',
       label: t('settings.about'),
@@ -131,6 +142,8 @@
         <Certificates {services} />
       {:else if section === 'history'}
         <History {services} />
+      {:else if section === 'account'}
+        <Account {services} />
       {:else if section === 'keybindings'}
         <Keybindings {services} filter={query} />
       {:else}

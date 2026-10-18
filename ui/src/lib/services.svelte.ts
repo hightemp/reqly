@@ -5,6 +5,7 @@ import { defaultActions } from './hotkeys/actions';
 import { HotkeyRegistry, detectPlatform, type Platform } from './hotkeys/hotkeys';
 import { i18n } from './i18n';
 import { PreferencesStore } from './preferences.svelte';
+import { AccountStore } from './stores/account.svelte';
 import { EditorStore } from './stores/editor.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
@@ -43,6 +44,7 @@ export interface Services {
   responses: ResponseStore;
   streams: StreamStore;
   environments: EnvironmentStore;
+  account: AccountStore;
   scopes: FocusScopes;
 }
 
@@ -66,10 +68,16 @@ export async function createServices(
 
   await loadUserCustomizations(transport, themes, hotkeys);
 
+  const account = new AccountStore(transport);
+  await account.load().catch((e: unknown) => console.warn('[account] load failed', e));
   const workspace = new WorkspaceStore(transport, prefs);
   const tree = new TreeStore(transport);
   const tabs = new TabsStore(transport);
-  const editor = new EditorStore(transport, () => prefs.value.autosave);
+  const editor = new EditorStore(
+    transport,
+    () => prefs.value.autosave,
+    () => !account.canEdit(workspace.activeWorkspaceId),
+  );
   const responses = new ResponseStore(transport, (id) => editor.flush(id));
   const streams = new StreamStore(transport, (id) => editor.flush(id));
   const environments = new EnvironmentStore(transport);
@@ -99,6 +107,7 @@ export async function createServices(
     responses,
     streams,
     environments,
+    account,
     scopes: new FocusScopes(),
   };
 }

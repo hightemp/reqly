@@ -8,9 +8,10 @@
 
   import { TRANSPORT_TOPICS } from '$lib/api/transport';
   import LoginScreen from '$features/auth/LoginScreen.svelte';
+  import { authStatus, type AuthStatus } from '$features/auth/status';
 
   type Boot =
-    | { kind: 'login' }
+    | { kind: 'login'; status: AuthStatus }
     | {
         kind: 'app';
         services: Awaited<ReturnType<typeof createServices>>;
@@ -19,16 +20,16 @@
 
   async function start(): Promise<Boot> {
     if (!isTauri()) {
-      const status = await fetch('/api/v1/auth/status', { credentials: 'same-origin' })
-        .then((r) =>
-          r.ok ? (r.json() as Promise<{ mode: string; authenticated: boolean }>) : null,
-        )
-        .catch(() => null);
-      if (status && !status.authenticated) return { kind: 'login' };
+      const status = await authStatus();
+      if (status && !status.authenticated) return { kind: 'login', status };
     }
     const transport = await createTransport();
     transport.subscribe((e) => {
-      if (e.topic === TRANSPORT_TOPICS.unauthorized) boot = Promise.resolve({ kind: 'login' });
+      if (e.topic === TRANSPORT_TOPICS.unauthorized)
+        boot = authStatus().then((status) => ({
+          kind: 'login',
+          status: status ?? { mode: 'token', authenticated: false },
+        }));
     });
     const services = await createServices(transport);
     const windowController = isTauri() && !isMobile() ? await tauriWindow() : undefined;
@@ -42,7 +43,7 @@
   <div class="splash" role="status">{t('app.loading')}</div>
 {:then state}
   {#if state.kind === 'login'}
-    <LoginScreen onsuccess={() => location.reload()} />
+    <LoginScreen status={state.status} onsuccess={() => location.reload()} />
   {:else}
     <AppShell services={state.services} windowController={state.windowController} />
   {/if}
