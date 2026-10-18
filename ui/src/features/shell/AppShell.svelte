@@ -35,6 +35,7 @@
   import TagEditor from '../template/TagEditor.svelte';
   import { tagEditor } from '../template/tagEditorState.svelte';
   import { provideTemplateHost } from '$lib/template/host';
+  import { provideCollab } from '$lib/collab/collab';
   import Titlebar from './Titlebar.svelte';
 
   interface Props {
@@ -52,6 +53,8 @@
   // svelte-ignore state_referenced_locally
   bindPreferences(services);
   provideTemplateHost(createTemplateHostFactory(environments));
+  // svelte-ignore state_referenced_locally
+  provideCollab(services.collab);
   // svelte-ignore state_referenced_locally
   services.responses.askPrompts = (prompts) => promptState.ask(prompts);
   // svelte-ignore state_referenced_locally

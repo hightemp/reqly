@@ -153,6 +153,8 @@
         <CodeEditor
           bind:this={queryEditor}
           label={t('graphql.query')}
+          {nodeId}
+          collab="body.graphql.query"
           value={value.query}
           extensions={[language]}
           onchange={(query) => onchange({ ...value, query })}
@@ -168,6 +170,7 @@
           lineNumbers={false}
           placeholder={'{ "id": 1 }'}
           value={value.variables}
+          collab="body.graphql.variables"
           onchange={(variables) => onchange({ ...value, variables })}
         />
       </div>

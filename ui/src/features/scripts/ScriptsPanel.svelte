@@ -16,9 +16,11 @@
     onchange: (scripts: Scripts) => void;
     /** Shown above the editors (e.g. where the scripts run). */
     hint?: string;
+    /** The request or folder, to edit the scripts together. */
+    nodeId?: string | null;
   }
 
-  let { scripts, onchange, hint }: Props = $props();
+  let { scripts, onchange, hint, nodeId = null }: Props = $props();
   const templateHost = templateHostFactory();
 
   onMount(() => {
@@ -85,6 +87,8 @@
         bind:this={editor}
         label={phase === 'pre' ? t('scripts.preRequest') : t('scripts.afterResponse')}
         language="javascript"
+        {nodeId}
+        collab={nodeId ? (phase === 'pre' ? 'scripts.preRequest' : 'scripts.afterResponse') : null}
         {value}
         completions={[scriptCompletions]}
         placeholder={phase === 'pre' ? t('scripts.prePlaceholder') : t('scripts.postPlaceholder')}

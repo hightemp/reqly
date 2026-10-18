@@ -302,6 +302,7 @@
         />
       {:else if section === 'scripts'}
         <ScriptsPanel
+          nodeId={activeId}
           scripts={req.scripts}
           onchange={(scripts) => edit((r) => ({ ...r, scripts }))}
         />

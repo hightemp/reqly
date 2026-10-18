@@ -32,6 +32,8 @@
     placeholder as placeholderExt,
   } from '@codemirror/view';
   import { onMount } from 'svelte';
+  import { yCollab, yUndoManagerKeymap } from 'y-codemirror.next';
+  import { collabService, type CollabBinding } from '$lib/collab/collab';
   import { templateCompletions, templateExtension } from '$lib/template/codemirror';
   import { templateHostFactory } from '$lib/template/host';
   import { formatJson, formatXml } from './format';
@@ -53,6 +55,8 @@
     extensions?: Extension[];
     /** Extra completion sources (kept alongside template completions). */
     completions?: CompletionSource[];
+    /** Path of the field in `nodeId`'s data to edit together (ADR-012). */
+    collab?: string | null;
     onchange?: (value: string) => void;
   }
 
@@ -68,10 +72,15 @@
     nodeId = null,
     extensions = [],
     completions = [],
+    collab = null,
     onchange,
   }: Props = $props();
 
   const factory = templateHostFactory();
+  const collabs = collabService();
+  /** The shared document while the field is edited together. */
+  let binding: CollabBinding | null = null;
+  let destroyed = false;
   let host: HTMLDivElement | null = $state(null);
   let view: EditorView | null = null;
   const lang = new Compartment();
@@ -118,15 +127,20 @@
     return true;
   }
 
-  onMount(() => {
+  /** (Re)creates the view, bound to `shared` when editing together. */
+  function create(shared: CollabBinding | null) {
+    if (destroyed || !host) return;
+    view?.destroy();
     const templateHost = templates ? factory?.(nodeId) : undefined;
     view = new EditorView({
-      parent: host!,
+      parent: host,
       state: EditorState.create({
-        doc: value,
+        doc: shared ? shared.ytext.toString() : value,
         extensions: [
           showLines ? [lineNumbers(), foldGutter(), highlightActiveLineGutter()] : [],
-          history(),
+          shared
+            ? yCollab(shared.ytext, shared.awareness, { undoManager: shared.undoManager })
+            : history(),
           drawSelection(),
           indentOnInput(),
           bracketMatching(),
@@ -146,7 +160,7 @@
             ...closeBracketsKeymap,
             ...defaultKeymap,
             ...searchKeymap,
-            ...historyKeymap,
+            ...(shared ? yUndoManagerKeymap : historyKeymap),
             ...foldKeymap,
             indentWithTab,
           ]),
@@ -169,13 +183,51 @@
         ],
       }),
     });
-    return () => view?.destroy();
+  }
+
+  onMount(() => {
+    create(null);
+    return () => {
+      destroyed = true;
+      binding?.destroy();
+      view?.destroy();
+    };
   });
 
-  // External value changes (e.g. switching requests, cURL import).
+  // Edit together on a multi-user server; join again when the document
+  // went stale on the server.
+  $effect(() => {
+    const id = nodeId;
+    const field = collab;
+    if (!collabs?.enabled || !id || !field) return;
+    let cancelled = false;
+    const start = () => {
+      collabs
+        .bind(id, field, () => {
+          binding = null;
+          if (!cancelled) start();
+        })
+        .then((b) => {
+          if (cancelled) return b.destroy();
+          binding = b;
+          create(b);
+        })
+        .catch((e: unknown) => console.warn('[collab] join failed', e));
+    };
+    start();
+    return () => {
+      cancelled = true;
+      binding?.destroy();
+      binding = null;
+      create(null);
+    };
+  });
+
+  // External value changes (e.g. switching requests, cURL import); a shared
+  // document brings them itself.
   $effect(() => {
     const next = value;
-    if (view && next !== view.state.doc.toString()) {
+    if (view && !binding && next !== view.state.doc.toString()) {
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next } });
     }
   });

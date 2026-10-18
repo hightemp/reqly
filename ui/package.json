@@ -32,7 +32,10 @@
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-dialog": "^2.8.3",
     "cm6-graphql": "0.2.2",
-    "graphql": "^16.14.2"
+    "graphql": "^16.14.2",
+    "y-codemirror.next": "^0.3.6",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -93,6 +93,7 @@
           label={t('body.label')}
           {language}
           value={body.text}
+          collab="body.text"
           onchange={(text) => onchange({ ...body, text })}
         />
       </div>

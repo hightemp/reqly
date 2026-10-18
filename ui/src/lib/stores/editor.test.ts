@@ -193,6 +193,23 @@ describe('EditorStore', () => {
 });
 
 describe('changes and rebase', () => {
+  it('leave fields edited together to the server', () => {
+    const base = node('r1', 1);
+    const body = { ...base.data.body, text: 'typed' };
+    const local = { ...base, data: { ...base.data, body } };
+    expect(changes(base as never, local as never, ['body.text']).fields).toEqual({});
+    const kind = { ...local, data: { ...local.data, body: { ...body, kind: 'json' } } };
+    expect(changes(base as never, kind as never, ['body.text']).fields).toEqual({
+      body: { ...base.data.body, kind: 'json' },
+    });
+    const fresh = node('r1', 4, 'http://new');
+    const merged = rebase(local as never, base as never, fresh as never, [
+      'body.text',
+    ]) as never as typeof local;
+    expect(merged.data.url).toBe('http://new');
+    expect(merged.data.body.text).toBe('typed');
+  });
+
   it('diffs top-level fields and replays them on a fresh node', () => {
     const base = node('r1', 1, 'http://a');
     const local = { ...base, name: 'Mine', data: { ...base.data, url: 'http://b' } };

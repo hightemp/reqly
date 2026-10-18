@@ -23,10 +23,31 @@ export type GrpcData = GrpcRequest & { kind: 'grpc' };
 /** Same JSON value (field values are plain data). */
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-/** Top-level fields of `data` (and whether the name) changed from `base`. */
-export function changes(base: Node, node: Node) {
-  const before = base.data as Record<string, unknown>;
-  const after = node.data as Record<string, unknown>;
+type Json = Record<string, unknown>;
+
+function getPath(data: Json, path: string): unknown {
+  return path.split('.').reduce<unknown>((v, k) => (v as Json | undefined)?.[k], data);
+}
+
+/** A copy of `data` with `path` set (the parents must exist). */
+function setPath(data: Json, path: string, value: unknown): Json {
+  const [key, ...rest] = path.split('.') as [string, ...string[]];
+  if (!(key in data)) return data;
+  return {
+    ...data,
+    [key]: rest.length ? setPath(data[key] as Json, rest.join('.'), value) : value,
+  };
+}
+
+/**
+ * Top-level fields of `data` (and whether the name) changed from `base`.
+ * `shared` paths are edited together and stored by the server: they do not
+ * count as changes.
+ */
+export function changes(base: Node, node: Node, shared: string[] = []) {
+  const before = base.data as Json;
+  let after = node.data as Json;
+  for (const path of shared) after = setPath(after, path, getPath(before, path));
   const fields: Record<string, unknown> = {};
   const keys = [...Object.keys(before), ...Object.keys(after)];
   for (const key of keys.filter((k, i) => keys.indexOf(k) === i)) {
@@ -36,13 +57,12 @@ export function changes(base: Node, node: Node) {
 }
 
 /** `fresh` from the server with the local edits (made since `base`) on top. */
-export function rebase(local: Node, base: Node, fresh: Node): Node {
-  const { fields, name } = changes(base, local);
-  return {
-    ...fresh,
-    name: name ?? fresh.name,
-    data: { ...fresh.data, ...fields } as NodeData,
-  };
+export function rebase(local: Node, base: Node, fresh: Node, shared: string[] = []): Node {
+  const { fields, name } = changes(base, local, shared);
+  let data = { ...(fresh.data as Json), ...fields };
+  // The editor's text of shared fields is the newest one.
+  for (const path of shared) data = setPath(data, path, getPath(local.data as Json, path));
+  return { ...fresh, name: name ?? fresh.name, data: data as NodeData };
 }
 
 export class Draft {
@@ -86,6 +106,8 @@ export class EditorStore {
     private readonly autosave: () => boolean,
     /** Viewers may try edits locally; nothing is saved. */
     readonly readonly: () => boolean = () => false,
+    /** Fields of a node edited together, stored by the server (ADR-012). */
+    private readonly shared: (id: string) => string[] = () => [],
   ) {
     this.unsubscribe = transport.subscribe((e) => {
       if (e.topic === 'node.overwritten') {
@@ -134,7 +156,9 @@ export class EditorStore {
     try {
       const fresh = await this.transport.call('node.get', { id: draft.id });
       if (draft.saving || !draft.node || !draft.base || fresh.version <= draft.base.version) return;
-      draft.node = draft.dirty ? rebase(draft.node, draft.base, fresh) : fresh;
+      draft.node = draft.dirty
+        ? rebase(draft.node, draft.base, fresh, this.shared(draft.id))
+        : fresh;
       draft.base = fresh;
     } catch {
       // Deleted nodes are cleaned up by the tabs store.
@@ -189,7 +213,13 @@ export class EditorStore {
       if (!draft.dirty || !draft.node || !draft.base || this.readonly()) return;
       const revision = draft.revision;
       const base = draft.base;
-      const { fields, name } = changes(base, draft.node);
+      const shared = this.shared(draft.id);
+      const { fields, name } = changes(base, draft.node, shared);
+      if (!Object.keys(fields).length && name === undefined) {
+        // Only shared text changed: the server has it already.
+        draft.dirty = false;
+        return;
+      }
       draft.saving = true;
       try {
         // Only the changed fields: others' edits to other fields survive.
@@ -204,7 +234,7 @@ export class EditorStore {
           draft.dirty = false;
         } else if (draft.node) {
           // Newer local edits stay on top of the saved version.
-          draft.node = rebase(draft.node, base, saved);
+          draft.node = rebase(draft.node, base, saved, shared);
         }
         draft.base = saved;
       } catch (e) {

@@ -5,6 +5,7 @@ import { defaultActions } from './hotkeys/actions';
 import { HotkeyRegistry, detectPlatform, type Platform } from './hotkeys/hotkeys';
 import { i18n } from './i18n';
 import { PreferencesStore } from './preferences.svelte';
+import { CollabService, userColor } from './collab/collab';
 import { AccountStore } from './stores/account.svelte';
 import { EditorStore } from './stores/editor.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
@@ -45,6 +46,7 @@ export interface Services {
   streams: StreamStore;
   environments: EnvironmentStore;
   account: AccountStore;
+  collab: CollabService;
   scopes: FocusScopes;
 }
 
@@ -70,6 +72,9 @@ export async function createServices(
 
   const account = new AccountStore(transport);
   await account.load().catch((e: unknown) => console.warn('[account] load failed', e));
+  const collab = new CollabService(transport, () =>
+    account.user ? { name: account.user.displayName, color: userColor(account.user.id) } : null,
+  );
   const workspace = new WorkspaceStore(transport, prefs);
   const tree = new TreeStore(transport);
   const tabs = new TabsStore(transport);
@@ -77,6 +82,7 @@ export async function createServices(
     transport,
     () => prefs.value.autosave,
     () => !account.canEdit(workspace.activeWorkspaceId),
+    (id) => collab.paths(id),
   );
   const responses = new ResponseStore(transport, (id) => editor.flush(id));
   const streams = new StreamStore(transport, (id) => editor.flush(id));
@@ -108,6 +114,7 @@ export async function createServices(
     streams,
     environments,
     account,
+    collab,
     scopes: new FocusScopes(),
   };
 }

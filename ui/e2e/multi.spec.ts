@@ -234,3 +234,82 @@ test('edits to different fields merge and overwrites are announced', async ({ br
   await ownerContext.close();
   await otherContext.close();
 });
+
+test('two people type in the same body at once', async ({ browser }) => {
+  const ownerContext = await browser.newContext();
+  const owner = await ownerContext.newPage();
+  await signIn(owner, E2E_ADMIN.username, E2E_ADMIN.password);
+  const call = (page: Page, name: string, data: unknown) =>
+    page.request
+      .post(`${base}/api/v1/cmd/${name}`, { data })
+      .then((r) => r.json() as Promise<Record<string, never> & { id: string }>);
+  const ws = await call(owner, 'workspace.create', { name: 'Pair' });
+  const col = await call(owner, 'collection.create', { workspaceId: ws.id, name: 'Pair API' });
+  await call(owner, 'node.create', {
+    collectionId: col.id,
+    parentId: null,
+    name: 'Pair request',
+    data: {
+      kind: 'request',
+      method: 'POST',
+      url: 'https://example.com',
+      body: { kind: 'text', text: 'middle' },
+    },
+  });
+  const invite = (await call(owner, 'members.invite', {
+    workspaceId: ws.id,
+    role: 'editor',
+  })) as unknown as { token: string };
+
+  const otherContext = await browser.newContext();
+  const other = await otherContext.newPage();
+  await other.request.post(`${base}/api/v1/auth/register`, {
+    data: {
+      username: 'gina',
+      password: 'gina-password',
+      displayName: 'Gina',
+      invite: invite.token,
+    },
+  });
+
+  const open = async (page: Page) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Workspace' }).click();
+    await page.getByRole('option', { name: 'Pair' }).click();
+    await page.getByRole('treeitem', { name: /Pair request/ }).click();
+    await page.getByRole('tab', { name: 'Body' }).click();
+    const editor = page.getByRole('textbox', { name: 'Request body' });
+    await expect(editor).toHaveText('middle');
+    return editor;
+  };
+  const mine = await open(owner);
+  const theirs = await open(other);
+
+  await mine.click();
+  await owner.keyboard.press('ControlOrMeta+End');
+  await theirs.click();
+  await other.keyboard.press('ControlOrMeta+Home');
+  await Promise.all([owner.keyboard.type(' end'), other.keyboard.type('start ')]);
+
+  // The editors also show the other person's cursor with their name, so
+  // compare the stored text and the parts on screen.
+  const stored = async () => {
+    const [req] = (await call(other, 'tree.list', { collectionId: col.id })) as never as {
+      id: string;
+    }[];
+    const node = (await call(other, 'node.get', { id: req!.id })) as never as {
+      data: { body: { text: string } };
+    };
+    return node.data.body.text;
+  };
+  await expect.poll(stored).toBe('start middle end');
+  for (const editor of [mine, theirs]) {
+    await expect(editor).toContainText('start');
+    await expect(editor).toContainText('middle end');
+  }
+  await expect(owner.locator('.cm-ySelectionInfo', { hasText: 'Gina' })).toBeAttached();
+  await expect(other.locator('.cm-ySelectionInfo', { hasText: 'admin' })).toBeAttached();
+
+  await ownerContext.close();
+  await otherContext.close();
+});

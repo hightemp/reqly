@@ -103,6 +103,7 @@
       {:else if section === 'scripts'}
         <div class="scripts">
           <ScriptsPanel
+            nodeId={folderId}
             scripts={folder.scripts}
             hint={t('scripts.folderHint')}
             onchange={(scripts) => edit((f) => ({ ...f, scripts }))}
