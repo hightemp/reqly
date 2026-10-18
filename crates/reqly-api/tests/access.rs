@@ -614,3 +614,44 @@ mod collab {
         assert_eq!(saved["data"]["body"]["text"], "{\"a\":1}");
     }
 }
+
+#[tokio::test]
+async fn presence_follows_tabs() {
+    let fx = Fx::new().await;
+    let mut events = fx.ctx.events.subscribe();
+    let people = fx
+        .ok(
+            fx.owner,
+            "presence.set",
+            json!({ "clientId": "tab-1", "workspaceId": fx.ws, "nodeId": fx.req }),
+        )
+        .await;
+    assert_eq!(people[0]["name"], "owner");
+    let people = fx
+        .ok(
+            fx.viewer,
+            "presence.set",
+            json!({ "clientId": "tab-2", "workspaceId": fx.ws }),
+        )
+        .await;
+    assert_eq!(people.as_array().unwrap().len(), 2);
+    assert_eq!(
+        fx.code(
+            fx.outsider,
+            "presence.set",
+            json!({ "clientId": "tab-3", "workspaceId": fx.ws })
+        )
+        .await,
+        "not_found"
+    );
+    fx.ctx.presence.leave(&fx.ctx, "tab-1");
+    let mut last = None;
+    while let Ok(e) = events.try_recv() {
+        if e.topic == "presence.changed" {
+            last = Some(e.payload);
+        }
+    }
+    let last = last.unwrap();
+    assert_eq!(last["people"].as_array().unwrap().len(), 1);
+    assert_eq!(last["people"][0]["name"], "viewer");
+}

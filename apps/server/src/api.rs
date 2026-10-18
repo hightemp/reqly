@@ -2,7 +2,7 @@ use axum::Extension;
 use axum::Router;
 use axum::body::Bytes;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{any, get, post};
@@ -62,13 +62,26 @@ async fn command(
     Ok(axum::Json(output))
 }
 
+#[derive(serde::Deserialize)]
+struct WsQuery {
+    /// The browser tab, for presence (`presence.set`).
+    client: Option<String>,
+}
+
 async fn websocket(
     State(state): State<AppState>,
     caller: Option<Extension<Caller>>,
+    Query(query): Query<WsQuery>,
     ws: WebSocketUpgrade,
 ) -> Response {
     let caller = caller.map(|Extension(c)| c).unwrap_or_default();
-    ws.on_upgrade(move |socket| push_events(state, caller, socket))
+    ws.on_upgrade(move |socket| async move {
+        push_events(state.clone(), caller, socket).await;
+        // The tab is gone: so is its presence.
+        if let Some(client) = query.client {
+            state.ctx.presence.leave(&state.ctx, &client);
+        }
+    })
 }
 
 /// The workspaces of a user, for filtering events.

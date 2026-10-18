@@ -510,3 +510,57 @@ async fn successful_logins_are_not_rate_limited() {
         session(&app, "root", "root-password").await;
     }
 }
+
+#[tokio::test]
+async fn presence_ends_with_the_websocket() {
+    use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+
+    let state = state(Registration::Admin).await;
+    let app = router(state.clone());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(axum::serve(listener, app.clone()).into_future());
+    let root = session(&app, "root", "root-password").await;
+    let ws = send(&app, cmd("workspace.ensureDefault", json!({}), &root))
+        .await
+        .body[0]["id"]
+        .clone();
+
+    let mut req = format!("ws://{addr}/api/v1/ws?client=tab-a")
+        .into_client_request()
+        .unwrap();
+    req.headers_mut()
+        .insert(header::COOKIE, root.parse().unwrap());
+    let (mut socket, _) = tokio_tungstenite::connect_async(req).await.unwrap();
+    let people = send(
+        &app,
+        cmd(
+            "presence.set",
+            json!({ "clientId": "tab-a", "workspaceId": ws }),
+            &root,
+        ),
+    )
+    .await;
+    assert_eq!(people.body.as_array().unwrap().len(), 1);
+
+    socket.close(None).await.unwrap();
+    drop(socket);
+    let mut gone = false;
+    for _ in 0..50 {
+        let people = send(
+            &app,
+            cmd(
+                "presence.set",
+                json!({ "clientId": "tab-b", "workspaceId": ws }),
+                &root,
+            ),
+        )
+        .await;
+        if people.body.as_array().unwrap().len() == 1 {
+            gone = true;
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    assert!(gone, "tab-a is still present");
+}

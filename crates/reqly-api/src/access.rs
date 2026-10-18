@@ -152,6 +152,7 @@ pub const RULES: &[(&str, Need)] = {
         ("members.list", Read),
         ("members.leave", Read),
         ("collab.join", Read),
+        ("presence.set", Read),
         ("collab.awareness", Read),
         // Changing a workspace.
         ("collection.create", Write),
@@ -333,6 +334,7 @@ const SHARED_EVENTS: &[&str] = &[
     "variables.runtimeChanged",
     "collab.update",
     "collab.awareness",
+    "presence.changed",
 ];
 
 /// Whether `caller` may receive `event`. `member_of` holds the caller's

@@ -81,6 +81,8 @@ import type { OAuth2DevicePollInput } from "./OAuth2DevicePollInput";
 import type { OAuth2DevicePollOutput } from "./OAuth2DevicePollOutput";
 import type { OAuth2NodeInput } from "./OAuth2NodeInput";
 import type { OAuth2TokenInfo } from "./OAuth2TokenInfo";
+import type { PresencePerson } from "./PresencePerson";
+import type { PresenceSetInput } from "./PresenceSetInput";
 import type { PromptInfo } from "./PromptInfo";
 import type { RenameInput } from "./RenameInput";
 import type { RequestIdInput } from "./RequestIdInput";
@@ -230,6 +232,7 @@ export type Commands = {
   "collab.join": { input: CollabJoinInput; output: CollabJoinOutput };
   "collab.update": { input: CollabUpdateInput; output: Empty };
   "collab.awareness": { input: CollabAwarenessInput; output: Empty };
+  "presence.set": { input: PresenceSetInput; output: Array<PresencePerson> };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 
