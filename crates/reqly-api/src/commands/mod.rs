@@ -9,6 +9,7 @@ pub mod scripts;
 pub mod stream;
 pub mod template;
 pub mod tree;
+pub mod users;
 
 use std::sync::Arc;
 
@@ -118,8 +119,27 @@ pub fn registry() -> Registry<AppContext> {
     grpc::register(&mut r);
     stream::register(&mut r);
     scripts::register(&mut r);
+    users::register(&mut r);
     r.register::<SearchNodes>();
     r
+}
+
+/// Authorizes `name` for `caller` and runs it as them (multi-user server).
+pub async fn dispatch_as(
+    registry: &Registry<AppContext>,
+    ctx: &AppContext,
+    caller: crate::access::Caller,
+    name: &str,
+    input: Value,
+) -> CoreResult<Value> {
+    if !registry.contains(name) {
+        return Err(
+            reqly_core::CoreError::new("command.unknown", "unknown command")
+                .with_param("name", name),
+        );
+    }
+    crate::access::authorize(&ctx.storage, caller, name, &input).await?;
+    crate::access::scope(caller, registry.dispatch(ctx, name, input)).await
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, TS)]
@@ -204,7 +224,7 @@ impl Command<AppContext> for SettingsGet {
     type Output = SettingsGetOutput;
 
     async fn run(ctx: &AppContext, input: SettingsGetInput) -> CoreResult<SettingsGetOutput> {
-        let value = SettingsRepo::new(&ctx.storage).get(&input.key).await?;
+        let value = crate::access::setting(&ctx.storage, &input.key).await?;
         Ok(SettingsGetOutput { value })
     }
 }
@@ -235,7 +255,11 @@ impl Command<AppContext> for SettingsSet {
 
     async fn run(ctx: &AppContext, input: SettingsSetInput) -> CoreResult<Empty> {
         SettingsRepo::new(&ctx.storage)
-            .set(&input.key, &input.value, ctx.clock.as_ref())
+            .set(
+                &crate::access::settings_key(&input.key),
+                &input.value,
+                ctx.clock.as_ref(),
+            )
             .await?;
         ctx.events.publish(crate::Event::new(
             "settings.changed",

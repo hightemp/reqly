@@ -82,17 +82,17 @@ pub(crate) fn changed(ctx: &AppContext, env: &Environment) {
 }
 
 pub(crate) async fn get_id(ctx: &AppContext, key: &str) -> CoreResult<Option<Id>> {
-    Ok(SettingsRepo::new(&ctx.storage)
-        .get(key)
+    Ok(crate::access::setting(&ctx.storage, key)
         .await?
         .and_then(|v| v.as_str().and_then(|s| s.parse().ok())))
 }
 
 pub(crate) async fn set_id(ctx: &AppContext, key: &str, id: Option<Id>) -> CoreResult<()> {
     let repo = SettingsRepo::new(&ctx.storage);
+    let key = crate::access::settings_key(key);
     match id {
-        Some(id) => repo.set(key, &json!(id), ctx.clock.as_ref()).await,
-        None => repo.delete(key).await,
+        Some(id) => repo.set(&key, &json!(id), ctx.clock.as_ref()).await,
+        None => repo.delete(&key).await,
     }
 }
 
@@ -548,12 +548,11 @@ fn send_chained(
 
 /// The collection's faker locale, else the global one, else English.
 pub async fn faker_locale(ctx: &AppContext, collection_id: Id) -> Locale {
-    let repo = SettingsRepo::new(&ctx.storage);
     for key in [
         faker_locale_key(collection_id),
         FAKER_LOCALE_KEY.to_string(),
     ] {
-        if let Ok(Some(v)) = repo.get(&key).await
+        if let Ok(Some(v)) = crate::access::setting(&ctx.storage, &key).await
             && let Ok(locale) = serde_json::from_value(v)
         {
             return locale;

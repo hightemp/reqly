@@ -5,6 +5,7 @@
 //! [`Registry::dispatch`], so both platforms share one implementation and one
 //! contract test suite.
 
+pub mod access;
 pub mod commands;
 #[cfg(feature = "contract")]
 pub mod contract;

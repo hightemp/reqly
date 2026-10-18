@@ -15,7 +15,6 @@ use reqly_http::prepare::{PreparedBody, PreparedRequest, prepare_with_base};
 use reqly_http::snapshot::RequestSnapshot;
 use reqly_storage::cookies::{Cookie, CookieRepo};
 use reqly_storage::history::{HistoryLimits, HistoryRepo, NewResponse};
-use reqly_storage::settings::SettingsRepo;
 use reqly_storage::tree::TreeRepo;
 use reqly_template::{RenderOptions, Renderer};
 use serde::{Deserialize, Serialize};
@@ -113,8 +112,7 @@ pub(crate) async fn setting<T: serde::de::DeserializeOwned + Default>(
     ctx: &AppContext,
     key: &str,
 ) -> CoreResult<T> {
-    Ok(SettingsRepo::new(&ctx.storage)
-        .get(key)
+    Ok(crate::access::setting(&ctx.storage, key)
         .await?
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default())

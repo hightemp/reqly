@@ -132,6 +132,8 @@ pub struct Connection {
     grpc_tx: Mutex<Option<tokio::sync::mpsc::UnboundedSender<prost_reflect::DynamicMessage>>>,
     grpc_input: Mutex<Option<prost_reflect::MessageDescriptor>>,
     events: EventBus,
+    /// The user who opened it (multi-user server); others cannot see it.
+    owner: Option<Id>,
 }
 
 #[derive(Default)]
@@ -261,20 +263,24 @@ fn not_found(id: &str) -> CoreError {
 }
 
 impl Streams {
+    /// A connection of the caller.
     fn get(&self, id: &str) -> CoreResult<Arc<Connection>> {
+        let caller = crate::access::current().user_id();
         self.by_id
             .lock()
             .ok()
             .and_then(|m| m.get(id).cloned())
+            .filter(|c| c.owner == caller)
             .ok_or_else(|| not_found(id))
     }
 
     fn by_request(&self, request_id: Id) -> Option<Arc<Connection>> {
+        let caller = crate::access::current().user_id();
         self.by_id
             .lock()
             .ok()?
             .values()
-            .find(|c| c.info().request_id == request_id)
+            .find(|c| c.owner == caller && c.info().request_id == request_id)
             .cloned()
     }
 
@@ -456,6 +462,7 @@ command!(
             grpc_tx: Mutex::new(None),
             grpc_input: Mutex::new(None),
             events: ctx.events.clone(),
+            owner: crate::access::current().user_id(),
         });
         ctx.streams.insert(conn.clone());
         conn.set_status(StreamStatus::Connecting);
@@ -926,11 +933,17 @@ command!(
     Empty,
     Vec<StreamInfo>,
     |ctx, _input| {
+        let caller = crate::access::current().user_id();
         let mut list: Vec<StreamInfo> = ctx
             .streams
             .by_id
             .lock()
-            .map(|m| m.values().map(|c| c.info()).collect())
+            .map(|m| {
+                m.values()
+                    .filter(|c| c.owner == caller)
+                    .map(|c| c.info())
+                    .collect()
+            })
             .unwrap_or_default();
         list.sort_by_key(|i| i.opened_at);
         Ok(list)

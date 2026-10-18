@@ -114,6 +114,10 @@ impl<C: Send + Sync + 'static> Registry<C> {
         handler(ctx, input).await
     }
 
+    pub fn contains(&self, name: &str) -> bool {
+        self.handlers.contains_key(name)
+    }
+
     pub fn names(&self) -> impl Iterator<Item = &'static str> + '_ {
         self.handlers.keys().copied()
     }

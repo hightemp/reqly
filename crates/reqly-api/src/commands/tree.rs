@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use reqly_core::model::{Collection, Node, NodeData, NodeSummary, RequestSettings, Workspace};
 use reqly_core::{CoreResult, Id, Version};
 use reqly_storage::tree::{Placement, TreeRepo};
+use reqly_storage::users::{MemberRepo, Role};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -40,6 +41,32 @@ pub fn register(r: &mut Registry<AppContext>) {
 
 fn repo(ctx: &AppContext) -> TreeRepo<'_> {
     TreeRepo::new(&ctx.storage, ctx.clock.as_ref())
+}
+
+/// The workspaces the caller is a member of (all of them for local callers).
+async fn visible_workspaces(ctx: &AppContext) -> CoreResult<Vec<Workspace>> {
+    let all = repo(ctx).list_workspaces().await?;
+    let Some(user) = crate::access::current().user_id() else {
+        return Ok(all);
+    };
+    let mine = MemberRepo::new(&ctx.storage, ctx.clock.as_ref())
+        .workspaces_of(user)
+        .await?;
+    Ok(all
+        .into_iter()
+        .filter(|w| mine.contains_key(&w.meta.id))
+        .collect())
+}
+
+/// Creates a workspace owned by the caller.
+async fn create_workspace(ctx: &AppContext, name: &str) -> CoreResult<Workspace> {
+    let ws = repo(ctx).create_workspace(name).await?;
+    if let Some(user) = crate::access::current().user_id() {
+        MemberRepo::new(&ctx.storage, ctx.clock.as_ref())
+            .set(ws.meta.id, user, Role::Owner)
+            .await?;
+    }
+    Ok(ws)
 }
 
 // ----- events ---------------------------------------------------------------
@@ -178,7 +205,7 @@ command!(
     "workspace.list",
     Empty,
     Vec<Workspace>,
-    |ctx, _input| { repo(ctx).list_workspaces().await }
+    |ctx, _input| { visible_workspaces(ctx).await }
 );
 
 command!(
@@ -188,15 +215,14 @@ command!(
     Empty,
     Vec<Workspace>,
     |ctx, _input| {
-        let repo = repo(ctx);
-        let existing = repo.list_workspaces().await?;
+        let existing = visible_workspaces(ctx).await?;
         if !existing.is_empty() {
             return Ok(existing);
         }
-        let ws = repo.create_workspace("My Workspace").await?;
-        repo.create_collection(ws.meta.id, "My Collection").await?;
+        let ws = create_workspace(ctx, "My Workspace").await?;
+        repo(ctx).create_collection(ws.meta.id, "My Collection").await?;
         workspaces_changed(ctx);
-        repo.list_workspaces().await
+        visible_workspaces(ctx).await
     }
 );
 
@@ -206,7 +232,7 @@ command!(
     NameInput,
     Workspace,
     |ctx, input| {
-        let ws = repo(ctx).create_workspace(&input.name).await?;
+        let ws = create_workspace(ctx, &input.name).await?;
         workspaces_changed(ctx);
         Ok(ws)
     }
