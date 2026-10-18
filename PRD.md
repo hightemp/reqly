@@ -109,7 +109,8 @@ reqly/
 │   ├── reqly-core/           # доменные модели, сервисы, use-cases, ошибки
 │   ├── reqly-storage/        # SQLite (sqlx), миграции, репозитории, FTS5, blob store
 │   ├── reqly-http/           # HTTP-движок, timeline, cookies, TLS, proxy
-│   ├── reqly-template/       # (этап 2) переменные, окружения, faker, template tags
+│   ├── reqly-template/       # (этап 2) переменные, окружения, template tags
+│   ├── reqly-faker/          # faker-js в QuickJS для шаблонов и скриптов (ADR-009)
 │   ├── reqly-interop/        # (этап 3) импорт и экспорт форматов, codegen
 │   ├── reqly-protocols/      # (этап 5) GraphQL, WebSocket, SSE, gRPC
 │   ├── reqly-script/         # (этап 6) JS-песочница
@@ -194,7 +195,7 @@ reqly/
 | Rust-тесты | `cargo test`, `insta` (snapshot), `wiremock` или собственный тестовый HTTP-сервер, `proptest` |
 | Типы | `ts-rs` |
 | JSON-фильтры | `serde_json_path` (JSONPath), `jaq` (jq), XPath для XML |
-| Faker | crate `fake` и собственные датасеты для ru (см. 7.11) |
+| Faker | faker-js со всеми локалями в QuickJS (ADR-009, см. 7.11) |
 | CI | GitHub Actions: lint, test, build-матрица, e2e, Docker-образ |
 | Линт | clippy, rustfmt, eslint, prettier, svelte-check, i18n-линт |
 
@@ -361,9 +362,10 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 ### 7.11. Faker и template tags [Э2]
 
 **Faker**
-- Синтаксис: `{{$faker.<category>.<method>}}`, например `{{$faker.person.firstName}}` или `{{$faker.internet.email}}`, с аргументами: `{{$faker.number.int(1, 100)}}`. Нейминг категорий соответствует faker-js, так легче для пользователей.
+- Синтаксис: `{{$faker.<category>.<method>}}`, например `{{$faker.person.firstName}}` или `{{$faker.internet.email}}`, с аргументами faker-js: `{{$faker.number.int({ min: 1, max: 100 })}}`, `{{$faker.helpers.arrayElement(['a', 'b'])}}`; позиционное сокращение `{{$faker.number.int(1, 100)}}` тоже работает.
+- Генерация выполняется самим faker-js (встроен, все функции и все локали) в QuickJS; те же модули доступны в скриптах (ADR-009).
 - Алиасы динамических переменных Postman (`{{$guid}}`, `{{$timestamp}}`, `{{$randomFirstName}}` и т. д.) поддерживаются для совместимости импорта.
-- Локаль данных выбирается в настройках коллекции или глобально: en, ru (дальше другие). Генерация выполняется в Rust (crate `fake`). Для ru, если в `fake` нет нужной локали, используются собственные датасеты (имена, фамилии, города, улицы, телефоны в российском формате).
+- Локаль данных выбирается в настройках коллекции или глобально: любая локаль faker-js (en, ru, de, fr, ja и др.).
 - Каждое вычисление генерирует новое значение. Режим «зафиксировать значение на время отправки» означает, что одна переменная в одном запросе даёт одинаковое значение.
 
 **Template tags (паритет с Insomnia)**
@@ -416,7 +418,7 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 - Pre-request и after-response скрипты на уровне коллекции, папки и запроса. Порядок выполнения: коллекция → папки (от внешней к внутренней) → запрос.
 - **API `rq`:** доступ к запросу и его изменение (url, headers, body), ответ, переменные всех уровней (get/set/unset), `rq.sendRequest()`, `rq.test()` и `rq.expect()` (Э9), консоль (`console.log`, вывод в панель Console).
 - **Шимы совместимости:** `pm.*` (Postman) и `insomnia.*`, чтобы импортированные скрипты работали без переписывания (в пределах поддерживаемого API).
-- **Встроенные модули:** `crypto-js`, `uuid`, `chai`, `lodash`, `atob/btoa`, faker, `moment`-совместимые функции дат (минимальный набор).
+- **Встроенные модули:** `crypto-js`, `uuid`, `chai`, `lodash`, `atob/btoa`, `@faker-js/faker` (все локали), `moment`.
 - Редактор: CodeMirror с автодополнением по `rq` и `pm` (d.ts), сниппеты.
 - Песочница: лимит времени (по умолчанию 5 с) и памяти, без доступа к FS и сети, кроме `sendRequest`.
 

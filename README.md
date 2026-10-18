@@ -36,7 +36,7 @@ self-hosted web version served by a single Rust binary.
   environments, folder and request variables, encrypted secrets, highlighted
   `{{ variables }}` with hover preview and completion, template tags
   (`{% uuid %}`, `{% hash %}`, `{% jwt %}`, response chaining, prompts…) and
-  faker data in English and Russian — see [docs/templates.md](docs/templates.md)
+  fake data from faker-js in all its locales — see [docs/templates.md](docs/templates.md)
 - Import from Insomnia (v4/v5), Postman (collections, environments, globals),
   OpenAPI 3.x / Swagger 2.0, HAR, cURL and Bruno with a report of everything
   that could not be imported exactly; export to Reqly (JSON/YAML), Insomnia,

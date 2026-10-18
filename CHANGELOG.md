@@ -5,6 +5,33 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
+  bundled and run in QuickJS (ADR-009, `docs/templates.md`).
+- Template arguments can be arrays and objects:
+  `{{ $faker.number.int({ min: 1, max: 9 }) }}`,
+  `{{ $faker.helpers.arrayElement(['a', b]) }}`.
+- All Postman dynamic variables (`$randomCatsImage`, `$randomLoremParagraphs`,
+  `$randomSemver`…); the editor completes them.
+- Scripts: `faker`, `require('@faker-js/faker')` with every locale export,
+  `require('@faker-js/faker/locale/<code>')`, `TextEncoder`;
+  `replaceIn()` replaces dynamic variables such as `{{$randomFirstName}}`.
+- Script completion lists faker-js modules and methods with parameters.
+
+### Changed
+
+- The faker locale setting accepts any faker-js locale; the data follows
+  faker-js (for `ru`, phone numbers use national formats; ask for
+  `phone.number({ style: 'international' })` to get `+7`).
+- `rq.faker` is the faker-js instance (`rq.faker.person.firstName()`);
+  `rq.faker('module.method', ...args)` still works and now returns faker-js
+  values (numbers stay numbers).
+
+### Removed
+
+- The built-in Rust faker (ADR-005).
+
 ## [0.6.0] — 2026-10-18
 
 Stage 6: scripts.

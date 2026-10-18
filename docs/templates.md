@@ -70,7 +70,7 @@ An environment key can be marked as secret (the lock in its row):
 | `hmac` | algorithm, encoding, key, value | `{% hmac 'sha256', 'hex', secret, payload %}` |
 | `jsonpath` | JSON (a value or a string), expression | `{% jsonpath user, '$.roles[0]' %}` |
 | `jwt` | `encode` payload key [algorithm]; `decode` token [`header`/`payload`] | `{% jwt 'encode', '{"sub":"1"}', secret, 'HS256' %}` |
-| `faker` | function name, arguments | `{% faker 'number.int', 1, 10 %}` |
+| `faker` | function name, arguments | `{% faker 'number.int', { min: 1, max: 10 } %}` |
 | `cookie` | URL, name | `{% cookie 'https://api.example.com', 'sid' %}` |
 | `request` | `url`, `method`, `name`, `id`, `folder`, `header` name | `{% request 'header', 'Accept' %}` |
 | `response` | field, request id, path, trigger, maxAge (s) | see below |
@@ -106,30 +106,42 @@ run on the server and must not reveal its environment.
 
 ## Fake data
 
-Function names follow faker-js. The data language is English or Russian
-(**Settings → Templates**) and can be overridden per collection. Russian data
-respects grammatical gender (Ivanov / Ivanova) and adds patronymics, `+7`
-phone numbers and six-digit postal codes.
+Fake data comes from [faker-js](https://fakerjs.dev) (bundled, version in
+`crates/reqly-faker/vendor/catalog.json`), so every faker-js function and
+all of its locales are available: `{{ $faker.<module>.<method>(args) }}`.
 
-| Category | Functions |
-| --- | --- |
-| `person` | `firstName`, `lastName`, `middleName`, `fullName`, `prefix`, `sex`, `jobTitle` |
-| `internet` | `email`, `username`, `password(length?)`, `url`, `domainName`, `ipv4`, `ipv6`, `mac`, `port`, `userAgent` |
-| `location` | `city`, `street`, `streetAddress`, `state`, `country`, `zipCode`, `latitude`, `longitude` |
-| `phone` | `number` |
-| `company` | `name`, `catchPhrase` |
-| `lorem` | `word`, `words(count?)`, `sentence`, `sentences(count?)`, `paragraph`, `slug` |
-| `number` | `int(min?, max?)`, `float(min?, max?, precision?)` |
-| `string` | `uuid`, `alpha(length?)`, `alphanumeric(length?)`, `numeric(length?)` |
-| `datatype` | `boolean` |
-| `date` | `past`, `future`, `recent`, `soon`, `birthdate`, `anytime`, `month`, `weekday` |
-| `color` | `human`, `rgb` |
-| `commerce` | `product`, `productName`, `price`, `department` |
-| `finance` | `amount`, `accountNumber`, `iban`, `currencyCode`, `creditCardNumber`, `bic` |
-| `image` | `url`, `avatar` |
+```text
+{{ $faker.person.firstName }}
+{{ $faker.internet.email({ provider: 'example.com' }) }}
+{{ $faker.number.int({ min: 1, max: 100 }) }}
+{{ $faker.helpers.arrayElement(['new', 'paid', 'shipped']) }}
+{{ $faker.helpers.fake('{{person.lastName}}-{{string.numeric(4)}}') }}
+{{ $faker.date.between({ from: '2026-01-01', to: '2026-12-31' }) }}
+{% faker 'string.alpha', { length: 8, casing: 'upper' } %}
+```
+
+Arguments are those of faker-js: strings, numbers, booleans, `null`,
+variables, arrays (`[a, 'b']`) and objects (`{ min: 1, 'max': n }`). Dates
+render as ISO 8601 strings; arrays and objects as JSON. The editor completes
+the function names and shows their parameters and a sample value.
+
+For the most common options there are positional shortcuts:
+`number.int(1, 100)`, `number.float(0, 1, 2)`, `number.bigInt(1, 9)`,
+`date.between(from, to)`, `finance.amount(min, max, dec, symbol)`,
+`internet.password(length)` and `image.url(width, height)`.
+
+The locale (**Settings → Templates**) applies to templates and scripts and
+can be overridden per collection: `en`, `ru`, `de`, `de_AT`, `fr`, `ja`,
+`pt_BR`, `uk`, `zh_CN` and the other faker-js locales. A locale falls back
+to English for data it does not have, as in faker-js.
+
+A call may run for at most 5 seconds; `{{ $faker.lorem.words(1000000000) }}`
+fails with *faker ran too long* instead of blocking sends.
 
 ### Postman dynamic variables
 
-`$guid`, `$randomUUID`, `$timestamp`, `$isoTimestamp`, `$randomInt` and
-`$random*` (`$randomFirstName`, `$randomEmail`, `$randomCity`,
-`$randomPrice`, `$randomIP`…) map to the functions above.
+`$guid`, `$randomUUID`, `$timestamp`, `$isoTimestamp`, `$randomInt` and the
+`$random*` variables of Postman (`$randomFirstName`, `$randomEmail`,
+`$randomCity`, `$randomPrice`, `$randomCatsImage`, `$randomLoremParagraphs`…)
+map to faker-js functions. Two are not supported: `$randomLocale` and
+`$randomCompanySuffix` (faker-js no longer has them).

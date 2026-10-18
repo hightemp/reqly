@@ -33,7 +33,7 @@ within what is supported.
 | `rq.sendRequest(request, callback?)` | Sends another request; returns a promise and calls the callback (`(err, res)`) if given |
 | `rq.info` | `requestName`, `requestId`, `eventName`, `iteration` |
 | `rq.execution.skipRequest()` | Pre-request: do not send the request |
-| `rq.faker(path)` | Fake data, e.g. `rq.faker('person.firstName')` |
+| `rq.faker` | faker-js in the data locale from the settings: `rq.faker.person.firstName()`, or `rq.faker('person.firstName')` |
 | `console.log/info/warn/error/debug` | Output in the response's **Console** tab |
 
 `await` works at the top level of a script. `setTimeout` works; the script
@@ -44,9 +44,35 @@ Legacy Postman globals are supported too: `postman.setEnvironmentVariable`,
 
 ## Modules
 
-`require()` gives `crypto-js`, `lodash`, `chai`, `moment` and `uuid`.
-`CryptoJS`, `_` and `moment` are also globals, as in Postman, and `atob` and
-`btoa` are available. Other modules (`cheerio`, `xml2js`, Node modules) are
+`require()` gives `crypto-js`, `lodash`, `chai`, `moment`, `uuid` and
+`@faker-js/faker`. `CryptoJS`, `_` and `moment` are also globals, as in
+Postman, and `atob`, `btoa` and `TextEncoder` are available.
+
+### faker-js
+
+The full faker-js API with all its locales. `faker` (a global, the same as
+`rq.faker`) uses the data locale from **Settings → Templates**; other locales
+load on first use:
+
+```js
+const { faker, fakerDE, fakerJA } = require('@faker-js/faker');
+const { faker: fakerAT } = require('@faker-js/faker/locale/de_AT');
+
+faker.seed(42); // repeatable values
+rq.variables.set('email', faker.internet.email());
+rq.variables.set('city', fakerDE.location.city());
+
+// Your own locale chain, as in faker-js:
+const { Faker, ru, en } = require('@faker-js/faker');
+const custom = new Faker({ locale: [ru, en] });
+```
+
+`require('@faker-js/faker')` loads only the locales a script uses. Exports
+other than the `faker…` instances (`Faker`, `allLocales`, locale definitions)
+load the whole package, which takes longer.
+
+`rq.variables.replaceIn()` also replaces dynamic variables:
+`replaceIn('{{$randomFirstName}} {{$faker.number.int({ min: 1, max: 9 })}}')`. Other modules (`cheerio`, `xml2js`, Node modules) are
 not; imports report scripts that use them.
 
 ## Variables set by scripts
