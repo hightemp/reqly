@@ -35,13 +35,21 @@ impl<'a> SessionRepo<'a> {
     }
 
     pub async fn is_valid(&self, token: &str) -> CoreResult<bool> {
-        let found: Option<i64> =
-            sqlx::query_scalar("SELECT expires_at FROM sessions WHERE token_hash = ?")
+        Ok(self.lookup(token).await?.is_some())
+    }
+
+    /// `Some(user_id)` for a live session; the user id is `None` for
+    /// sessions of the single-user `token` mode.
+    pub async fn lookup(&self, token: &str) -> CoreResult<Option<Option<String>>> {
+        let found: Option<(i64, Option<String>)> =
+            sqlx::query_as("SELECT expires_at, user_id FROM sessions WHERE token_hash = ?")
                 .bind(hash(token))
                 .fetch_optional(self.storage.pool())
                 .await
                 .map_err(db_err)?;
-        Ok(found.is_some_and(|exp| exp > self.clock.now().0))
+        Ok(found
+            .filter(|(exp, _)| *exp > self.clock.now().0)
+            .map(|(_, user)| user))
     }
 
     pub async fn delete(&self, token: &str) -> CoreResult<()> {
@@ -80,6 +88,7 @@ mod tests {
         assert!(!repo.is_valid("tok").await.unwrap());
         assert_eq!(repo.purge_expired().await.unwrap(), 1);
         repo.create("tok2", Some("u1"), 100).await.unwrap();
+        assert_eq!(repo.lookup("tok2").await.unwrap(), Some(Some("u1".into())));
         repo.delete("tok2").await.unwrap();
         assert!(!repo.is_valid("tok2").await.unwrap());
     }

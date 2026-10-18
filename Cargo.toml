@@ -23,6 +23,7 @@ reqly-script = { path = "crates/reqly-script" }
 reqly-faker = { path = "crates/reqly-faker" }
 
 anyhow = "1"
+argon2 = "0.6"
 async-trait = "0.1"
 axum = { version = "0.8", features = ["ws", "macros"] }
 futures = "0.3"
@@ -54,3 +55,10 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
+
+# Password hashing is far too slow unoptimized for tests.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
