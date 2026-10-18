@@ -453,6 +453,21 @@ async fn preview_variables_and_function_catalog() {
             .iter()
             .any(|f| f["name"] == "person.firstName")
     );
+    assert!(catalog["faker"].as_array().unwrap().len() > 200);
+    assert!(
+        catalog["fakerLocales"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|l| l["code"] == "ru" && l["endonym"] == "Русский")
+    );
+    assert!(
+        catalog["dynamicVariables"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|v| v == "randomFirstName")
+    );
 }
 
 #[tokio::test]
@@ -528,10 +543,38 @@ async fn faker_locale_per_collection_overrides_global() {
     let out = fx
         .call(
             "template.preview",
-            json!({ "collectionId": fx.collection, "text": "{{ $faker.phone.number }}" }),
+            json!({
+                "collectionId": fx.collection,
+                "text": "{{ $faker.phone.number({ style: 'international' }) }}"
+            }),
         )
         .await;
     assert!(out["value"].as_str().unwrap().starts_with("+7"), "{out}");
+    // Any faker-js locale; unknown codes fall back to English.
+    fx.call("settings.set", json!({ "key": key, "value": "de_AT" }))
+        .await;
+    let out = fx
+        .call(
+            "template.preview",
+            json!({
+                "collectionId": fx.collection,
+                "text": "{{ $faker.phone.number({ style: 'international' }) }}"
+            }),
+        )
+        .await;
+    assert!(out["value"].as_str().unwrap().starts_with("+43"), "{out}");
+    fx.call("settings.set", json!({ "key": key, "value": "xx" }))
+        .await;
+    let out = fx
+        .call(
+            "template.preview",
+            json!({
+                "collectionId": fx.collection,
+                "text": "{{ $faker.phone.number({ style: 'international' }) }}"
+            }),
+        )
+        .await;
+    assert!(out["value"].as_str().unwrap().starts_with("+1"), "{out}");
 }
 
 #[tokio::test]

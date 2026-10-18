@@ -1,6 +1,6 @@
 [package]
 name = "reqly-template"
-description = "Template language for Reqly: variables, functions (template tags) and faker"
+description = "Template language for Reqly: variables and functions (template tags)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,6 +8,7 @@ rust-version.workspace = true
 
 [dependencies]
 reqly-core.workspace = true
+reqly-faker.workspace = true
 async-trait.workspace = true
 base64 = "0.22"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

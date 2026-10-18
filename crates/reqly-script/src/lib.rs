@@ -270,6 +270,8 @@ pub async fn run<H: ScriptHost + 'static>(
         AsyncRuntime::new().map_err(|e| script_error("script.error", &label, e.to_string()))?;
     rt.set_memory_limit(input.limits.memory).await;
     rt.set_max_stack_size(1 << 20).await;
+    rt.set_loader(reqly_faker::Resolver, reqly_faker::Loader)
+        .await;
     // The deadline moves forward while the script waits for the host.
     let deadline = Arc::new(Mutex::new(Instant::now() + input.limits.time));
     let interrupted = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -307,6 +309,9 @@ pub async fn run<H: ScriptHost + 'static>(
         ctx.globals()
             .set("__input", input_json)
             .map_err(|e| e.to_string())?;
+        ctx.eval::<(), _>(reqly_faker::POLYFILLS)
+            .catch(&ctx)
+            .map_err(caught)?;
         ctx.eval::<(), _>(PRELUDE).catch(&ctx).map_err(caught)?;
         // The script body runs as an async function so top-level `await` works.
         let source = format!("(async function () {{\n{script}\n}})().then(() => __settle())");
@@ -441,29 +446,61 @@ fn install<'js, H: ScriptHost + 'static>(
         )?,
     )?;
     g.set("__rq_uuid", Func::from(|| uuid::Uuid::new_v4().to_string()))?;
+    let meta = serde_json::json!({
+        "locale": locale,
+        "locales": reqly_faker::locales().iter().map(|l| &l.code).collect::<Vec<_>>(),
+        "exports": reqly_faker::exports(),
+    })
+    .to_string();
+    g.set("__rq_faker_meta", Func::from(move || meta.clone()))?;
     g.set(
-        "__rq_faker",
-        Func::from(
-            move |path: String, args: String| -> rquickjs::Result<String> {
-                let mut values = vec![serde_json::Value::String(path)];
-                if let Ok(serde_json::Value::Array(a)) = serde_json::from_str(&args) {
-                    values.extend(a);
-                }
-                match reqly_template::functions::call("faker", &values, locale) {
-                    Some(Ok(v)) => Ok(reqly_template::value_to_string(&v)),
-                    Some(Err(e)) => Err(rquickjs::Error::new_from_js_message(
-                        "faker", "string", e.message,
-                    )),
-                    None => Ok(String::new()),
-                }
-            },
-        ),
+        "__rq_faker_import",
+        Func::from(|ctx: Ctx<'js>, name: String| reqly_faker::import(&ctx, &name)),
+    )?;
+    g.set(
+        "__rq_dynamic",
+        Func::from(move |text: String| dynamic(&text, locale)),
     )?;
     g.set(
         "__rq_module",
         Func::from(|ctx: Ctx<'js>, name: String| modules::load(&ctx, &name)),
     )?;
     Ok(())
+}
+
+/// The value of a single `{{ $name }}` / `{{ $faker.x.y(…) }}` with literal
+/// arguments, for `replaceIn`; `None` leaves the text as is.
+fn dynamic(text: &str, locale: reqly_template::Locale) -> Option<String> {
+    use reqly_template::ast::{Expr, Segment};
+    fn literal(e: &Expr) -> Option<serde_json::Value> {
+        Some(match e {
+            Expr::Lit(v) => v.clone(),
+            Expr::Array(items) => items.iter().map(literal).collect::<Option<_>>()?,
+            Expr::Object(fields) => serde_json::Value::Object(
+                fields
+                    .iter()
+                    .map(|(k, v)| Some((k.clone(), literal(v)?)))
+                    .collect::<Option<_>>()?,
+            ),
+            _ => return None,
+        })
+    }
+    let segments = reqly_template::parse(text).ok()?;
+    let [
+        Segment::Expr {
+            expr: Expr::Call { name, args },
+            ..
+        },
+    ] = segments.as_slice()
+    else {
+        return None;
+    };
+    let values = args.iter().map(literal).collect::<Option<Vec<_>>>()?;
+    let (name, values) = reqly_template::functions::resolve_alias(name, values);
+    match reqly_template::functions::call(&name, &values, locale)? {
+        Ok(v) => Some(reqly_template::value_to_string(&v)),
+        Err(_) => None,
+    }
 }
 
 fn extend(deadline: &Mutex<Instant>, by: Duration) {

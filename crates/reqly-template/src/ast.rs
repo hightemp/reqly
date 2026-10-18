@@ -18,6 +18,10 @@ pub enum Expr {
         args: Vec<Expr>,
     },
     Lit(Value),
+    /// `[a, 'b', 1]`
+    Array(Vec<Expr>),
+    /// `{ min: 1, 'max': n }`
+    Object(Vec<(String, Expr)>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

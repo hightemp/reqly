@@ -59,6 +59,8 @@ pub struct AppContext {
 
 impl AppContext {
     pub fn new(platform: Platform, storage: Storage, blobs: BlobStore) -> Self {
+        // The first faker call would otherwise load the locale.
+        reqly_faker::warm_up(reqly_faker::Locale::EN);
         Self {
             platform,
             events: EventBus::default(),

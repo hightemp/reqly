@@ -96,12 +96,15 @@
   }
 
   function replaceIn(text) {
-    // Plain `{{name}}` from the script's view of variables; the rest (tags,
-    // faker) stays for the request's own rendering.
-    return String(text).replace(/\{\{\s*(?:_\.)?([\w.-]+)\s*\}\}/g, (m, name) => {
-      const v = resolve(name);
-      return v === undefined ? m : typeof v === 'string' ? v : JSON.stringify(v);
-    });
+    // `{{name}}` from the script's view of variables, then dynamic variables
+    // such as `{{$randomFirstName}}` or `{{$faker.person.firstName}}`; tags
+    // stay for the request's own rendering.
+    return String(text)
+      .replace(/\{\{\s*(?:_\.)?([\w.-]+)\s*\}\}/g, (m, name) => {
+        const v = resolve(name);
+        return v === undefined ? m : typeof v === 'string' ? v : JSON.stringify(v);
+      })
+      .replace(/\{\{\s*\$(?:[^{}]|\{[^{}]*\})*?\}\}/g, (m) => __rq_dynamic(m) ?? m);
   }
 
   const variables = Object.assign(scopeApi('local', 'variables'), {
@@ -571,14 +574,54 @@
     chai: () => load('chai'),
     moment: () => load('moment'),
     uuid: () => ({ v4: () => __rq_uuid(), v7: () => __rq_uuid() }),
+    '@faker-js/faker': () => fakerPackage(),
     atob: () => globalThis.atob,
     btoa: () => globalThis.btoa,
   };
   globalThis.require = (name) => {
+    const locale = /^@faker-js\/faker\/locale\/(\w+)$/.exec(name);
+    if (locale) return { faker: fakerFor(locale[1]) };
     const f = builtins[name];
     if (!f) throw new Error(`module "${name}" is not available in Reqly scripts`);
     return f();
   };
+  // ----- faker-js ------------------------------------------------------------------------
+
+  const fakerMeta = JSON.parse(__rq_faker_meta());
+  const fakerLocales = {};
+  function fakerFor(code) {
+    if (!fakerMeta.locales.includes(code)) throw new Error(`unknown faker locale "${code}"`);
+    return (fakerLocales[code] ??= __rq_faker_import(`faker/locale/${code}.js`).faker);
+  }
+
+  // The package's exports, loaded on access: `fakerDE` loads one locale,
+  // rarer exports (`Faker`, `allLocales`, …) load the whole package.
+  let fakerPkg;
+  let fakerIndex;
+  function fakerPackage() {
+    if (fakerPkg) return fakerPkg;
+    fakerPkg = {};
+    const lazy = (name, get) =>
+      Object.defineProperty(fakerPkg, name, {
+        enumerable: true,
+        configurable: true,
+        get() {
+          const value = get();
+          Object.defineProperty(fakerPkg, name, { value, enumerable: true });
+          return value;
+        },
+      });
+    const codes = {};
+    for (const code of fakerMeta.locales) codes[`faker${code}`.toLowerCase()] = code;
+    for (const name of fakerMeta.exports) {
+      const code = codes[name.toLowerCase()];
+      lazy(name, code ? () => fakerFor(code) : () => (fakerIndex ??= __rq_faker_import('faker/index.js'))[name]);
+    }
+    // `faker` follows the data locale from the settings.
+    lazy('faker', () => fakerFor(fakerMeta.locale));
+    return fakerPkg;
+  }
+
   // Postman's sandbox globals.
   for (const [name, mod] of [
     ['_', 'lodash'],
@@ -596,6 +639,16 @@
       },
     });
   }
+
+  // `faker` as in faker-js, in the data locale from the settings.
+  Object.defineProperty(globalThis, 'faker', {
+    configurable: true,
+    get() {
+      const value = fakerFor(fakerMeta.locale);
+      Object.defineProperty(globalThis, 'faker', { value, writable: true, configurable: true });
+      return value;
+    },
+  });
 
   const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   globalThis.btoa = (input) => {
@@ -650,7 +703,19 @@
     location: [input.info.requestName],
   };
 
-  const faker = (path, ...args) => __rq_faker(String(path), JSON.stringify(args));
+  // `rq.faker.person.firstName()` or `rq.faker('person.firstName')`.
+  const faker = new Proxy(
+    (path, ...args) => {
+      const [module, name] = String(path).split('.');
+      const target = fakerFor(fakerMeta.locale)[module];
+      if (!target || typeof target[name] !== 'function') throw new Error(`unknown faker function "${path}"`);
+      return target[name](...args);
+    },
+    {
+      get: (fn, key) => (key in fn ? fn[key] : fakerFor(fakerMeta.locale)[key]),
+      has: (fn, key) => key in fakerFor(fakerMeta.locale),
+    },
+  );
 
   const rq = {
     request,

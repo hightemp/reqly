@@ -175,6 +175,44 @@ impl<'a> Cursor<'a> {
                 Ok(Expr::Lit(Value::String(self.string(q)?)))
             }
             Some(c) if c.is_ascii_digit() || c == '-' => Ok(Expr::Lit(self.number()?)),
+            Some('[') => {
+                self.bump();
+                let items = self.args("]")?;
+                self.skip_ws();
+                if !self.eat("]") {
+                    return Err(self.err("expected ']'"));
+                }
+                Ok(Expr::Array(items))
+            }
+            Some('{') => {
+                self.bump();
+                let mut fields = Vec::new();
+                loop {
+                    self.skip_ws();
+                    let key = match self.peek() {
+                        Some('}') => break,
+                        Some(q @ ('\'' | '"')) => {
+                            self.bump();
+                            self.string(q)?
+                        }
+                        _ => self.ident().ok_or_else(|| self.err("expected a key"))?,
+                    };
+                    self.skip_ws();
+                    if !self.eat(":") {
+                        return Err(self.err("expected ':'"));
+                    }
+                    fields.push((key, self.expr()?));
+                    self.skip_ws();
+                    if !self.eat(",") {
+                        break;
+                    }
+                }
+                self.skip_ws();
+                if !self.eat("}") {
+                    return Err(self.err("expected '}'"));
+                }
+                Ok(Expr::Object(fields))
+            }
             Some('$') => {
                 self.bump();
                 let mut name = self

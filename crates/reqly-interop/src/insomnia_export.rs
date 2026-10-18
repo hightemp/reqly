@@ -69,6 +69,22 @@ fn expr_text(expr: &Expr) -> Option<String> {
         Expr::Lit(Value::String(s)) => quote(s),
         Expr::Lit(v) => v.to_string(),
         Expr::Var(path) => format!("_.{}", reqly_template::path_name(path)),
+        Expr::Array(items) => format!(
+            "[{}]",
+            items
+                .iter()
+                .map(expr_text)
+                .collect::<Option<Vec<_>>>()?
+                .join(", ")
+        ),
+        Expr::Object(fields) => format!(
+            "{{{}}}",
+            fields
+                .iter()
+                .map(|(k, v)| Some(format!("{}: {}", quote(k), expr_text(v)?)))
+                .collect::<Option<Vec<_>>>()?
+                .join(", ")
+        ),
         Expr::Call { .. } => return None,
     })
 }

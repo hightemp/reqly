@@ -9,9 +9,7 @@ use std::sync::Mutex;
 
 use async_trait::async_trait;
 use reqly_core::{CoreError, CoreResult};
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use ts_rs::TS;
 
 use crate::ast::{Expr, PathPart, Segment};
 use crate::functions;
@@ -19,14 +17,7 @@ use crate::parser::{has_template, parse};
 
 const MAX_DEPTH: usize = 16;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-pub enum Locale {
-    #[default]
-    En,
-    Ru,
-}
+pub use reqly_faker::Locale;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RenderOptions {
@@ -42,7 +33,7 @@ impl Default for RenderOptions {
         Self {
             strict: true,
             stable: false,
-            locale: Locale::En,
+            locale: Locale::EN,
         }
     }
 }
@@ -145,6 +136,20 @@ impl<'a> Renderer<'a> {
         Box::pin(async move {
             match expr {
                 Expr::Lit(v) => Ok(v),
+                Expr::Array(items) => {
+                    let mut out = Vec::with_capacity(items.len());
+                    for item in items {
+                        out.push(self.eval(item, stack.clone()).await?);
+                    }
+                    Ok(Value::Array(out))
+                }
+                Expr::Object(fields) => {
+                    let mut out = serde_json::Map::new();
+                    for (key, value) in fields {
+                        out.insert(key, self.eval(value, stack.clone()).await?);
+                    }
+                    Ok(Value::Object(out))
+                }
                 Expr::Var(path) => {
                     let name = path_name(&path);
                     let Some(value) = lookup(self.vars, &path) else {

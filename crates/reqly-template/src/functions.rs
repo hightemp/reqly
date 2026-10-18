@@ -8,7 +8,6 @@ use serde_json::{Value, json};
 use sha2::Digest;
 use ts_rs::TS;
 
-use crate::faker;
 use crate::render::{Locale, value_to_string};
 
 pub(crate) fn bad_arg(function: &str, message: impl Into<String>) -> CoreError {
@@ -50,59 +49,167 @@ impl Args<'_> {
     }
 }
 
+/// Postman dynamic variables backed by faker-js functions.
+const POSTMAN: &[(&str, &str)] = &[
+    ("randomAbbreviation", "hacker.abbreviation"),
+    ("randomAdjective", "hacker.adjective"),
+    ("randomAvatarImage", "image.avatar"),
+    ("randomBankAccount", "finance.accountNumber"),
+    ("randomBankAccountBic", "finance.bic"),
+    ("randomBankAccountIban", "finance.iban"),
+    ("randomBankAccountName", "finance.accountName"),
+    ("randomBitcoin", "finance.bitcoinAddress"),
+    ("randomBoolean", "datatype.boolean"),
+    ("randomBs", "company.buzzPhrase"),
+    ("randomBsAdjective", "company.buzzAdjective"),
+    ("randomBsBuzz", "company.buzzVerb"),
+    ("randomBsNoun", "company.buzzNoun"),
+    ("randomCatchPhrase", "company.catchPhrase"),
+    ("randomCatchPhraseAdjective", "company.catchPhraseAdjective"),
+    (
+        "randomCatchPhraseDescriptor",
+        "company.catchPhraseDescriptor",
+    ),
+    ("randomCatchPhraseNoun", "company.catchPhraseNoun"),
+    ("randomCity", "location.city"),
+    ("randomColor", "color.human"),
+    ("randomCommonFileExt", "system.commonFileExt"),
+    ("randomCommonFileName", "system.commonFileName"),
+    ("randomCommonFileType", "system.commonFileType"),
+    ("randomCompanyName", "company.name"),
+    ("randomCountry", "location.country"),
+    ("randomCountryCode", "location.countryCode"),
+    ("randomCurrencyCode", "finance.currencyCode"),
+    ("randomCurrencyName", "finance.currencyName"),
+    ("randomCurrencySymbol", "finance.currencySymbol"),
+    ("randomDatabaseCollation", "database.collation"),
+    ("randomDatabaseColumn", "database.column"),
+    ("randomDatabaseEngine", "database.engine"),
+    ("randomDatabaseType", "database.type"),
+    ("randomDateFuture", "date.future"),
+    ("randomDatePast", "date.past"),
+    ("randomDateRecent", "date.recent"),
+    ("randomDepartment", "commerce.department"),
+    ("randomDirectoryPath", "system.directoryPath"),
+    ("randomDomainName", "internet.domainName"),
+    ("randomDomainSuffix", "internet.domainSuffix"),
+    ("randomDomainWord", "internet.domainWord"),
+    ("randomEmail", "internet.email"),
+    ("randomExampleEmail", "internet.exampleEmail"),
+    ("randomFileExt", "system.fileExt"),
+    ("randomFileName", "system.fileName"),
+    ("randomFilePath", "system.filePath"),
+    ("randomFileType", "system.fileType"),
+    ("randomFirstName", "person.firstName"),
+    ("randomFullName", "person.fullName"),
+    ("randomHexColor", "color.rgb"),
+    ("randomIP", "internet.ipv4"),
+    ("randomIPV6", "internet.ipv6"),
+    ("randomImageDataUri", "image.dataUri"),
+    ("randomImageUrl", "image.url"),
+    ("randomIngverb", "hacker.ingverb"),
+    ("randomJobArea", "person.jobArea"),
+    ("randomJobDescriptor", "person.jobDescriptor"),
+    ("randomJobTitle", "person.jobTitle"),
+    ("randomJobType", "person.jobType"),
+    ("randomLastName", "person.lastName"),
+    ("randomLatitude", "location.latitude"),
+    ("randomLongitude", "location.longitude"),
+    ("randomLoremLines", "lorem.lines"),
+    ("randomLoremParagraph", "lorem.paragraph"),
+    ("randomLoremParagraphs", "lorem.paragraphs"),
+    ("randomLoremSentence", "lorem.sentence"),
+    ("randomLoremSentences", "lorem.sentences"),
+    ("randomLoremSlug", "lorem.slug"),
+    ("randomLoremText", "lorem.text"),
+    ("randomLoremWord", "lorem.word"),
+    ("randomLoremWords", "lorem.words"),
+    ("randomMACAddress", "internet.mac"),
+    ("randomMimeType", "system.mimeType"),
+    ("randomMonth", "date.month"),
+    ("randomNamePrefix", "person.prefix"),
+    ("randomNameSuffix", "person.suffix"),
+    ("randomNoun", "hacker.noun"),
+    ("randomPassword", "internet.password"),
+    ("randomPhoneNumber", "phone.number"),
+    ("randomPhoneNumberExt", "phone.number"),
+    ("randomPhrase", "hacker.phrase"),
+    ("randomPrice", "commerce.price"),
+    ("randomProduct", "commerce.product"),
+    ("randomProductAdjective", "commerce.productAdjective"),
+    ("randomProductMaterial", "commerce.productMaterial"),
+    ("randomProductName", "commerce.productName"),
+    ("randomProtocol", "internet.protocol"),
+    ("randomSemver", "system.semver"),
+    ("randomStreetAddress", "location.streetAddress"),
+    ("randomStreetName", "location.street"),
+    ("randomTransactionType", "finance.transactionType"),
+    ("randomUserAgent", "internet.userAgent"),
+    ("randomUserName", "internet.username"),
+    ("randomUrl", "internet.url"),
+    ("randomVerb", "hacker.verb"),
+    ("randomWeekday", "date.weekday"),
+    ("randomWord", "lorem.word"),
+    ("randomWords", "lorem.words"),
+];
+
+/// Postman image variables: `$randomCatsImage` is a LoremFlickr `cats` image.
+const POSTMAN_IMAGES: &[(&str, &str)] = &[
+    ("randomAbstractImage", "abstract"),
+    ("randomAnimalsImage", "animals"),
+    ("randomBusinessImage", "business"),
+    ("randomCatsImage", "cats"),
+    ("randomCityImage", "city"),
+    ("randomFashionImage", "fashion"),
+    ("randomFoodImage", "food"),
+    ("randomNatureImage", "nature"),
+    ("randomNightlifeImage", "nightlife"),
+    ("randomPeopleImage", "people"),
+    ("randomSportsImage", "sports"),
+    ("randomTransportImage", "transport"),
+];
+
+/// Names of the Postman dynamic variables (without `$`).
+pub fn dynamic_variables() -> Vec<&'static str> {
+    let mut names: Vec<&str> = [
+        "guid",
+        "timestamp",
+        "isoTimestamp",
+        "randomUUID",
+        "randomInt",
+    ]
+    .into_iter()
+    .chain(["randomAlphaNumeric", "randomCreditCardMask"])
+    .chain(POSTMAN.iter().map(|(n, _)| *n))
+    .chain(POSTMAN_IMAGES.iter().map(|(n, _)| *n))
+    .collect();
+    names.sort_unstable();
+    names
+}
+
 /// Postman-style dynamic variables and other short names.
 pub fn resolve_alias(name: &str, args: Vec<Value>) -> (String, Vec<Value>) {
-    let faker = |path: &str| ("faker".to_string(), vec![json!(path)]);
+    let faker = |path: &str, rest: &[Value]| {
+        let mut values = vec![json!(path)];
+        values.extend_from_slice(rest);
+        ("faker".to_string(), values)
+    };
     match name {
         "guid" | "randomUUID" => ("uuid".into(), vec![json!("v4")]),
         "timestamp" => ("now".into(), vec![json!("unix")]),
         "isoTimestamp" => ("now".into(), vec![json!("iso-8601")]),
         "randomInt" => ("random".into(), vec![json!("int"), json!(0), json!(1000)]),
-        "randomFirstName" => faker("person.firstName"),
-        "randomLastName" => faker("person.lastName"),
-        "randomFullName" => faker("person.fullName"),
-        "randomJobTitle" => faker("person.jobTitle"),
-        "randomEmail" | "randomExampleEmail" => faker("internet.email"),
-        "randomUserName" => faker("internet.username"),
-        "randomPassword" => faker("internet.password"),
-        "randomUrl" => faker("internet.url"),
-        "randomDomainName" => faker("internet.domainName"),
-        "randomIP" => faker("internet.ipv4"),
-        "randomIPV6" => faker("internet.ipv6"),
-        "randomMACAddress" => faker("internet.mac"),
-        "randomUserAgent" => faker("internet.userAgent"),
-        "randomPhoneNumber" => faker("phone.number"),
-        "randomCity" => faker("location.city"),
-        "randomStreetName" => faker("location.street"),
-        "randomStreetAddress" => faker("location.streetAddress"),
-        "randomCountry" => faker("location.country"),
-        "randomLatitude" => faker("location.latitude"),
-        "randomLongitude" => faker("location.longitude"),
-        "randomCompanyName" => faker("company.name"),
-        "randomCatchPhrase" => faker("company.catchPhrase"),
-        "randomWord" => faker("lorem.word"),
-        "randomWords" => faker("lorem.words"),
-        "randomLoremSentence" => faker("lorem.sentence"),
-        "randomLoremParagraph" => faker("lorem.paragraph"),
-        "randomLoremSlug" => faker("lorem.slug"),
-        "randomBoolean" => faker("datatype.boolean"),
-        "randomColor" => faker("color.human"),
-        "randomHexColor" => faker("color.rgb"),
-        "randomPrice" => faker("commerce.price"),
-        "randomProductName" => faker("commerce.productName"),
-        "randomDepartment" => faker("commerce.department"),
-        "randomBankAccount" => faker("finance.accountNumber"),
-        "randomBankAccountIban" => faker("finance.iban"),
-        "randomCurrencyCode" => faker("finance.currencyCode"),
-        "randomCreditCardMask" => faker("finance.creditCardNumber"),
-        "randomDateFuture" => faker("date.future"),
-        "randomDatePast" => faker("date.past"),
-        "randomDateRecent" => faker("date.recent"),
-        "randomMonth" => faker("date.month"),
-        "randomWeekday" => faker("date.weekday"),
-        "randomImageUrl" => faker("image.url"),
-        "randomAlphaNumeric" => ("faker".into(), vec![json!("string.alphanumeric"), json!(1)]),
-        _ => (name.to_string(), args),
+        "randomAlphaNumeric" => faker("string.alphanumeric", &[json!(1)]),
+        "randomCreditCardMask" => faker("string.numeric", &[json!(4)]),
+        _ => {
+            if let Some((_, path)) = POSTMAN.iter().find(|(n, _)| *n == name) {
+                faker(path, &[])
+            } else if let Some((_, category)) = POSTMAN_IMAGES.iter().find(|(n, _)| *n == name) {
+                faker("image.urlLoremFlickr", &[json!({ "category": category })])
+            } else {
+                (name.to_string(), args)
+            }
+        }
     }
 }
 
@@ -121,14 +228,17 @@ pub fn call(name: &str, values: &[Value], locale: Locale) -> Option<CoreResult<V
         "jwt" => jwt(&a),
         "faker" => {
             // Insomnia's faker tag uses Postman names: `{% faker 'randomFullName' %}`.
-            let path = a.str(0).unwrap_or_default();
+            let path = match a.str(0) {
+                Ok(p) => p,
+                Err(e) => return Some(Err(e)),
+            };
             if !path.contains('.') {
                 let (alias, args) = resolve_alias(&path, Vec::new());
                 if alias != path {
                     return call(&alias, &args, locale);
                 }
             }
-            faker::call(&a, locale)
+            reqly_faker::call(locale, &path, a.values.get(1..).unwrap_or_default())
         }
         _ => return None,
     })

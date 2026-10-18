@@ -240,7 +240,7 @@ async fn faker_in_both_locales() {
         &v,
         &NoHost,
         RenderOptions {
-            locale: Locale::En,
+            locale: Locale::EN,
             ..RenderOptions::default()
         },
     );
@@ -248,7 +248,7 @@ async fn faker_in_both_locales() {
         &v,
         &NoHost,
         RenderOptions {
-            locale: Locale::Ru,
+            locale: Locale::RU,
             ..RenderOptions::default()
         },
     );
@@ -266,7 +266,10 @@ async fn faker_in_both_locales() {
                 || c == 'Ё'),
         "{ru_name}"
     );
-    let phone = ru.render("{{ $faker.phone.number }}").await.unwrap();
+    let phone = ru
+        .render("{{ $faker.phone.number({ style: 'international' }) }}")
+        .await
+        .unwrap();
     assert!(phone.starts_with("+7"), "{phone}");
     let n: i64 = en
         .render("{{ $faker.number.int(10, 12) }}")
@@ -285,6 +288,71 @@ async fn faker_in_both_locales() {
         en.render("{% faker 'nope.nope' %}").await.unwrap_err().code,
         "template.faker_unknown"
     );
+}
+
+#[tokio::test]
+async fn faker_takes_arrays_objects_and_variables() {
+    let v = json!({ "pick": "x", "n": 4 });
+    let r = Renderer::new(&v, &NoHost, RenderOptions::default());
+    assert_eq!(
+        r.render("{{ $faker.helpers.arrayElement([pick]) }}")
+            .await
+            .unwrap(),
+        "x"
+    );
+    assert_eq!(
+        r.render("{{ $faker.number.int({ min: n, 'max': 4 }) }}")
+            .await
+            .unwrap(),
+        "4"
+    );
+    let s = r
+        .render("{% faker 'string.alpha', { length: n, casing: 'upper' } %}")
+        .await
+        .unwrap();
+    assert!(
+        s.len() == 4 && s.chars().all(|c| c.is_ascii_uppercase()),
+        "{s}"
+    );
+    assert_eq!(
+        r.render("{{ $faker.helpers.arrayElements([1, 2], 2) }}")
+            .await
+            .unwrap()
+            .len(),
+        5
+    );
+}
+
+#[tokio::test]
+async fn faker_supports_every_locale() {
+    let v = vars();
+    for code in ["de", "fr", "ja", "pt_BR", "uk", "zh_CN"] {
+        let r = Renderer::new(
+            &v,
+            &NoHost,
+            RenderOptions {
+                locale: Locale::parse(code).unwrap(),
+                ..RenderOptions::default()
+            },
+        );
+        assert!(
+            !r.render("{{ $faker.location.city }}")
+                .await
+                .unwrap()
+                .is_empty(),
+            "{code}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn every_postman_dynamic_variable_renders() {
+    let v = vars();
+    let r = Renderer::new(&v, &NoHost, RenderOptions::default());
+    for name in reqly_template::dynamic_variables() {
+        let out = r.render(&format!("{{{{${name}}}}}")).await;
+        assert!(out.as_ref().is_ok_and(|s| !s.is_empty()), "{name}: {out:?}");
+    }
 }
 
 #[tokio::test]

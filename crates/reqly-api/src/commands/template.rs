@@ -474,7 +474,7 @@ impl SendHost<'_> {
                     reqly_template::functions::call(
                         "jsonpath",
                         &[Value::String(text), Value::String(path)],
-                        Locale::En,
+                        Locale::EN,
                     )
                     .expect("built-in")?
                 } else {
@@ -1015,9 +1015,21 @@ command!(
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct FakerInfo {
+    /// `module.method`, e.g. `person.firstName`.
     pub name: String,
-    /// Argument hint, e.g. `min?, max?`.
+    /// Parameters as faker-js declares them, e.g. `options?: number | {min, max}`.
     pub args: String,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct FakerLocaleInfo {
+    pub code: String,
+    /// English name, e.g. `Russian`.
+    pub title: String,
+    /// Name in the language itself, e.g. `Русский`.
+    pub endonym: String,
 }
 
 #[derive(Debug, Serialize, TS)]
@@ -1026,6 +1038,9 @@ pub struct FakerInfo {
 pub struct TemplateFunctionsOutput {
     pub functions: Vec<FunctionInfo>,
     pub faker: Vec<FakerInfo>,
+    pub faker_locales: Vec<FakerLocaleInfo>,
+    /// Postman dynamic variables such as `randomFirstName` (used as `$randomFirstName`).
+    pub dynamic_variables: Vec<String>,
 }
 
 command!(
@@ -1036,12 +1051,24 @@ command!(
     |_ctx, _input| {
         Ok(TemplateFunctionsOutput {
             functions: reqly_template::catalog(),
-            faker: reqly_template::FAKER_FUNCTIONS
+            faker: reqly_faker::functions()
                 .iter()
-                .map(|(name, args)| FakerInfo {
-                    name: name.to_string(),
-                    args: args.to_string(),
+                .map(|f| FakerInfo {
+                    name: f.name.clone(),
+                    args: f.args.clone(),
                 })
+                .collect(),
+            faker_locales: reqly_faker::locales()
+                .iter()
+                .map(|l| FakerLocaleInfo {
+                    code: l.code.clone(),
+                    title: l.title.clone(),
+                    endonym: l.endonym.clone(),
+                })
+                .collect(),
+            dynamic_variables: reqly_template::dynamic_variables()
+                .into_iter()
+                .map(String::from)
                 .collect(),
         })
     }

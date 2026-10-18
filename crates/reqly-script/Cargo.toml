@@ -8,6 +8,7 @@ rust-version.workspace = true
 
 [dependencies]
 reqly-core.workspace = true
+reqly-faker.workspace = true
 reqly-template.workspace = true
 rquickjs = { version = "0.14", features = ["futures", "macro", "loader", "parallel"] }
 serde.workspace = true

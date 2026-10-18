@@ -103,7 +103,7 @@ fn input(phase: Phase, script: &str) -> ScriptInput {
             iteration_count: 1,
         },
         limits: Limits::default(),
-        locale: reqly_template::Locale::En,
+        locale: reqly_template::Locale::EN,
     }
 }
 
@@ -374,6 +374,71 @@ async fn chai_loads_quickly_after_the_first_use() {
     let started = std::time::Instant::now();
     for _ in 0..5 {
         exec(input(Phase::Post, "pm.expect(1).to.equal(1)")).await;
+    }
+    let each = started.elapsed() / 5;
+    eprintln!("first run {first:?}, then {each:?} per run");
+    assert!(each < Duration::from_millis(250), "{each:?}");
+}
+
+#[tokio::test]
+async fn faker_js_api_and_locales() {
+    let mut i = input(
+        Phase::Pre,
+        r#"
+        const { faker, fakerDE, fakerEN } = require('@faker-js/faker');
+        const { faker: fakerAT } = require('@faker-js/faker/locale/de_AT');
+        console.log(/^[А-Яа-яЁё-]+$/.test(faker.person.firstName()), /^[А-Яа-яЁё-]+$/.test(rq.faker.person.lastName()));
+        console.log(typeof fakerDE.location.city(), typeof fakerAT.location.city(), typeof fakerEN.finance.iban());
+        console.log(faker.helpers.arrayElement(['only']), faker.number.int({ min: 5, max: 5 }), rq.faker('number.int', { min: 7, max: 7 }));
+        faker.seed(42);
+        const a = faker.string.alpha(8);
+        faker.seed(42);
+        console.log(a === faker.string.alpha(8), globalThis.faker === faker);
+        console.log(pm.variables.replaceIn('{{$randomFirstName}}').length > 0, pm.variables.replaceIn('{{$faker.number.int({ min: 3, max: 3 })}}'));
+        console.log(pm.variables.replaceIn('{{$faker.nope.nope}} {{$guid}}').startsWith('{{$faker.nope.nope}} '));
+        console.log(faker.image.dataUri({ type: 'svg-base64' }).startsWith('data:image/svg+xml;base64,'));
+        "#,
+    );
+    i.locale = reqly_template::Locale::RU;
+    let out = exec(i).await;
+    let texts: Vec<&str> = out.logs.iter().map(|l| l.text.as_str()).collect();
+    assert_eq!(
+        texts,
+        [
+            "true true",
+            "string string string",
+            "only 5 7",
+            "true true",
+            "true 3",
+            "true",
+            "true"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn faker_package_exports_load_the_whole_package() {
+    let out = exec(input(
+        Phase::Pre,
+        r#"
+        const { Faker, allLocales, en, ru } = require('@faker-js/faker');
+        const custom = new Faker({ locale: [ru, en] });
+        console.log(typeof custom.person.firstName(), Object.keys(allLocales).length > 50);
+        "#,
+    ))
+    .await;
+    assert_eq!(out.logs[0].text, "string true");
+}
+
+#[tokio::test]
+async fn faker_loads_quickly_after_the_first_use() {
+    let script = "console.log(faker.person.firstName())";
+    let started = std::time::Instant::now();
+    exec(input(Phase::Pre, script)).await;
+    let first = started.elapsed();
+    let started = std::time::Instant::now();
+    for _ in 0..5 {
+        exec(input(Phase::Pre, script)).await;
     }
     let each = started.elapsed() / 5;
     eprintln!("first run {first:?}, then {each:?} per run");
