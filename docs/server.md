@@ -104,6 +104,11 @@ wins, and the person whose newer change was overwritten gets a
 notification naming who did it. Unsaved edits stay on top of changes
 arriving from others.
 
+The body, the GraphQL query and variables and the scripts are edited
+together in real time: everyone types into the same text, sees the others'
+cursors with their names, and undo takes back only their own typing
+(ADR-012).
+
 The server checks every command against the caller's role in the
 workspaces it touches (ADR-010), so the rules hold for the API as well as
 for the UI.

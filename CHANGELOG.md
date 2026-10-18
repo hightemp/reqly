@@ -32,6 +32,8 @@ Ships in 0.7.0 together with stage 7.
 - Field-level merging of request and folder edits: concurrent changes to
   different fields both survive, and whoever loses a change to the same
   field is notified (`node.update` with `fields` and `baseVersion`).
+- Real-time co-editing of the request body, GraphQL query and variables and
+  scripts with other people's cursors (Yjs and `yrs`, ADR-012).
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
   bundled and run in QuickJS (ADR-009, `docs/templates.md`).
 - Template arguments can be arrays and objects:

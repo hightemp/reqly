@@ -40,6 +40,10 @@ data in the database, so the text must end up there too.
 - Documents are dropped after 10 minutes without joins or updates.
 - Only on a multi-user server; desktop and single-user servers keep plain
   editors.
+- The UI binds the body, the GraphQL query and variables and the scripts.
+  The URL bar shows a text built from the URL and the query parameters
+  rather than the stored URL, and the description is a plain text area, so
+  both stay with field-level merging (T7.2.2) for now.
 
 ## Consequences
 
@@ -49,3 +53,8 @@ data in the database, so the text must end up there too.
   to a document.
 - Yjs history lives only in memory: after a restart or eviction the
   document starts again from the stored text.
+- Updates of one client must arrive in the order it made them: `yrs` 0.28
+  can lose an edit when updates of the same client arrive out of order (a
+  property test found it). Clients send updates one at a time, and HTTP and
+  the WebSocket keep the order; the property test checks convergence under
+  any interleaving of different senders.
