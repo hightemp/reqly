@@ -27,6 +27,21 @@ function variableName(inner: string): { name: string; root: string } | null {
   return { name, root };
 }
 
+/** Index of `close` after `from`, skipping quoted strings and `{…}`, `[…]`, `(…)` arguments. */
+function findClose(src: string, from: number, close: string): number {
+  let depth = 0;
+  for (let j = from; j < src.length; j++) {
+    const c = src[j]!;
+    if (depth === 0 && src.startsWith(close, j)) return j;
+    if (c === "'" || c === '"') {
+      const q = c;
+      for (j++; j < src.length && src[j] !== q; j++) if (src[j] === '\\') j++;
+    } else if (c === '{' || c === '[' || c === '(') depth++;
+    else if ((c === '}' || c === ']' || c === ')') && depth > 0) depth--;
+  }
+  return -1;
+}
+
 export function scanTemplates(src: string): TemplateRange[] {
   const out: TemplateRange[] = [];
   let i = 0;
@@ -43,7 +58,7 @@ export function scanTemplates(src: string): TemplateRange[] {
       i = open + 1;
       continue;
     }
-    const end = src.indexOf(close, open + 2);
+    const end = next === '#' ? src.indexOf(close, open + 2) : findClose(src, open + 2, close);
     if (end < 0) break;
     const to = end + 2;
     const inner = src.slice(open + 2, end);
@@ -102,6 +117,9 @@ function readArgs(s: string): TagArg[] | null {
       if (s[i] !== c) return null;
       i++;
       args.push({ kind: 'string', value });
+    } else if (c === '{' || c === '[') {
+      // Object and array arguments are edited as text.
+      return null;
     } else {
       const m = /^[^,]+/.exec(s.slice(i));
       if (!m) return null;

@@ -9,9 +9,16 @@ export function createTemplateHostFactory(envs: EnvironmentStore): TemplateHostF
     async load() {
       const [variables, catalog] = await Promise.all([
         envs.variables(nodeId),
-        envs.loadCatalog().catch(() => ({ functions: [], faker: [] })),
+        envs
+          .loadCatalog()
+          .catch(() => ({ functions: [], faker: [], fakerLocales: [], dynamicVariables: [] })),
       ]);
-      return { variables, functions: catalog.functions, faker: catalog.faker };
+      return {
+        variables,
+        functions: catalog.functions,
+        faker: catalog.faker,
+        dynamicVariables: catalog.dynamicVariables,
+      };
     },
     onChange: (listener) => envs.onChange(listener),
     preview: (text) => envs.preview(text, nodeId),

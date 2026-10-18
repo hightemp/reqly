@@ -1,7 +1,7 @@
 import { CompletionContext } from '@codemirror/autocomplete';
 import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
-import { SNIPPETS } from './api';
+import { SNIPPETS, setFakerFunctions } from './api';
 import { membersAt, scriptCompletions } from './completion';
 
 function complete(text: string) {
@@ -21,6 +21,17 @@ describe('script completion', () => {
     );
     expect(complete('cons')?.options.map((o) => o.label)).toContain('console');
     expect(complete('unknown.x')).toBeNull();
+  });
+
+  it('completes faker modules and methods from the catalog', () => {
+    setFakerFunctions([
+      { name: 'person.firstName', args: 'sex?: SexType' },
+      { name: 'number.int', args: 'options?: number | {min, max}' },
+    ]);
+    expect(complete('faker.')?.options.map((o) => o.label)).toEqual(['seed', 'person', 'number']);
+    const int = complete('rq.faker.number.i')?.options.find((o) => o.label === 'int');
+    expect(int?.detail).toBe('(options?: number | {min, max})');
+    expect(complete('insomnia.faker.person.')?.options.map((o) => o.label)).toEqual(['firstName']);
   });
 
   it('describes request lists and snippets', () => {

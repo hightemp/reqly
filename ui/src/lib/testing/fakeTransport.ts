@@ -69,7 +69,12 @@ export class FakeTransport implements Transport {
       activeGlobalId: null,
     }));
     this.handle('template.variables', () => []);
-    this.handle('template.functions', () => ({ functions: [], faker: [] }));
+    this.handle('template.functions', () => ({
+      functions: [],
+      faker: [],
+      fakerLocales: [{ code: 'en', title: 'English', endonym: 'English' }],
+      dynamicVariables: [],
+    }));
     this.handle('template.prompts', () => []);
     return this;
   }

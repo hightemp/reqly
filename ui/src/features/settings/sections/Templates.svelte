@@ -13,8 +13,13 @@
 
   let global = $state('en');
   let collection = $state('');
+  let locales = $state<{ value: string; label: string }[]>([]);
 
   onMount(async () => {
+    const catalog = await services.environments.loadCatalog().catch(() => null);
+    locales = (catalog?.fakerLocales ?? [{ code: 'en', title: 'English', endonym: 'English' }]).map(
+      (l) => ({ value: l.code, label: `${l.endonym} (${l.code})` }),
+    );
     global =
       ((await services.transport.call('settings.get', { key: KEY })).value as string) ?? 'en';
     if (collectionKey)
@@ -22,11 +27,6 @@
         ((await services.transport.call('settings.get', { key: collectionKey })).value as string) ??
         '';
   });
-
-  const locales = $derived([
-    { value: 'en', label: t('languages.en') },
-    { value: 'ru', label: t('languages.ru') },
-  ]);
 
   async function setGlobal(value: string) {
     global = value;

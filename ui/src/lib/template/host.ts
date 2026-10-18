@@ -10,6 +10,8 @@ export interface TemplateData {
   variables: VariableInfo[];
   functions: FunctionInfo[];
   faker: FakerInfo[];
+  /** Postman dynamic variables such as `randomFirstName`. */
+  dynamicVariables: string[];
 }
 
 export interface TemplateHost {
@@ -33,12 +35,10 @@ export function templateHostFactory(): TemplateHostFactory | undefined {
   return getContext<TemplateHostFactory | undefined>(KEY);
 }
 
-/** Function names that need no catalog entry (Postman dynamic variables). */
-export function isKnownFunction(name: string, functions: FunctionInfo[]): boolean {
-  return (
-    functions.some((f) => f.name === name) ||
-    ['guid', 'timestamp', 'isoTimestamp'].includes(name) ||
-    /^random[A-Z]/.test(name) ||
-    name === 'randomUUID'
-  );
+/** A catalog function or a Postman dynamic variable. */
+export function isKnownFunction(
+  name: string,
+  data: Pick<TemplateData, 'functions' | 'dynamicVariables'>,
+): boolean {
+  return data.functions.some((f) => f.name === name) || data.dynamicVariables.includes(name);
 }

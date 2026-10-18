@@ -643,7 +643,8 @@ export const ru: Translation<Messages> = {
   },
   settings: {
     templates: 'Шаблоны',
-    templatesHint: 'Тестовые данные {{ $faker.… }} генерируются на этом языке.',
+    templatesHint:
+      'Тестовые данные из {{ $faker.… }}, {{ $random… }} и faker в скриптах генерируются для этой локали faker-js.',
     fakerLocale: 'Язык faker',
     fakerLocaleCollection: 'Язык faker для этой коллекции',
     sameAsGlobal: 'Как в общих настройках',
@@ -938,6 +939,8 @@ export const ru: Translation<Messages> = {
     'template.unknown_function': 'Неизвестная функция шаблона «{name}»',
     'template.bad_argument': '{function}: неверный аргумент',
     'template.faker_unknown': 'Неизвестная функция faker «{name}»',
+    'template.faker_failed': 'faker {name}: {message}',
+    'template.faker_timeout': 'faker {name} выполнялся слишком долго',
     'template.prompt_required': 'Нужно значение для «{title}»',
     'template.response_missing': 'У запроса-источника ещё нет ответа',
     'template.response_cycle': 'Запросы зависят от ответов друг друга',

@@ -2,12 +2,14 @@
 <script lang="ts">
   import type { Scripts } from '$lib/api/generated/Scripts';
   import { t, type Key } from '$lib/i18n';
-  import { SNIPPETS } from '$lib/script/api';
+  import { onMount } from 'svelte';
+  import { SNIPPETS, setFakerFunctions } from '$lib/script/api';
   import { scriptCompletions } from '$lib/script/completion';
   import Button from '$lib/ui/Button.svelte';
   import CodeEditor from '$lib/ui/code/CodeEditor.svelte';
   import { menus } from '$lib/ui/overlay/menus.svelte';
   import Tabs from '$lib/ui/Tabs.svelte';
+  import { templateHostFactory } from '$lib/template/host';
 
   interface Props {
     scripts: Scripts;
@@ -17,6 +19,14 @@
   }
 
   let { scripts, onchange, hint }: Props = $props();
+  const templateHost = templateHostFactory();
+
+  onMount(() => {
+    templateHost?.(null)
+      .load()
+      .then((data) => setFakerFunctions(data.faker))
+      .catch(() => {});
+  });
   let phase = $state<'pre' | 'post'>('pre');
   let editor: CodeEditor | undefined = $state();
 

@@ -22,7 +22,7 @@ function rangeState(r: TemplateRange, data: TemplateData | null): 'ok' | 'missin
   if (!data) return 'unknown';
   if (r.kind === 'variable')
     return data.variables.some((v) => v.name === r.root) ? 'ok' : 'missing';
-  return isKnownFunction(r.name, data.functions) ? 'ok' : 'missing';
+  return isKnownFunction(r.name, data) ? 'ok' : 'missing';
 }
 
 function decorations(view: EditorView, data: TemplateData | null): DecorationSet {
@@ -184,6 +184,13 @@ export function templateCompletions(host: TemplateHost) {
           info: f.example,
         })),
         { label: 'faker.', type: 'namespace', detail: 'faker', boost: 1 },
+        ...data.dynamicVariables.map((name) => ({
+          label: name,
+          type: 'constant',
+          detail: 'Postman',
+          boost: -1,
+          apply: closed('\\}\\}') ? name : `${name} }}`,
+        })),
       ];
     } else if (at.kind === 'faker') {
       options = data.faker.map((f) => ({

@@ -17,6 +17,16 @@ describe('scanTemplates', () => {
     expect(scanTemplates('\\{{ no }} {# c #} {{ open')).toEqual([]);
   });
 
+  it('skips braces inside object, array and string arguments', () => {
+    const src =
+      "{{ $faker.helpers.objectValue({ a: { b: '}}' } }) }} {{ $faker.helpers.arrayElement(['x']) }}!";
+    const found = scanTemplates(src);
+    expect(found.map((t) => src.slice(t.from, t.to))).toEqual([
+      "{{ $faker.helpers.objectValue({ a: { b: '}}' } }) }}",
+      "{{ $faker.helpers.arrayElement(['x']) }}",
+    ]);
+  });
+
   it('keeps the root name of indexed paths', () => {
     expect(scanTemplates('{{ items[0].id }}')[0]!.root).toBe('items');
     expect(scanTemplates("{{ _['odd key'] }}")[0]!.root).toBe('odd key');
@@ -43,6 +53,11 @@ describe('parseTag / serializeTag', () => {
     const s = serializeTag({ name: 'base64', args: [{ kind: 'string', value: "it's" }] });
     expect(s).toBe("{% base64 'it\\'s' %}");
     expect(parseTag(s)!.args[0]!.value).toBe("it's");
+  });
+
+  it('leaves object and array arguments to text editing', () => {
+    expect(parseTag("{% faker 'number.int', { min: 1, max: 2 } %}")).toBeNull();
+    expect(parseTag("{{ $faker.helpers.arrayElement(['a', 'b']) }}")).toBeNull();
   });
 
   it('parses dollar calls', () => {

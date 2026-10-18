@@ -605,7 +605,8 @@ export const en = {
   },
   settings: {
     templates: 'Templates',
-    templatesHint: 'Fake data from {{ $faker.… }} uses this language.',
+    templatesHint:
+      'Fake data from {{ $faker.… }}, {{ $random… }} and faker in scripts uses this faker-js locale.',
     fakerLocale: 'Faker locale',
     fakerLocaleCollection: 'Faker locale for this collection',
     sameAsGlobal: 'Same as global',
@@ -889,6 +890,8 @@ export const en = {
     'template.unknown_function': 'Unknown template function "{name}"',
     'template.bad_argument': '{function}: invalid argument',
     'template.faker_unknown': 'Unknown faker function "{name}"',
+    'template.faker_failed': 'faker {name}: {message}',
+    'template.faker_timeout': 'faker {name} ran too long',
     'template.prompt_required': 'A value for "{title}" is required',
     'template.response_missing': 'The referenced request has no response yet',
     'template.response_cycle': "Requests depend on each other's responses",

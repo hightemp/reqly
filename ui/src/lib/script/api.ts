@@ -1,6 +1,8 @@
 // The script API as a tree, for completion (mirrors the prelude in
 // crates/reqly-script/src/prelude.js). Snippet labels: i18n-dynamic: scripts.snippet.
 
+import type { FakerInfo } from '$lib/api/generated/FakerInfo';
+
 export interface ApiNode {
   /** `fn` entries complete with `()`. */
   kind: 'object' | 'fn' | 'prop';
@@ -127,16 +129,33 @@ const common: Record<string, ApiNode> = {
   }),
 };
 
+/** faker-js modules and methods from the template catalog. */
+export function fakerApi(functions: FakerInfo[]): ApiNode {
+  const modules: Record<string, ApiNode> = {
+    seed: fn('(seed?) → number', 'Make the generated values repeatable'),
+  };
+  for (const f of functions) {
+    const [module, name] = f.name.split('.');
+    if (!module || !name) continue;
+    const node = (modules[module] ??= obj({}, `faker.${module}`));
+    node.children![name] = fn(`(${f.args})`);
+  }
+  return {
+    kind: 'fn',
+    detail: '(path, ...args)',
+    info: 'faker-js in the data locale from the settings',
+    children: modules,
+  };
+}
+
 export const SCRIPT_API: Record<string, ApiNode> = {
-  rq: obj(
-    { ...common, faker: fn('(path) → string', "Fake data, e.g. rq.faker('person.firstName')") },
-    'Reqly script API',
-  ),
+  rq: obj({ ...common, faker: fakerApi([]) }, 'Reqly script API'),
   pm: obj(common, 'Postman-compatible API'),
   insomnia: obj(
-    { ...common, baseEnvironment: scope('base environment') },
+    { ...common, baseEnvironment: scope('base environment'), faker: fakerApi([]) },
     'Insomnia-compatible API',
   ),
+  faker: { ...fakerApi([]), kind: 'object' },
   console: obj({
     log: fn('(...values)'),
     info: fn('(...values)'),
@@ -144,7 +163,10 @@ export const SCRIPT_API: Record<string, ApiNode> = {
     error: fn('(...values)'),
     debug: fn('(...values)'),
   }),
-  require: fn("('crypto-js' | 'lodash' | 'chai' | 'moment' | 'uuid')", 'Bundled modules'),
+  require: fn(
+    "('crypto-js' | 'lodash' | 'chai' | 'moment' | 'uuid' | '@faker-js/faker')",
+    'Bundled modules',
+  ),
   CryptoJS: obj({
     HmacSHA256: fn('(message, key)'),
     HmacSHA1: fn('(message, key)'),
@@ -158,6 +180,14 @@ export const SCRIPT_API: Record<string, ApiNode> = {
   btoa: fn('(text) → string'),
   setTimeout: fn('(fn, ms)'),
 };
+
+/** Fills the faker members once the catalog has loaded. */
+export function setFakerFunctions(functions: FakerInfo[]) {
+  const faker = fakerApi(functions);
+  SCRIPT_API.rq!.children!.faker = faker;
+  SCRIPT_API.insomnia!.children!.faker = faker;
+  SCRIPT_API.faker = { ...faker, kind: 'object' };
+}
 
 export interface Snippet {
   id: string;
