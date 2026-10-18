@@ -131,3 +131,42 @@ test('administrators manage users in the admin panel', async ({ browser }) => {
   );
   await context.close();
 });
+
+test('changes by one member appear for the others without reloading', async ({ browser }) => {
+  const ownerContext = await browser.newContext();
+  const owner = await ownerContext.newPage();
+  await signIn(owner, E2E_ADMIN.username, E2E_ADMIN.password);
+  const api = (name: string, data: unknown) =>
+    owner.request
+      .post(`${base}/api/v1/cmd/${name}`, { data })
+      .then((r) => r.json() as Promise<Record<string, unknown> & { id: string }>);
+  const ws = await api('workspace.create', { name: 'Live' });
+  const col = await api('collection.create', { workspaceId: ws.id, name: 'Live API' });
+  const invite = (await api('members.invite', {
+    workspaceId: ws.id,
+    role: 'editor',
+  })) as unknown as {
+    token: string;
+  };
+
+  const otherContext = await browser.newContext();
+  const other = await otherContext.newPage();
+  await other.goto(`/?invite=${invite.token}`);
+  await other.getByRole('textbox', { name: 'User name' }).fill('erin');
+  await other.getByRole('textbox', { name: 'Password' }).fill('erin-password');
+  await other.getByRole('button', { name: 'Create account' }).click();
+  await other.getByRole('combobox', { name: 'Workspace' }).click();
+  await other.getByRole('option', { name: 'Live' }).click();
+  await expect(other.getByRole('combobox', { name: 'Collection' })).toHaveText('Live API');
+
+  await api('node.create', {
+    collectionId: col.id,
+    parentId: null,
+    name: 'Created elsewhere',
+    data: { kind: 'request', method: 'GET', url: 'https://example.com' },
+  });
+  await expect(other.getByRole('treeitem', { name: /Created elsewhere/ })).toBeVisible();
+
+  await ownerContext.close();
+  await otherContext.close();
+});

@@ -92,6 +92,11 @@ environment; a setting a user never changed falls back to the server-wide
 value. WebSocket, SSE and gRPC connections belong to the user who opened
 them.
 
+Changes made by one member (requests, folders, collections, environments,
+cookies) appear for the other members of the workspace at once, without
+reloading. Responses, stream messages and settings are seen only by the
+user they belong to.
+
 The server checks every command against the caller's role in the
 workspaces it touches (ADR-010), so the rules hold for the API as well as
 for the UI.

@@ -26,6 +26,9 @@ Ships in 0.7.0 together with stage 7.
   disable, reset password, delete), all workspaces, sign-up links and the
   server configuration.
 - Per-user settings and active environments on a multi-user server.
+- Live updates between users: changes to a shared workspace reach its
+  other members at once; private events (responses, streams, settings)
+  reach only their user.
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
   bundled and run in QuickJS (ADR-009, `docs/templates.md`).
 - Template arguments can be arrays and objects:

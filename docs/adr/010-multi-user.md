@@ -72,7 +72,10 @@ Option 3, in `reqly-api` (`access.rs`), so it is tested without HTTP:
   the author classify them.
 - Ids from input are trusted only after the lookup, so a crafted input
   that mixes ids of two workspaces needs the role in both.
-- Push events must be filtered by membership too (T7.2.1); until then the
-  WebSocket in `multi` mode sends only events of the caller's workspaces
-  or none.
+- Push events are filtered the same way (`access::event_visible`): events
+  about shared content (tree, collections, environments, cookies, runtime
+  variables) go to the members of the workspace their ids belong to;
+  `workspaces.changed` carries nothing and goes to everyone; every other
+  event goes only to the user who caused it (`Event::actor`, taken from
+  the task-local caller). An event without an actor reaches no user.
 - PostgreSQL stays open (Q5, T7.1.6).
