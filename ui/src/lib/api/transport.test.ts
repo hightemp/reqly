@@ -75,7 +75,7 @@ describe('WebTransport', () => {
     const seen: ReqlyEvent[] = [];
     t.subscribe((e) => seen.push(e));
     const socket = FakeSocket.instances[0]!;
-    expect(socket.url).toBe('ws://host:1/api/v1/ws');
+    expect(socket.url).toBe(`ws://host:1/api/v1/ws?client=${t.clientId}`);
     socket.open();
     socket.push({ type: 'hello', version: '0' });
     socket.push({ type: 'event', event: { topic: 'app.pinged', payload: 'hi' } });
@@ -121,7 +121,7 @@ describe('WebTransport', () => {
       WebSocket: FakeSocket as unknown as typeof WebSocket,
     });
     t.subscribe(() => {});
-    expect(FakeSocket.instances[0]!.url).toBe('wss://reqly.example/api/v1/ws');
+    expect(FakeSocket.instances[0]!.url).toBe(`wss://reqly.example/api/v1/ws?client=${t.clientId}`);
   });
 });
 

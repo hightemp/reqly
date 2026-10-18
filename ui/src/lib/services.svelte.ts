@@ -8,6 +8,7 @@ import { PreferencesStore } from './preferences.svelte';
 import { CollabService, userColor } from './collab/collab';
 import { AccountStore } from './stores/account.svelte';
 import { EditorStore } from './stores/editor.svelte';
+import { PresenceStore } from './stores/presence.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
 import { StreamStore } from './stores/streams.svelte';
@@ -47,6 +48,7 @@ export interface Services {
   environments: EnvironmentStore;
   account: AccountStore;
   collab: CollabService;
+  presence: PresenceStore;
   scopes: FocusScopes;
 }
 
@@ -115,6 +117,7 @@ export async function createServices(
     environments,
     account,
     collab,
+    presence: new PresenceStore(transport, account),
     scopes: new FocusScopes(),
   };
 }

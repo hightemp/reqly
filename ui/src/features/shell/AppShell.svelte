@@ -75,6 +75,11 @@
     | null
   >(null);
 
+  // Tell the others where this tab is (multi-user server).
+  $effect(() => {
+    services.presence.report(services.workspace.activeWorkspaceId, services.tabs.activeId);
+  });
+
   // Desktop: custom title bar or the OS frame.
   $effect(() => {
     void windowController?.setDecorations(prefs.value.nativeFrame);

@@ -8,6 +8,7 @@
   import { contextMenu } from '$lib/ui/overlay/menus.svelte';
   import Tree from '$lib/ui/tree/Tree.svelte';
   import { createRequest, treeMenu, type TreeActionHooks } from './actions';
+  import Avatars from '$lib/ui/Avatars.svelte';
   import ItemLabel from './ItemLabel.svelte';
 
   interface Props {
@@ -45,6 +46,7 @@
 >
   {#snippet row(r)}
     <ItemLabel item={r.item} expanded={r.expanded} {words} dimmed={cutIds.has(r.id)} />
+    <Avatars people={services.presence.on(r.id)} size={14} max={3} label={t('presence.open')} />
   {/snippet}
   {#snippet empty()}
     <EmptyState title={filter ? t('sidebar.noMatches') : t('sidebar.empty')}>

@@ -539,6 +539,10 @@ export const en = {
     secureCookie: 'Secure cookie',
     network: 'Outgoing requests',
   },
+  presence: {
+    here: 'Also here',
+    open: 'Also open by',
+  },
   editor: {
     overwritten: '{by} overwrote your change to {fields} in “{name}”',
   },

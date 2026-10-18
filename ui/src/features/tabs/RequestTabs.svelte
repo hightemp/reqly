@@ -1,5 +1,6 @@
 <!-- Open requests as tabs (Postman-style). -->
 <script lang="ts">
+  import Avatars from '$lib/ui/Avatars.svelte';
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
@@ -168,6 +169,12 @@
           {#if tab.pinned}<span class="pin"><Icon name="pin" size={11} /></span>{/if}
           <MethodBadge method={meta.method} protocol={meta.protocol} />
           <span class="name">{meta.name}</span>
+          <Avatars
+            people={services.presence.on(tab.id)}
+            size={14}
+            max={2}
+            label={t('presence.open')}
+          />
           <span class="state">
             {#if meta.running}
               <Spinner size={10} />

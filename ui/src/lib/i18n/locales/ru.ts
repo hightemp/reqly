@@ -577,6 +577,10 @@ export const ru: Translation<Messages> = {
     secureCookie: 'Secure cookie',
     network: 'Исходящие запросы',
   },
+  presence: {
+    here: 'Сейчас здесь',
+    open: 'Также открыто у',
+  },
   editor: {
     overwritten: '{by} перезаписал(а) ваше изменение ({fields}) в «{name}»',
   },

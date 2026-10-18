@@ -41,6 +41,8 @@ export class ApiError extends Error {
 
 export interface Transport {
   readonly kind: 'tauri' | 'web';
+  /** This browser tab, as the server knows it (web only; presence). */
+  readonly clientId?: string;
   call<N extends CommandName>(name: N, input: Input<N>): Promise<Output<N>>;
   /** Subscribes to every core event; returns an unsubscribe function. */
   subscribe(listener: EventListener): () => void;
@@ -67,6 +69,7 @@ export interface WebTransportOptions {
 
 export class WebTransport implements Transport {
   readonly kind = 'web';
+  readonly clientId = crypto.randomUUID();
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly SocketImpl: typeof WebSocket;
@@ -120,7 +123,7 @@ export class WebTransport implements Transport {
   }
 
   private connect() {
-    const url = `${this.baseUrl.replace(/^http/, 'ws')}/api/v1/ws`;
+    const url = `${this.baseUrl.replace(/^http/, 'ws')}/api/v1/ws?client=${this.clientId}`;
     const socket = new this.SocketImpl(url);
     this.socket = socket;
 

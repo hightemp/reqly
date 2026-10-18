@@ -313,3 +313,51 @@ test('two people type in the same body at once', async ({ browser }) => {
   await ownerContext.close();
   await otherContext.close();
 });
+
+test('members see who is in the workspace and on which request', async ({ browser }) => {
+  const ownerContext = await browser.newContext();
+  const owner = await ownerContext.newPage();
+  await signIn(owner, E2E_ADMIN.username, E2E_ADMIN.password);
+  const call = (page: Page, name: string, data: unknown) =>
+    page.request
+      .post(`${base}/api/v1/cmd/${name}`, { data })
+      .then((r) => r.json() as Promise<Record<string, never> & { id: string }>);
+  const ws = await call(owner, 'workspace.create', { name: 'Presence' });
+  const col = await call(owner, 'collection.create', { workspaceId: ws.id, name: 'Presence API' });
+  await call(owner, 'node.create', {
+    collectionId: col.id,
+    parentId: null,
+    name: 'Watched request',
+    data: { kind: 'request', method: 'GET', url: 'https://example.com' },
+  });
+  const invite = (await call(owner, 'members.invite', {
+    workspaceId: ws.id,
+    role: 'viewer',
+  })) as unknown as { token: string };
+
+  const otherContext = await browser.newContext();
+  const other = await otherContext.newPage();
+  await other.request.post(`${base}/api/v1/auth/register`, {
+    data: {
+      username: 'hana',
+      password: 'hana-password',
+      displayName: 'Hana Lee',
+      invite: invite.token,
+    },
+  });
+  for (const page of [owner, other]) {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: 'Workspace' }).click();
+    await page.getByRole('option', { name: 'Presence' }).click();
+  }
+  await other.getByRole('treeitem', { name: /Watched request/ }).click();
+
+  await expect(owner.getByRole('img', { name: 'Also here: Hana Lee' })).toBeVisible();
+  await expect(
+    owner.getByRole('treeitem', { name: /Watched request/ }).getByRole('img', { name: /Hana Lee/ }),
+  ).toBeVisible();
+
+  await otherContext.close();
+  await expect(owner.getByRole('img', { name: 'Also here: Hana Lee' })).toHaveCount(0);
+  await ownerContext.close();
+});

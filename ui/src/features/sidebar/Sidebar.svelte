@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
+  import Avatars from '$lib/ui/Avatars.svelte';
   import Icon from '$lib/ui/Icon.svelte';
   import IconButton from '$lib/ui/IconButton.svelte';
   import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
@@ -223,6 +224,7 @@
         options={ws.workspaces.map((w) => ({ value: w.id, label: w.name }))}
         onchange={(id) => void ws.selectWorkspace(id)}
       />
+      <Avatars people={services.presence.others} label={t('presence.here')} />
       <IconButton
         icon="more"
         label={t('workspace.menu')}
