@@ -38,6 +38,7 @@ ts-rs.workspace = true
 contract = []
 
 [dev-dependencies]
+proptest.workspace = true
 tempfile.workspace = true
 reqly-testserver.workspace = true
 

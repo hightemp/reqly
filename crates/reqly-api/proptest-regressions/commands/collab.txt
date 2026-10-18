@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 9300316cfabcee02fd18a2d1714af5f23ee0ca1631a3a20df111c037c961a7aa # shrinks to ops = [Delete { client: 1, at: 39, len: 2 }, Replace { text: "" }, Replace { text: "lnigf   " }, Insert { client: 0, at: 21, text: "é " }, Delete { client: 2, at: 17, len: 4 }, Replace { text: "mloe z " }, Replace { text: " h qy  l  " }, Replace { text: "b a tw wghz" }, Insert { client: 1, at: 21, text: "o  😀" }, Replace { text: " n p" }, Insert { client: 0, at: 12, text: "ossj" }, Delete { client: 2, at: 3, len: 4 }, Insert { client: 0, at: 3, text: " w " }, Insert { client: 2, at: 21, text: "sax😀" }, Delete { client: 1, at: 23, len: 3 }, Insert { client: 2, at: 13, text: "écn😀" }, Insert { client: 1, at: 20, text: "h😀😀 " }, Replace { text: "    jw f q " }], seed = 7573835129854959636
+cc f35172f5cce0fdc1d5c487cf0bc422438e024652481536a0097c164967e2fd2d # shrinks to ops = [Insert { client: 0, at: 0, text: "é" }, Replace { text: "" }, Insert { client: 1, at: 5, text: "😀" }, Insert { client: 1, at: 5, text: "a" }, Insert { client: 1, at: 0, text: "a" }], seed = 335621097525576143

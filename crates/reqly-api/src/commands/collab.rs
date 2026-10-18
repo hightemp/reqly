@@ -447,6 +447,136 @@ mod tests {
         assert!(replace_text(&server, &text, "https://v2/users/1").is_none());
     }
 
+    mod converge {
+        use proptest::prelude::*;
+
+        use super::*;
+
+        #[derive(Debug, Clone)]
+        enum Op {
+            Insert {
+                client: usize,
+                at: usize,
+                text: String,
+            },
+            Delete {
+                client: usize,
+                at: usize,
+                len: usize,
+            },
+            /// The server replaces the text (a change made another way).
+            Replace { text: String },
+        }
+
+        fn op() -> impl Strategy<Value = Op> {
+            prop_oneof![
+                (0..3usize, 0..40usize, "[a-zé😀 ]{1,4}")
+                    .prop_map(|(client, at, text)| Op::Insert { client, at, text }),
+                (0..3usize, 0..40usize, 1..5usize).prop_map(|(client, at, len)| Op::Delete {
+                    client,
+                    at,
+                    len
+                }),
+                "[a-z ]{0,12}".prop_map(|text| Op::Replace { text }),
+            ]
+        }
+
+        fn utf16_len(t: &TextRef, doc: &Doc) -> u32 {
+            t.get_string(&doc.transact()).encode_utf16().count() as u32
+        }
+
+        /// A character boundary at or before `at` (UTF-16 units).
+        fn boundary(s: &str, at: u32) -> u32 {
+            let mut pos = 0;
+            for c in s.chars() {
+                let next = pos + c.len_utf16() as u32;
+                if next > at {
+                    break;
+                }
+                pos = next;
+            }
+            pos
+        }
+
+        proptest! {
+            #![proptest_config(ProptestConfig::with_cases(64))]
+            /// Clients edit concurrently, updates arrive late and in a
+            /// shuffled order, the server rewrites the text in between:
+            /// everyone ends with the same text.
+            #[test]
+            fn concurrent_edits_converge(ops in prop::collection::vec(op(), 1..30), seed in any::<u64>()) {
+                let (server, stext) = new_doc("start");
+                let full = server.transact().encode_state_as_update_v1(&StateVector::default());
+                let clients: Vec<(Doc, TextRef)> = (0..3)
+                    .map(|_| {
+                        let doc = Doc::with_options(Options { offset_kind: OffsetKind::Utf16, ..Options::default() });
+                        let t = doc.get_or_insert_text("t");
+                        apply(&doc, &full);
+                        (doc, t)
+                    })
+                    .collect();
+                // Updates in flight to each client and to the server, with
+                // their sender (3 = server).
+                let mut inbox: Vec<Vec<(usize, Vec<u8>)>> = vec![Vec::new(); 4];
+                for op in ops {
+                    match op {
+                        Op::Insert { client, at, text } => {
+                            let (doc, t) = &clients[client];
+                            let s = t.get_string(&doc.transact());
+                            let at = boundary(&s, (at as u32).min(utf16_len(t, doc)));
+                            let before = doc.transact().state_vector();
+                            t.insert(&mut doc.transact_mut(), at, &text);
+                            let u = doc.transact().encode_state_as_update_v1(&before);
+                            for (i, b) in inbox.iter_mut().enumerate() {
+                                if i != client { b.push((client, u.clone())); }
+                            }
+                        }
+                        Op::Delete { client, at, len } => {
+                            let (doc, t) = &clients[client];
+                            let s = t.get_string(&doc.transact());
+                            let total = utf16_len(t, doc);
+                            let from = boundary(&s, (at as u32).min(total));
+                            let to = boundary(&s, (from + len as u32).min(total));
+                            if to <= from { continue; }
+                            let before = doc.transact().state_vector();
+                            t.remove_range(&mut doc.transact_mut(), from, to - from);
+                            let u = doc.transact().encode_state_as_update_v1(&before);
+                            for (i, b) in inbox.iter_mut().enumerate() {
+                                if i != client { b.push((client, u.clone())); }
+                            }
+                        }
+                        Op::Replace { text } => {
+                            // The server first takes what reached it.
+                            for (_, u) in std::mem::take(&mut inbox[3]) { apply(&server, &u); }
+                            if let Some(u) = replace_text(&server, &stext, &text) {
+                                for b in inbox.iter_mut().take(3) { b.push((3, u.clone())); }
+                            }
+                        }
+                    }
+                }
+                // Deliver everything, interleaving senders at random. Each
+                // sender's updates keep their order, as over HTTP and the
+                // WebSocket (the client sends one update after another).
+                let mut rng = seed;
+                for (i, updates) in inbox.into_iter().enumerate() {
+                    let mut streams: Vec<std::collections::VecDeque<Vec<u8>>> = vec![Default::default(); 4];
+                    for (from, u) in updates { streams[from].push_back(u); }
+                    let target = if i == 3 { &server } else { &clients[i].0 };
+                    while streams.iter().any(|q| !q.is_empty()) {
+                        rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
+                        let open: Vec<usize> = (0..4).filter(|&k| !streams[k].is_empty()).collect();
+                        let from = open[(rng >> 33) as usize % open.len()];
+                        apply(target, &streams[from].pop_front().unwrap());
+                    }
+                }
+                let expected = stext.get_string(&server.transact());
+                for (doc, t) in &clients {
+                    prop_assert_eq!(t.get_string(&doc.transact()), expected.clone());
+                }
+            }
+        }
+    }
+
     #[test]
     fn replaces_with_utf16_offsets() {
         let (doc, text) = new_doc("😀 a");
