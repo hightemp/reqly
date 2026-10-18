@@ -478,3 +478,4 @@
 - [ ] **B3** Прокси из настроек (manual, system, no proxy) для WebSocket и gRPC: HTTP CONNECT и SOCKS5, исключения `noProxy`; сейчас прокси действует только на HTTP и SSE.
   - **Тесты:** WS и gRPC через тестовый прокси.
 - [ ] **B4** Импорт WebSocket- и gRPC-запросов из Bruno (сейчас попадают в отчёт как неподдерживаемые).
+- [ ] **B5** Автодополнение в редакторе скриптов на основе d.ts и TypeScript language service: вывод типов своих переменных, подсказки по API библиотек (chai, lodash, moment, crypto-js).
