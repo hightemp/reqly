@@ -863,11 +863,19 @@ pub async fn export_data(
             .collect();
     }
     if options.history {
-        let history = HistoryRepo::new(&ctx.storage, ctx.clock.as_ref());
         let mut ids = Vec::new();
         for c in &data.collections {
             request_ids(&c.items, &mut ids);
         }
+        // What the caller may see of the workspace's history.
+        let ws = match ids.iter().find_map(|id| id.parse::<Id>().ok()) {
+            Some(id) => super::http::workspace_of_request(ctx, id).await.ok(),
+            None => None,
+        };
+        let history = match ws {
+            Some(ws) => super::http::history(ctx, ws).await?,
+            None => HistoryRepo::new(&ctx.storage, ctx.clock.as_ref()),
+        };
         for id in ids {
             let Ok(request_id) = id.parse::<Id>() else {
                 continue;

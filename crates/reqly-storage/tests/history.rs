@@ -137,3 +137,52 @@ async fn workspace_log_is_searchable() {
     );
     let _ = Timestamp(0);
 }
+
+#[tokio::test]
+async fn private_history_shows_each_user_their_own() {
+    let (s, clock) = setup().await;
+    let (ann, bob) = (Id::new(), Id::new());
+    let req = Id::new();
+    let old = HistoryRepo::new(&s, &clock)
+        .insert(record(req, 1, &"a".repeat(64)))
+        .await
+        .unwrap();
+    let mine = HistoryRepo::new(&s, &clock)
+        .for_user(Some(ann), true)
+        .insert(record(req, 1, &"b".repeat(64)))
+        .await
+        .unwrap();
+    let theirs = HistoryRepo::new(&s, &clock)
+        .for_user(Some(bob), true)
+        .insert(record(req, 1, &"c".repeat(64)))
+        .await
+        .unwrap();
+
+    let ann_private = HistoryRepo::new(&s, &clock).for_user(Some(ann), true);
+    let ids: Vec<Id> = ann_private
+        .list_for_request(req, 10)
+        .await
+        .unwrap()
+        .iter()
+        .map(|r| r.id)
+        .collect();
+    assert_eq!(ids.len(), 2);
+    assert!(ids.contains(&mine.id) && ids.contains(&old.id));
+    assert_eq!(
+        ann_private.get(theirs.id).await.unwrap_err().code,
+        "not_found"
+    );
+    ann_private.delete(&[theirs.id]).await.unwrap();
+    ann_private.clear_for_requests(&[req]).await.unwrap();
+
+    // Shared history (and single-user setups) show everything left.
+    let shared = HistoryRepo::new(&s, &clock).for_user(Some(ann), false);
+    let left: Vec<Id> = shared
+        .list_for_request(req, 10)
+        .await
+        .unwrap()
+        .iter()
+        .map(|r| r.id)
+        .collect();
+    assert_eq!(left, [theirs.id]);
+}

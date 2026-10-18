@@ -14,7 +14,6 @@ use reqly_core::model::{
 use reqly_core::{CoreError, CoreResult, Id};
 use reqly_storage::cookies::CookieRepo;
 use reqly_storage::environments::EnvironmentRepo;
-use reqly_storage::history::HistoryRepo;
 use reqly_storage::settings::SettingsRepo;
 use reqly_storage::tree::TreeRepo;
 use reqly_template::ast::{Expr, Segment};
@@ -405,7 +404,16 @@ impl SendHost<'_> {
             _ => None,
         });
 
-        let history = HistoryRepo::new(&self.ctx.storage, self.ctx.clock.as_ref());
+        // The request may be in another workspace: only one the caller is in.
+        let ws = super::http::workspace_of_request(self.ctx, request_id).await?;
+        let caller = crate::access::current();
+        if crate::access::role_in(&self.ctx.storage, caller, ws)
+            .await?
+            .is_none()
+        {
+            return Err(CoreError::not_found("request", request_id));
+        }
+        let history = super::http::history(self.ctx, ws).await?;
         let latest = history
             .list_for_request(request_id, 1)
             .await?

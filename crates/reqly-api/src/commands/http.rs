@@ -15,6 +15,7 @@ use reqly_http::prepare::{PreparedBody, PreparedRequest, prepare_with_base};
 use reqly_http::snapshot::RequestSnapshot;
 use reqly_storage::cookies::{Cookie, CookieRepo};
 use reqly_storage::history::{HistoryLimits, HistoryRepo, NewResponse};
+use reqly_storage::settings::SettingsRepo;
 use reqly_storage::tree::TreeRepo;
 use reqly_template::{RenderOptions, Renderer};
 use serde::{Deserialize, Serialize};
@@ -36,6 +37,8 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<ResponseDelete>()
         .register::<HistoryClear>()
         .register::<HistoryWorkspace>()
+        .register::<HistorySharingGet>()
+        .register::<HistorySharingSet>()
         .register::<CookiesList>()
         .register::<CookiesUpsert>()
         .register::<CookiesDelete>()
@@ -459,7 +462,8 @@ async fn script_failure(
     let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
     let workspace_id = tree.get_collection(node.collection_id).await?.workspace_id;
     let (method, url) = node.data.method_and_url();
-    let record = HistoryRepo::new(&ctx.storage, ctx.clock.as_ref())
+    let record = history(ctx, workspace_id)
+        .await?
         .insert(NewResponse {
             request_id: node.meta.id,
             workspace_id,
@@ -594,7 +598,7 @@ pub async fn send_request_with(
         None => reqly_http::engine::execute(prepared, options, cancel, Some(progress)).await,
     };
 
-    let history = HistoryRepo::new(&ctx.storage, ctx.clock.as_ref());
+    let history = history(ctx, workspace_id).await?;
     let record = match result {
         Ok(res) => {
             let HttpResponse {
@@ -832,8 +836,40 @@ pub struct HistoryWorkspaceInput {
     pub limit: Option<u32>,
 }
 
-fn history(ctx: &AppContext) -> HistoryRepo<'_> {
-    HistoryRepo::new(&ctx.storage, ctx.clock.as_ref())
+/// Whether the members of a workspace see each other's history (T7.2.5);
+/// a workspace setting, not a user's.
+pub fn history_shared_key(workspace_id: Id) -> String {
+    format!("workspace.historyShared.{workspace_id}")
+}
+
+/// The history of a workspace as the caller sees it: on a multi-user server
+/// only their own records unless the workspace shares its history.
+pub(crate) async fn history(ctx: &AppContext, workspace_id: Id) -> CoreResult<HistoryRepo<'_>> {
+    let user = crate::access::current().user_id();
+    let shared = match user {
+        None => true,
+        Some(_) => SettingsRepo::new(&ctx.storage)
+            .get(&history_shared_key(workspace_id))
+            .await?
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
+    };
+    Ok(HistoryRepo::new(&ctx.storage, ctx.clock.as_ref()).for_user(user, !shared))
+}
+
+pub(crate) async fn workspace_of_request(ctx: &AppContext, request_id: Id) -> CoreResult<Id> {
+    let tree = TreeRepo::new(&ctx.storage, ctx.clock.as_ref());
+    let node = tree.get_node(request_id).await?;
+    Ok(tree.get_collection(node.collection_id).await?.workspace_id)
+}
+
+/// A record the caller may see.
+async fn visible_record(ctx: &AppContext, id: Id) -> CoreResult<ResponseRecord> {
+    let ws = HistoryRepo::new(&ctx.storage, ctx.clock.as_ref())
+        .get(id)
+        .await?
+        .workspace_id;
+    history(ctx, ws).await?.get(id).await
 }
 
 command!(
@@ -842,7 +878,9 @@ command!(
     ResponseListInput,
     Vec<ResponseSummary>,
     |ctx, input| {
-        history(ctx)
+        let ws = workspace_of_request(ctx, input.request_id).await?;
+        history(ctx, ws)
+            .await?
             .list_for_request(input.request_id, input.limit.unwrap_or(100))
             .await
     }
@@ -853,7 +891,7 @@ command!(
     "response.get",
     IdInput,
     ResponseRecord,
-    |ctx, input| { history(ctx).get(input.id).await }
+    |ctx, input| { visible_record(ctx, input.id).await }
 );
 
 command!(
@@ -865,7 +903,7 @@ command!(
     ResponseBodyInput,
     ResponseBodyChunkOutput,
     |ctx, input| {
-        let record = history(ctx).get(input.id).await?;
+        let record = visible_record(ctx, input.id).await?;
         let Some(hash) = record.body_hash else {
             return Ok(ResponseBodyChunkOutput {
                 base64: String::new(),
@@ -902,7 +940,7 @@ command!(
         if ctx.platform != super::Platform::Desktop && ctx.platform != super::Platform::Test {
             return Err(CoreError::new("command.unavailable", "only available in the desktop app"));
         }
-        let record = history(ctx).get(input.id).await?;
+        let record = visible_record(ctx, input.id).await?;
         let write_err = |e: std::io::Error| {
             CoreError::new("file.write", e.to_string()).with_param("path", input.path.clone())
         };
@@ -940,7 +978,7 @@ command!(
     ResponseFilterInput,
     ResponseFilterOutput,
     |ctx, input| {
-        let record = history(ctx).get(input.id).await?;
+        let record = visible_record(ctx, input.id).await?;
         let Some(hash) = record.body_hash else {
             return Ok(ResponseFilterOutput { result: String::new() });
         };
@@ -978,7 +1016,9 @@ command!(
     CleanupOutput,
     |ctx, _input| {
         let limits: HistoryLimitSettings = setting(ctx, HISTORY_LIMITS_KEY).await?;
-        let removed_history = history(ctx).enforce_limits(&limits.into()).await?;
+        let removed_history = HistoryRepo::new(&ctx.storage, ctx.clock.as_ref())
+            .enforce_limits(&limits.into())
+            .await?;
         let cutoff = reqly_core::Timestamp(ctx.clock.now().0 - TRASH_RETENTION_MS);
         let removed_trash = TreeRepo::new(&ctx.storage, ctx.clock.as_ref()).purge_deleted_before(cutoff).await?;
         let removed_blobs = collect_garbage(ctx).await?;
@@ -992,7 +1032,15 @@ command!(
     IdsInput,
     Empty,
     |ctx, input| {
-        history(ctx).delete(&input.ids).await?;
+        for id in input.ids {
+            let Ok(record) = visible_record(ctx, id).await else {
+                continue;
+            };
+            history(ctx, record.workspace_id)
+                .await?
+                .delete(&[id])
+                .await?;
+        }
         collect_garbage(ctx).await?;
         Ok(Empty {})
     }
@@ -1026,7 +1074,10 @@ command!(
                 }
             }
         }
-        history(ctx).clear_for_requests(&request_ids).await?;
+        if let Some(&first) = request_ids.first() {
+            let ws = workspace_of_request(ctx, first).await?;
+            history(ctx, ws).await?.clear_for_requests(&request_ids).await?;
+        }
         collect_garbage(ctx).await?;
         Ok(Empty {})
     }
@@ -1038,13 +1089,65 @@ command!(
     HistoryWorkspaceInput,
     Vec<ResponseSummary>,
     |ctx, input| {
-        history(ctx)
+        history(ctx, input.workspace_id)
+            .await?
             .list_for_workspace(
                 input.workspace_id,
                 input.filter.as_deref(),
                 input.limit.unwrap_or(200),
             )
             .await
+    }
+);
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct HistorySharing {
+    /// Members see each other's responses (default: each their own).
+    pub shared: bool,
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct HistorySharingInput {
+    pub workspace_id: Id,
+    #[ts(optional)]
+    pub shared: Option<bool>,
+}
+
+command!(
+    HistorySharingGet,
+    "history.sharing",
+    HistorySharingInput,
+    HistorySharing,
+    |ctx, input| {
+        let shared = SettingsRepo::new(&ctx.storage)
+            .get(&history_shared_key(input.workspace_id))
+            .await?
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        Ok(HistorySharing { shared })
+    }
+);
+
+command!(
+    /// Shares the workspace's response history between members, or not.
+    HistorySharingSet,
+    "history.setSharing",
+    HistorySharingInput,
+    HistorySharing,
+    |ctx, input| {
+        let shared = input.shared.unwrap_or(false);
+        SettingsRepo::new(&ctx.storage)
+            .set(
+                &history_shared_key(input.workspace_id),
+                &serde_json::Value::Bool(shared),
+                ctx.clock.as_ref(),
+            )
+            .await?;
+        Ok(HistorySharing { shared })
     }
 );
 

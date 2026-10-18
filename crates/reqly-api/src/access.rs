@@ -129,6 +129,7 @@ pub const RULES: &[(&str, Need)] = {
         ("response.filter", Read),
         ("response.saveBody", Read),
         ("history.workspace", Read),
+        ("history.sharing", Read),
         ("cookies.list", Read),
         ("environment.list", Read),
         // The active environment is a setting of the caller.
@@ -187,6 +188,7 @@ pub const RULES: &[(&str, Need)] = {
         ("workspace.delete", Manage),
         ("members.set", Manage),
         ("members.remove", Manage),
+        ("history.setSharing", Manage),
         ("members.invite", Manage),
         ("members.invites", Manage),
         ("members.revokeInvite", Manage),

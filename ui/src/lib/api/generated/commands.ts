@@ -50,6 +50,8 @@ import type { GraphqlSchemaOutput } from "./GraphqlSchemaOutput";
 import type { GraphqlSchemaSetInput } from "./GraphqlSchemaSetInput";
 import type { GrpcDescribeInput } from "./GrpcDescribeInput";
 import type { GrpcServiceInfo } from "./GrpcServiceInfo";
+import type { HistorySharing } from "./HistorySharing";
+import type { HistorySharingInput } from "./HistorySharingInput";
 import type { HistoryWorkspaceInput } from "./HistoryWorkspaceInput";
 import type { IdInput } from "./IdInput";
 import type { IdsInput } from "./IdsInput";
@@ -157,6 +159,8 @@ export type Commands = {
   "response.delete": { input: IdsInput; output: Empty };
   "history.clear": { input: IdsInput; output: Empty };
   "history.workspace": { input: HistoryWorkspaceInput; output: Array<ResponseSummary> };
+  "history.sharing": { input: HistorySharingInput; output: HistorySharing };
+  "history.setSharing": { input: HistorySharingInput; output: HistorySharing };
   "cookies.list": { input: WorkspaceIdInput; output: Array<Cookie> };
   "cookies.upsert": { input: CookieUpsertInput; output: Empty };
   "cookies.delete": { input: CookieDeleteInput; output: Empty };

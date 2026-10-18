@@ -655,3 +655,102 @@ async fn presence_follows_tabs() {
     assert_eq!(last["people"].as_array().unwrap().len(), 1);
     assert_eq!(last["people"][0]["name"], "viewer");
 }
+
+#[tokio::test]
+async fn response_history_is_private_unless_shared() {
+    let fx = Fx::new().await;
+    let sent = fx
+        .call(fx.owner, "request.send", json!({ "requestId": fx.req }))
+        .await;
+    // Port 9 refuses: the error is recorded like a response.
+    let _ = sent;
+    let list = |caller| fx.ok(caller, "response.list", json!({ "requestId": fx.req }));
+    let mine = list(fx.owner).await;
+    assert_eq!(mine.as_array().unwrap().len(), 1);
+    let record = mine[0]["id"].clone();
+    assert_eq!(list(fx.editor).await, json!([]));
+    assert_eq!(
+        fx.code(fx.editor, "response.get", json!({ "id": record }))
+            .await,
+        "not_found"
+    );
+    let log = fx
+        .ok(
+            fx.editor,
+            "history.workspace",
+            json!({ "workspaceId": fx.ws }),
+        )
+        .await;
+    assert_eq!(log, json!([]));
+
+    assert_eq!(
+        fx.code(
+            fx.editor,
+            "history.setSharing",
+            json!({ "workspaceId": fx.ws, "shared": true })
+        )
+        .await,
+        "access.denied"
+    );
+    fx.ok(
+        fx.owner,
+        "history.setSharing",
+        json!({ "workspaceId": fx.ws, "shared": true }),
+    )
+    .await;
+    assert_eq!(list(fx.editor).await.as_array().unwrap().len(), 1);
+    fx.ok(fx.editor, "response.get", json!({ "id": record }))
+        .await;
+    let sharing = fx
+        .ok(
+            fx.viewer,
+            "history.sharing",
+            json!({ "workspaceId": fx.ws }),
+        )
+        .await;
+    assert_eq!(sharing["shared"], true);
+}
+
+#[tokio::test]
+async fn response_tags_stay_in_the_callers_workspaces() {
+    let fx = Fx::new().await;
+    let own = fx
+        .ok(fx.outsider, "workspace.ensureDefault", json!({}))
+        .await[0]["id"]
+        .clone();
+    let col = fx
+        .ok(
+            fx.outsider,
+            "collection.list",
+            json!({ "workspaceId": own }),
+        )
+        .await[0]["id"]
+        .clone();
+    let text = format!(
+        "{{% response 'body', '{}', 'b64::JC5h::46b', 'always' %}}",
+        fx.req.as_str().unwrap()
+    );
+    let out = fx
+        .call(
+            fx.outsider,
+            "template.preview",
+            json!({ "collectionId": col, "text": text }),
+        )
+        .await;
+    let rendered = format!("{out:?}");
+    assert!(
+        rendered.contains("not_found") || rendered.contains("NotFound"),
+        "{rendered}"
+    );
+    // Nothing was sent on the other workspace's behalf.
+    fx.ok(
+        fx.owner,
+        "history.setSharing",
+        json!({ "workspaceId": fx.ws, "shared": true }),
+    )
+    .await;
+    let none = fx
+        .ok(fx.owner, "response.list", json!({ "requestId": fx.req }))
+        .await;
+    assert_eq!(none, json!([]));
+}

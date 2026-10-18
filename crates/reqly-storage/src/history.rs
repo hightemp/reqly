@@ -56,7 +56,14 @@ impl Default for HistoryLimits {
 pub struct HistoryRepo<'a> {
     storage: &'a Storage,
     clock: &'a dyn Clock,
+    /// Recorded as the sender of new records.
+    author: Option<Id>,
+    /// Private history: only this user's records (and ones without a user).
+    viewer: Option<Id>,
 }
+
+/// SQL condition for the viewer (two binds: the viewer id twice).
+const VISIBLE: &str = "(? IS NULL OR user_id IS NULL OR user_id = ?)";
 
 fn json<T: serde::de::DeserializeOwned>(row: &SqliteRow, col: &str) -> CoreResult<T> {
     serde_json::from_str(row.get(col)).map_err(db_err)
@@ -118,7 +125,24 @@ const SUMMARY_COLUMNS: &str =
 
 impl<'a> HistoryRepo<'a> {
     pub fn new(storage: &'a Storage, clock: &'a dyn Clock) -> Self {
-        Self { storage, clock }
+        Self {
+            storage,
+            clock,
+            author: None,
+            viewer: None,
+        }
+    }
+
+    /// Records new responses as sent by `user`; with `private`, reads only
+    /// show that user's records.
+    pub fn for_user(mut self, user: Option<Id>, private: bool) -> Self {
+        self.author = user;
+        self.viewer = user.filter(|_| private);
+        self
+    }
+
+    fn viewer(&self) -> Option<String> {
+        self.viewer.map(|id| id.to_string())
     }
 
     pub async fn insert(&self, r: NewResponse) -> CoreResult<ResponseRecord> {
@@ -140,8 +164,8 @@ impl<'a> HistoryRepo<'a> {
             "INSERT INTO response_records (id, request_id, workspace_id, created_at, status, \
              status_text, http_version, headers, body_hash, body_size, headers_size, content_type, \
              timings, timeline, request_snapshot, redirects, final_url, remote_addr, error, method, url, \
-             script_logs, tests) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             script_logs, tests, user_id) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(id.to_string())
         .bind(r.request_id.to_string())
@@ -166,6 +190,7 @@ impl<'a> HistoryRepo<'a> {
         .bind(url)
         .bind(if r.script_logs.is_null() { "[]".to_string() } else { r.script_logs.to_string() })
         .bind(if r.tests.is_null() { "[]".to_string() } else { r.tests.to_string() })
+        .bind(self.author.map(|id| id.to_string()))
         .execute(self.storage.pool())
         .await
         .map_err(db_err)?;
@@ -173,12 +198,16 @@ impl<'a> HistoryRepo<'a> {
     }
 
     pub async fn get(&self, id: Id) -> CoreResult<ResponseRecord> {
-        let row = sqlx::query("SELECT * FROM response_records WHERE id = ?")
-            .bind(id.to_string())
-            .fetch_optional(self.storage.pool())
-            .await
-            .map_err(db_err)?
-            .ok_or_else(|| CoreError::not_found("response", id))?;
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "SELECT * FROM response_records WHERE id = ? AND {VISIBLE}"
+        )))
+        .bind(id.to_string())
+        .bind(self.viewer())
+        .bind(self.viewer())
+        .fetch_optional(self.storage.pool())
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| CoreError::not_found("response", id))?;
         record_from_row(&row)
     }
 
@@ -189,10 +218,12 @@ impl<'a> HistoryRepo<'a> {
         limit: u32,
     ) -> CoreResult<Vec<ResponseSummary>> {
         let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-            "SELECT {SUMMARY_COLUMNS} FROM response_records WHERE request_id = ? \
+            "SELECT {SUMMARY_COLUMNS} FROM response_records WHERE request_id = ? AND {VISIBLE} \
              ORDER BY created_at DESC, id DESC LIMIT ?"
         )))
         .bind(request_id.to_string())
+        .bind(self.viewer())
+        .bind(self.viewer())
         .bind(i64::from(limit))
         .fetch_all(self.storage.pool())
         .await
@@ -209,11 +240,13 @@ impl<'a> HistoryRepo<'a> {
     ) -> CoreResult<Vec<ResponseSummary>> {
         let pattern = filter.map(|f| format!("%{}%", f.replace('%', "\\%").replace('_', "\\_")));
         let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-            "SELECT {SUMMARY_COLUMNS} FROM response_records WHERE workspace_id = ? \
+            "SELECT {SUMMARY_COLUMNS} FROM response_records WHERE workspace_id = ? AND {VISIBLE} \
              AND (? IS NULL OR url LIKE ? ESCAPE '\\' OR method LIKE ? ESCAPE '\\') \
              ORDER BY created_at DESC, id DESC LIMIT ?"
         )))
         .bind(workspace_id.to_string())
+        .bind(self.viewer())
+        .bind(self.viewer())
         .bind(&pattern)
         .bind(&pattern)
         .bind(&pattern)
@@ -226,22 +259,30 @@ impl<'a> HistoryRepo<'a> {
 
     pub async fn delete(&self, ids: &[Id]) -> CoreResult<()> {
         for id in ids {
-            sqlx::query("DELETE FROM response_records WHERE id = ?")
-                .bind(id.to_string())
-                .execute(self.storage.pool())
-                .await
-                .map_err(db_err)?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DELETE FROM response_records WHERE id = ? AND {VISIBLE}"
+            )))
+            .bind(id.to_string())
+            .bind(self.viewer())
+            .bind(self.viewer())
+            .execute(self.storage.pool())
+            .await
+            .map_err(db_err)?;
         }
         Ok(())
     }
 
     pub async fn clear_for_requests(&self, request_ids: &[Id]) -> CoreResult<()> {
         for id in request_ids {
-            sqlx::query("DELETE FROM response_records WHERE request_id = ?")
-                .bind(id.to_string())
-                .execute(self.storage.pool())
-                .await
-                .map_err(db_err)?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "DELETE FROM response_records WHERE request_id = ? AND {VISIBLE}"
+            )))
+            .bind(id.to_string())
+            .bind(self.viewer())
+            .bind(self.viewer())
+            .execute(self.storage.pool())
+            .await
+            .map_err(db_err)?;
         }
         Ok(())
     }
