@@ -12,14 +12,27 @@ pub struct Event {
     pub topic: String,
     #[ts(type = "unknown")]
     pub payload: Value,
+    /// The user whose command caused the event (multi-user server); decides
+    /// who receives it (see [`crate::access::event_visible`]). Not sent.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub actor: Option<reqly_core::Id>,
 }
 
 impl Event {
+    /// An event caused by the current caller.
     pub fn new(topic: impl Into<String>, payload: impl Serialize) -> Self {
         Self {
             topic: topic.into(),
             payload: serde_json::to_value(payload).unwrap_or(Value::Null),
+            actor: crate::access::current().user_id(),
         }
+    }
+
+    /// For events published outside the caller's task (stream readers).
+    pub fn by(mut self, actor: Option<reqly_core::Id>) -> Self {
+        self.actor = actor;
+        self
     }
 }
 

@@ -310,6 +310,48 @@ pub async fn authorize(
     Ok(())
 }
 
+/// Events about shared workspace content; everyone in the workspace gets
+/// them. Other events go only to the user who caused them, except
+/// `workspaces.changed`, which carries nothing and asks every client to
+/// reload its list.
+const SHARED_EVENTS: &[&str] = &[
+    "tree.changed",
+    "collections.changed",
+    "environments.changed",
+    "cookies.changed",
+    "variables.runtimeChanged",
+];
+
+/// Whether `caller` may receive `event`. `member_of` holds the caller's
+/// workspaces (ignored for local callers and administrators).
+pub async fn event_visible(
+    storage: &Storage,
+    caller: Caller,
+    member_of: &std::collections::HashSet<Id>,
+    event: &crate::Event,
+) -> bool {
+    let Caller::User { id, admin } = caller else {
+        return true;
+    };
+    if event.topic == "workspaces.changed" {
+        return true;
+    }
+    if !SHARED_EVENTS.contains(&event.topic.as_str()) {
+        return event.actor == Some(id);
+    }
+    if admin {
+        return true;
+    }
+    let Ok(ids) = input_ids(&event.payload) else {
+        return false;
+    };
+    let ids: Vec<Id> = ids.into_iter().collect();
+    match workspaces_of_ids(storage, &ids).await {
+        Ok(found) => !found.is_empty() && found.values().all(|ws| member_of.contains(ws)),
+        Err(_) => false,
+    }
+}
+
 /// The settings key for the caller: users keep their own settings.
 pub fn settings_key(key: &str) -> String {
     match current() {

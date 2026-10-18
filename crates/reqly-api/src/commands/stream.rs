@@ -157,7 +157,7 @@ impl Connection {
         if let Ok(mut info) = self.info.lock() {
             info.status = status;
             self.events
-                .publish(Event::new("stream.status", info.clone()));
+                .publish(Event::new("stream.status", info.clone()).by(self.owner));
         }
     }
 
@@ -190,14 +190,17 @@ impl Connection {
             log.push_back(message.clone());
         }
         let info = self.info();
-        self.events.publish(Event::new(
-            "stream.message",
-            StreamMessageEvent {
-                connection_id: info.connection_id,
-                request_id: info.request_id,
-                message,
-            },
-        ));
+        self.events.publish(
+            Event::new(
+                "stream.message",
+                StreamMessageEvent {
+                    connection_id: info.connection_id,
+                    request_id: info.request_id,
+                    message,
+                },
+            )
+            .by(self.owner),
+        );
     }
 
     fn info_message(&self, kind: &str, text: impl Into<String>) {

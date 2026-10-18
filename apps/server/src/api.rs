@@ -6,9 +6,12 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{any, get, post};
-use reqly_api::access::Caller;
+use std::collections::HashSet;
+
+use reqly_api::access::{Caller, event_visible};
 use reqly_api::commands::dispatch_as;
-use reqly_core::CoreError;
+use reqly_core::{CoreError, Id};
+use reqly_storage::users::MemberRepo;
 use serde_json::{Value, json};
 use tokio::sync::broadcast::error::RecvError;
 
@@ -59,13 +62,32 @@ async fn command(
     Ok(axum::Json(output))
 }
 
-async fn websocket(State(state): State<AppState>, ws: WebSocketUpgrade) -> Response {
-    ws.on_upgrade(move |socket| push_events(state, socket))
+async fn websocket(
+    State(state): State<AppState>,
+    caller: Option<Extension<Caller>>,
+    ws: WebSocketUpgrade,
+) -> Response {
+    let caller = caller.map(|Extension(c)| c).unwrap_or_default();
+    ws.on_upgrade(move |socket| push_events(state, caller, socket))
 }
 
-/// Pushes every core event to the socket until either side closes.
-async fn push_events(state: AppState, mut socket: WebSocket) {
+/// The workspaces of a user, for filtering events.
+async fn memberships(state: &AppState, caller: Caller) -> HashSet<Id> {
+    let Some(user) = caller.user_id() else {
+        return HashSet::new();
+    };
+    MemberRepo::new(&state.ctx.storage, state.ctx.clock.as_ref())
+        .workspaces_of(user)
+        .await
+        .map(|m| m.into_keys().collect())
+        .unwrap_or_default()
+}
+
+/// Pushes the core events the caller may see to the socket until either
+/// side closes (ADR-010).
+async fn push_events(state: AppState, caller: Caller, mut socket: WebSocket) {
     let mut events = state.ctx.events.subscribe();
+    let mut member_of = memberships(&state, caller).await;
     let hello = json!({ "type": "hello", "version": env!("CARGO_PKG_VERSION") });
     if socket
         .send(Message::Text(hello.to_string().into()))
@@ -78,6 +100,12 @@ async fn push_events(state: AppState, mut socket: WebSocket) {
         tokio::select! {
             event = events.recv() => match event {
                 Ok(event) => {
+                    if event.topic == "workspaces.changed" {
+                        member_of = memberships(&state, caller).await;
+                    }
+                    if !event_visible(&state.ctx.storage, caller, &member_of, &event).await {
+                        continue;
+                    }
                     let msg = json!({ "type": "event", "event": event });
                     if socket.send(Message::Text(msg.to_string().into())).await.is_err() {
                         break;

@@ -389,3 +389,116 @@ async fn admin_panel_shows_the_server() {
     assert_eq!(res.body["users"], 1);
     assert!(!res.body.to_string().contains("boss-password"));
 }
+
+type Socket =
+    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
+
+/// The topic of the next event, `None` when none arrives soon.
+async fn next_topic(ws: &mut Socket) -> Option<String> {
+    use futures::StreamExt;
+    match tokio::time::timeout(std::time::Duration::from_millis(500), ws.next()).await {
+        Ok(Some(Ok(msg))) => {
+            let v: Value = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+            Some(v["event"]["topic"].as_str().unwrap_or_default().to_string())
+        }
+        _ => None,
+    }
+}
+
+/// Events reach the members of the workspace they are about, and private
+/// events only the user who caused them.
+#[tokio::test]
+async fn websocket_events_follow_membership() {
+    use futures::StreamExt;
+    use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+
+    let state = state(Registration::Open).await;
+    let app = router(state.clone());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(axum::serve(listener, app.clone()).into_future());
+
+    let root = session(&app, "root", "root-password").await;
+    let bob = send(
+        &app,
+        json_post(
+            "/api/v1/auth/register",
+            json!({ "username": "bob", "password": "bob-password" }),
+        ),
+    )
+    .await
+    .cookie
+    .unwrap();
+    let ws_of = |cookie: &str| {
+        let cookie = cookie.to_string();
+        async move {
+            let mut req = format!("ws://{addr}/api/v1/ws")
+                .into_client_request()
+                .unwrap();
+            req.headers_mut()
+                .insert(header::COOKIE, cookie.parse().unwrap());
+            let (mut ws, _) = tokio_tungstenite::connect_async(req).await.unwrap();
+            ws.next().await.unwrap().unwrap(); // hello
+            ws
+        }
+    };
+    let mut root_ws = ws_of(&root).await;
+    let mut bob_ws = ws_of(&bob).await;
+
+    // Root's own workspace: Bob hears nothing but the workspace list change.
+    let ws = send(&app, cmd("workspace.ensureDefault", json!({}), &root)).await;
+    let ws_id = ws.body[0]["id"].clone();
+    let col = send(
+        &app,
+        cmd("collection.list", json!({ "workspaceId": ws_id }), &root),
+    )
+    .await
+    .body[0]["id"]
+        .clone();
+    while next_topic(&mut root_ws).await.is_some() {}
+    while next_topic(&mut bob_ws).await.is_some() {}
+
+    let create = json!({ "collectionId": col, "parentId": null, "name": "R",
+        "data": { "kind": "request", "method": "GET", "url": "http://x" } });
+    send(&app, cmd("node.create", create.clone(), &root)).await;
+    assert_eq!(
+        next_topic(&mut root_ws).await.as_deref(),
+        Some("tree.changed")
+    );
+    assert_eq!(next_topic(&mut bob_ws).await, None);
+
+    send(
+        &app,
+        cmd("settings.set", json!({ "key": "ui.x", "value": 1 }), &root),
+    )
+    .await;
+    assert_eq!(
+        next_topic(&mut root_ws).await.as_deref(),
+        Some("settings.changed")
+    );
+    assert_eq!(next_topic(&mut bob_ws).await, None);
+
+    // Once Bob is a member he gets the workspace's changes.
+    send(
+        &app,
+        cmd(
+            "members.set",
+            json!({ "workspaceId": ws_id, "username": "bob", "role": "viewer" }),
+            &root,
+        ),
+    )
+    .await;
+    assert_eq!(
+        next_topic(&mut bob_ws).await.as_deref(),
+        Some("workspaces.changed")
+    );
+    while next_topic(&mut root_ws).await.is_some() {}
+    send(&app, cmd("node.create", create, &root)).await;
+    assert_eq!(
+        next_topic(&mut bob_ws).await.as_deref(),
+        Some("tree.changed")
+    );
+
+    root_ws.close(None).await.unwrap();
+    bob_ws.close(None).await.unwrap();
+}
