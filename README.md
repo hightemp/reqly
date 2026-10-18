@@ -43,8 +43,9 @@ self-hosted web version served by a single Rust binary.
   Postman, HAR and cURL; code generation for 26 languages and libraries —
   see [docs/import-export.md](docs/import-export.md)
 - Command palette (`Ctrl+K`), request log, cookie manager, copy as cURL
-- Server mode: token login, SSRF protection for requests sent by the server,
-  Docker image
+- Server mode: token login or user accounts with workspace roles (owner,
+  editor, viewer) and API tokens — see [docs/server.md](docs/server.md);
+  SSRF protection for requests sent by the server, Docker image
 
 ## Run with Docker
 
@@ -64,8 +65,11 @@ environment variables:
 | `bind` | `REQLY_BIND` | `127.0.0.1:8484` | Listen address |
 | `data_dir` | `REQLY_DATA_DIR` | `.reqly-data` | Database and files |
 | `log` | `REQLY_LOG` | `info` | `tracing` filter |
-| `auth.mode` | `REQLY_AUTH_MODE` | `none` | `none` or `token` |
+| `auth.mode` | `REQLY_AUTH_MODE` | `none` | `none`, `token` or `multi` |
 | `auth.token` | `REQLY_AUTH_TOKEN` | — | Required for `token` (12+ chars) |
+| `auth.registration` | `REQLY_REGISTRATION` | `admin` | `multi`: `open`, `invite` or `admin` |
+| `auth.admin_username` | `REQLY_ADMIN_USERNAME` | — | `multi`: first administrator |
+| `auth.admin_password` | `REQLY_ADMIN_PASSWORD` | — | Its password (8+ chars) |
 | `auth.secure_cookie` | `REQLY_SECURE_COOKIE` | `false` | Set behind HTTPS |
 | `network.block_private` | `REQLY_BLOCK_PRIVATE` | `false` | Deny RFC 1918 targets |
 | `network.block_loopback` | `REQLY_BLOCK_LOOPBACK` | `false` | Deny 127.0.0.0/8 |

@@ -9,6 +9,17 @@ Ships in 0.7.0 together with stage 7.
 
 ### Added
 
+- Multi-user server (`REQLY_AUTH_MODE=multi`): user accounts with
+  argon2id passwords, open or administrator-only registration, the first
+  administrator from the environment or `reqly-server admin create`,
+  `reqly-server admin password` to reset a password, lockout after failed
+  sign-ins, personal API tokens (`Authorization: Bearer rq_…`)
+  (`docs/server.md`, ADR-010).
+- Workspace members with the roles owner, editor and viewer; every command
+  is authorized by the caller's role. Viewers get a view-only workspace.
+- Settings → Account: display name, password, API tokens; Workspace
+  actions → Members….
+- Per-user settings and active environments on a multi-user server.
 - Fake data from faker-js 10.6.0 with all of its functions and 76 locales,
   bundled and run in QuickJS (ADR-009, `docs/templates.md`).
 - Template arguments can be arrays and objects:

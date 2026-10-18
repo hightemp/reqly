@@ -31,8 +31,8 @@ commands added later without anyone remembering to add a check.
 Option 3, in `reqly-api` (`access.rs`), so it is tested without HTTP:
 
 - `Caller` is `Local` (desktop, `none` and `token` modes: full access) or
-  `User { id, admin }`. `Registry::dispatch` runs under `caller::scope`, a
-  `tokio::task_local`.
+  `User { id, admin }`. `commands::dispatch_as` runs a command under
+  `access::scope`, a `tokio::task_local`.
 - **Workspaces of a call.** Every top-level input field named `id`, `ids`,
   `*Id` or `*Ids` (and those of an export `scope`) is an entity id. Nested
   request data is not looked at: header rows carry ids of their own. Ids are random UUIDs, so one query
