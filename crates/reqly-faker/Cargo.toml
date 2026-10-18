@@ -1,0 +1,20 @@
+[package]
+name = "reqly-faker"
+description = "faker-js in an embedded QuickJS runtime for templates and scripts (ADR-009)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+rquickjs = { version = "0.14", features = ["loader", "parallel"] }
+serde.workspace = true
+serde_json.workspace = true
+
+# No bundled bindings for Android: generate them (needs libclang).
+[target.'cfg(target_os = "android")'.dependencies]
+rquickjs = { version = "0.14", features = ["bindgen"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,1612 @@
+{
+ "version": "10.6.0",
+ "locales": [
+  {
+   "code": "af_ZA",
+   "title": "Afrikaans (South Africa)",
+   "endonym": "Afrikaans (Suid-Afrika)"
+  },
+  {
+   "code": "ar",
+   "title": "Arabic",
+   "endonym": "اَلْعَرَبِيَّةُ"
+  },
+  {
+   "code": "az",
+   "title": "Azerbaijani",
+   "endonym": "azərbaycan dili"
+  },
+  {
+   "code": "bn_BD",
+   "title": "Bengali (Bangladesh)",
+   "endonym": "বাংলা (বাংলাদেশ)"
+  },
+  {
+   "code": "cs_CZ",
+   "title": "Czech (Czechia)",
+   "endonym": "čeština (Česká republika)"
+  },
+  {
+   "code": "cy",
+   "title": "Welsh",
+   "endonym": "Cymraeg"
+  },
+  {
+   "code": "da",
+   "title": "Danish",
+   "endonym": "Dansk"
+  },
+  {
+   "code": "de",
+   "title": "German",
+   "endonym": "Deutsch"
+  },
+  {
+   "code": "de_AT",
+   "title": "German (Austria)",
+   "endonym": "Deutsch (Österreich)"
+  },
+  {
+   "code": "de_CH",
+   "title": "German (Switzerland)",
+   "endonym": "Deutsch (Schweiz)"
+  },
+  {
+   "code": "dv",
+   "title": "Maldivian",
+   "endonym": "ދިވެހި"
+  },
+  {
+   "code": "el",
+   "title": "Greek",
+   "endonym": "Ελληνικά"
+  },
+  {
+   "code": "en",
+   "title": "English",
+   "endonym": "English"
+  },
+  {
+   "code": "en_AU",
+   "title": "English (Australia)",
+   "endonym": "English (Australia)"
+  },
+  {
+   "code": "en_AU_ocker",
+   "title": "English (Australia Ocker)",
+   "endonym": "English (Australia)"
+  },
+  {
+   "code": "en_BORK",
+   "title": "English (Bork)",
+   "endonym": "English (Bork)"
+  },
+  {
+   "code": "en_CA",
+   "title": "English (Canada)",
+   "endonym": "English (Canada)"
+  },
+  {
+   "code": "en_GB",
+   "title": "English (Great Britain)",
+   "endonym": "English (Great Britain)"
+  },
+  {
+   "code": "en_GH",
+   "title": "English (Ghana)",
+   "endonym": "English (Ghana)"
+  },
+  {
+   "code": "en_HK",
+   "title": "English (Hong Kong)",
+   "endonym": "English (Hong Kong)"
+  },
+  {
+   "code": "en_IE",
+   "title": "English (Ireland)",
+   "endonym": "English (Ireland)"
+  },
+  {
+   "code": "en_IN",
+   "title": "English (India)",
+   "endonym": "English (India)"
+  },
+  {
+   "code": "en_NG",
+   "title": "English (Nigeria)",
+   "endonym": "English (Nigeria)"
+  },
+  {
+   "code": "en_NP",
+   "title": "English (Nepal)",
+   "endonym": "English (Nepal)"
+  },
+  {
+   "code": "en_US",
+   "title": "English (United States)",
+   "endonym": "English (United States)"
+  },
+  {
+   "code": "en_ZA",
+   "title": "English (South Africa)",
+   "endonym": "English (South Africa)"
+  },
+  {
+   "code": "eo",
+   "title": "Esperanto",
+   "endonym": "Esperanto"
+  },
+  {
+   "code": "es",
+   "title": "Spanish",
+   "endonym": "Español"
+  },
+  {
+   "code": "es_MX",
+   "title": "Spanish (Mexico)",
+   "endonym": "Español (México)"
+  },
+  {
+   "code": "fa",
+   "title": "Farsi/Persian",
+   "endonym": "فارسی"
+  },
+  {
+   "code": "fi",
+   "title": "Finnish",
+   "endonym": "suomi"
+  },
+  {
+   "code": "fr",
+   "title": "French",
+   "endonym": "Français"
+  },
+  {
+   "code": "fr_BE",
+   "title": "French (Belgium)",
+   "endonym": "Français (Belgique)"
+  },
+  {
+   "code": "fr_CA",
+   "title": "French (Canada)",
+   "endonym": "Français (Canada)"
+  },
+  {
+   "code": "fr_CH",
+   "title": "French (Switzerland)",
+   "endonym": "Français (Suisse)"
+  },
+  {
+   "code": "fr_LU",
+   "title": "French (Luxembourg)",
+   "endonym": "Français (Luxembourg)"
+  },
+  {
+   "code": "fr_SN",
+   "title": "French (Senegal)",
+   "endonym": "Français (Sénégal)"
+  },
+  {
+   "code": "he",
+   "title": "Hebrew",
+   "endonym": "עברית"
+  },
+  {
+   "code": "hr",
+   "title": "Croatian",
+   "endonym": "Hrvatski"
+  },
+  {
+   "code": "hu",
+   "title": "Hungarian",
+   "endonym": "magyar"
+  },
+  {
+   "code": "hy",
+   "title": "Armenian",
+   "endonym": "Հայերեն"
+  },
+  {
+   "code": "id_ID",
+   "title": "Indonesian (Indonesia)",
+   "endonym": "Bahasa Indonesia (Indonesia)"
+  },
+  {
+   "code": "it",
+   "title": "Italian",
+   "endonym": "Italiano"
+  },
+  {
+   "code": "ja",
+   "title": "Japanese",
+   "endonym": "日本語"
+  },
+  {
+   "code": "ka_GE",
+   "title": "Georgian (Georgia)",
+   "endonym": "ქართული (საქართველო)"
+  },
+  {
+   "code": "ko",
+   "title": "Korean",
+   "endonym": "한국어"
+  },
+  {
+   "code": "ku_ckb",
+   "title": "Kurdish (Sorani)",
+   "endonym": "کوردی (سۆرانی)"
+  },
+  {
+   "code": "ku_kmr_latin",
+   "title": "Kurdish (Kurmanji, Latin)",
+   "endonym": "Kurdî (Kurmancî)"
+  },
+  {
+   "code": "lv",
+   "title": "Latvian",
+   "endonym": "latviešu valoda"
+  },
+  {
+   "code": "mk",
+   "title": "Macedonian",
+   "endonym": "македонски јазик"
+  },
+  {
+   "code": "mn_MN_cyrl",
+   "title": "Mongolian (Mongolia, Cyrillic)",
+   "endonym": "Монгол (Монгол Улс, Кирилл)"
+  },
+  {
+   "code": "nb_NO",
+   "title": "Norwegian (Norway)",
+   "endonym": "Norsk bokmål (Norge)"
+  },
+  {
+   "code": "ne",
+   "title": "Nepali",
+   "endonym": "नेपाली"
+  },
+  {
+   "code": "nl",
+   "title": "Dutch",
+   "endonym": "Nederlands"
+  },
+  {
+   "code": "nl_BE",
+   "title": "Dutch (Belgium)",
+   "endonym": "Nederlands (België)"
+  },
+  {
+   "code": "pl",
+   "title": "Polish",
+   "endonym": "Polski"
+  },
+  {
+   "code": "pt_BR",
+   "title": "Portuguese (Brazil)",
+   "endonym": "Português (Brasil)"
+  },
+  {
+   "code": "pt_PT",
+   "title": "Portuguese (Portugal)",
+   "endonym": "Português (Portugal)"
+  },
+  {
+   "code": "ro",
+   "title": "Romanian",
+   "endonym": "Română"
+  },
+  {
+   "code": "ro_MD",
+   "title": "Romanian (Moldova)",
+   "endonym": "Română (Moldova)"
+  },
+  {
+   "code": "ru",
+   "title": "Russian",
+   "endonym": "Русский"
+  },
+  {
+   "code": "sk",
+   "title": "Slovak",
+   "endonym": "slovenčina"
+  },
+  {
+   "code": "sl_SI",
+   "title": "Slovenian (Slovenia)",
+   "endonym": "Slovensko (Slovenia)"
+  },
+  {
+   "code": "sr_RS_latin",
+   "title": "Serbian (Serbia, Latin)",
+   "endonym": "srpski (Srbija, latinica)"
+  },
+  {
+   "code": "sv",
+   "title": "Swedish",
+   "endonym": "Svenska"
+  },
+  {
+   "code": "ta_IN",
+   "title": "Tamil (India)",
+   "endonym": "தமிழ் (இந்தியா)"
+  },
+  {
+   "code": "th",
+   "title": "Thai",
+   "endonym": "ไทย"
+  },
+  {
+   "code": "tr",
+   "title": "Turkish",
+   "endonym": "Türkçe"
+  },
+  {
+   "code": "uk",
+   "title": "Ukrainian",
+   "endonym": "Українська"
+  },
+  {
+   "code": "ur",
+   "title": "Urdu",
+   "endonym": "اردو"
+  },
+  {
+   "code": "uz_UZ_latin",
+   "title": "Uzbek (Uzbekistan, Latin)",
+   "endonym": "O'zbekcha"
+  },
+  {
+   "code": "vi",
+   "title": "Vietnamese",
+   "endonym": "Tiếng Việt"
+  },
+  {
+   "code": "yo_NG",
+   "title": "Yoruba (Nigeria)",
+   "endonym": "Yoruba (Naijiria)"
+  },
+  {
+   "code": "zh_CN",
+   "title": "Chinese (China)",
+   "endonym": "中文 (中国)"
+  },
+  {
+   "code": "zh_TW",
+   "title": "Chinese (Taiwan)",
+   "endonym": "中文 (臺灣)"
+  },
+  {
+   "code": "zu_ZA",
+   "title": "Zulu (South Africa)",
+   "endonym": "isiZulu (Iningizimu Afrika)"
+  }
+ ],
+ "functions": [
+  {
+   "name": "airline.aircraftType",
+   "args": ""
+  },
+  {
+   "name": "airline.airline",
+   "args": ""
+  },
+  {
+   "name": "airline.airplane",
+   "args": ""
+  },
+  {
+   "name": "airline.airport",
+   "args": ""
+  },
+  {
+   "name": "airline.flightNumber",
+   "args": "options?: {length, addLeadingZeros}"
+  },
+  {
+   "name": "airline.recordLocator",
+   "args": "options?: {allowNumerics, allowVisuallySimilarCharacters}"
+  },
+  {
+   "name": "airline.seat",
+   "args": "options?: {aircraftType}"
+  },
+  {
+   "name": "animal.bear",
+   "args": ""
+  },
+  {
+   "name": "animal.bird",
+   "args": ""
+  },
+  {
+   "name": "animal.cat",
+   "args": ""
+  },
+  {
+   "name": "animal.cetacean",
+   "args": ""
+  },
+  {
+   "name": "animal.cow",
+   "args": ""
+  },
+  {
+   "name": "animal.crocodilia",
+   "args": ""
+  },
+  {
+   "name": "animal.dog",
+   "args": ""
+  },
+  {
+   "name": "animal.fish",
+   "args": ""
+  },
+  {
+   "name": "animal.horse",
+   "args": ""
+  },
+  {
+   "name": "animal.insect",
+   "args": ""
+  },
+  {
+   "name": "animal.lion",
+   "args": ""
+  },
+  {
+   "name": "animal.petName",
+   "args": ""
+  },
+  {
+   "name": "animal.rabbit",
+   "args": ""
+  },
+  {
+   "name": "animal.rodent",
+   "args": ""
+  },
+  {
+   "name": "animal.snake",
+   "args": ""
+  },
+  {
+   "name": "animal.type",
+   "args": ""
+  },
+  {
+   "name": "book.author",
+   "args": ""
+  },
+  {
+   "name": "book.format",
+   "args": ""
+  },
+  {
+   "name": "book.genre",
+   "args": ""
+  },
+  {
+   "name": "book.publisher",
+   "args": ""
+  },
+  {
+   "name": "book.series",
+   "args": ""
+  },
+  {
+   "name": "book.title",
+   "args": ""
+  },
+  {
+   "name": "color.cmyk",
+   "args": "options?: {format}"
+  },
+  {
+   "name": "color.colorByCSSColorSpace",
+   "args": "options?: {format, space}"
+  },
+  {
+   "name": "color.cssSupportedFunction",
+   "args": ""
+  },
+  {
+   "name": "color.cssSupportedSpace",
+   "args": ""
+  },
+  {
+   "name": "color.hsl",
+   "args": "options?: {format, includeAlpha}"
+  },
+  {
+   "name": "color.human",
+   "args": ""
+  },
+  {
+   "name": "color.hwb",
+   "args": "options?: {format}"
+  },
+  {
+   "name": "color.lab",
+   "args": "options?: {format}"
+  },
+  {
+   "name": "color.lch",
+   "args": "options?: {format}"
+  },
+  {
+   "name": "color.rgb",
+   "args": "options?: {prefix, casing, format, includeAlpha}"
+  },
+  {
+   "name": "color.space",
+   "args": ""
+  },
+  {
+   "name": "commerce.department",
+   "args": ""
+  },
+  {
+   "name": "commerce.isbn",
+   "args": "options?: 10 | 13 | {variant, separator}"
+  },
+  {
+   "name": "commerce.price",
+   "args": "options?: {min, max, dec, symbol}"
+  },
+  {
+   "name": "commerce.product",
+   "args": ""
+  },
+  {
+   "name": "commerce.productAdjective",
+   "args": ""
+  },
+  {
+   "name": "commerce.productDescription",
+   "args": ""
+  },
+  {
+   "name": "commerce.productMaterial",
+   "args": ""
+  },
+  {
+   "name": "commerce.productName",
+   "args": ""
+  },
+  {
+   "name": "commerce.upc",
+   "args": "options?: {prefix}"
+  },
+  {
+   "name": "company.buzzAdjective",
+   "args": ""
+  },
+  {
+   "name": "company.buzzNoun",
+   "args": ""
+  },
+  {
+   "name": "company.buzzPhrase",
+   "args": ""
+  },
+  {
+   "name": "company.buzzVerb",
+   "args": ""
+  },
+  {
+   "name": "company.catchPhrase",
+   "args": ""
+  },
+  {
+   "name": "company.catchPhraseAdjective",
+   "args": ""
+  },
+  {
+   "name": "company.catchPhraseDescriptor",
+   "args": ""
+  },
+  {
+   "name": "company.catchPhraseNoun",
+   "args": ""
+  },
+  {
+   "name": "company.name",
+   "args": ""
+  },
+  {
+   "name": "database.collation",
+   "args": ""
+  },
+  {
+   "name": "database.column",
+   "args": ""
+  },
+  {
+   "name": "database.engine",
+   "args": ""
+  },
+  {
+   "name": "database.mongodbObjectId",
+   "args": ""
+  },
+  {
+   "name": "database.type",
+   "args": ""
+  },
+  {
+   "name": "datatype.boolean",
+   "args": "options?: number | {probability}"
+  },
+  {
+   "name": "date.anytime",
+   "args": "options?: {refDate}"
+  },
+  {
+   "name": "date.between",
+   "args": "options: {from, to}"
+  },
+  {
+   "name": "date.betweens",
+   "args": "options: {from, to, count}"
+  },
+  {
+   "name": "date.birthdate",
+   "args": "options?: {refDate} | {mode, min, max, refDate}"
+  },
+  {
+   "name": "date.future",
+   "args": "options?: {years, refDate}"
+  },
+  {
+   "name": "date.month",
+   "args": "options?: {abbreviated, context}"
+  },
+  {
+   "name": "date.past",
+   "args": "options?: {years, refDate}"
+  },
+  {
+   "name": "date.recent",
+   "args": "options?: {days, refDate}"
+  },
+  {
+   "name": "date.soon",
+   "args": "options?: {days, refDate}"
+  },
+  {
+   "name": "date.timeZone",
+   "args": ""
+  },
+  {
+   "name": "date.weekday",
+   "args": "options?: {abbreviated, context}"
+  },
+  {
+   "name": "finance.accountName",
+   "args": ""
+  },
+  {
+   "name": "finance.accountNumber",
+   "args": "optionsOrLength?: number | {length}"
+  },
+  {
+   "name": "finance.amount",
+   "args": "options?: {min, max, dec, symbol, autoFormat}"
+  },
+  {
+   "name": "finance.bic",
+   "args": "options?: {includeBranchCode}"
+  },
+  {
+   "name": "finance.bitcoinAddress",
+   "args": "options?: {type, network}"
+  },
+  {
+   "name": "finance.creditCardCVV",
+   "args": ""
+  },
+  {
+   "name": "finance.creditCardIssuer",
+   "args": ""
+  },
+  {
+   "name": "finance.creditCardNumber",
+   "args": "options?: string | {issuer}"
+  },
+  {
+   "name": "finance.currency",
+   "args": ""
+  },
+  {
+   "name": "finance.currencyCode",
+   "args": ""
+  },
+  {
+   "name": "finance.currencyName",
+   "args": ""
+  },
+  {
+   "name": "finance.currencyNumericCode",
+   "args": ""
+  },
+  {
+   "name": "finance.currencySymbol",
+   "args": ""
+  },
+  {
+   "name": "finance.ethereumAddress",
+   "args": ""
+  },
+  {
+   "name": "finance.iban",
+   "args": "options?: {formatted, countryCode}"
+  },
+  {
+   "name": "finance.litecoinAddress",
+   "args": ""
+  },
+  {
+   "name": "finance.pin",
+   "args": "options?: number | {length}"
+  },
+  {
+   "name": "finance.routingNumber",
+   "args": ""
+  },
+  {
+   "name": "finance.transactionDescription",
+   "args": ""
+  },
+  {
+   "name": "finance.transactionType",
+   "args": ""
+  },
+  {
+   "name": "food.adjective",
+   "args": ""
+  },
+  {
+   "name": "food.description",
+   "args": ""
+  },
+  {
+   "name": "food.dish",
+   "args": ""
+  },
+  {
+   "name": "food.ethnicCategory",
+   "args": ""
+  },
+  {
+   "name": "food.fruit",
+   "args": ""
+  },
+  {
+   "name": "food.ingredient",
+   "args": ""
+  },
+  {
+   "name": "food.meat",
+   "args": ""
+  },
+  {
+   "name": "food.spice",
+   "args": ""
+  },
+  {
+   "name": "food.vegetable",
+   "args": ""
+  },
+  {
+   "name": "git.branch",
+   "args": ""
+  },
+  {
+   "name": "git.commitDate",
+   "args": "options?: {refDate}"
+  },
+  {
+   "name": "git.commitEntry",
+   "args": "options?: {merge, eol, refDate}"
+  },
+  {
+   "name": "git.commitMessage",
+   "args": ""
+  },
+  {
+   "name": "git.commitSha",
+   "args": "options?: {length}"
+  },
+  {
+   "name": "hacker.abbreviation",
+   "args": ""
+  },
+  {
+   "name": "hacker.adjective",
+   "args": ""
+  },
+  {
+   "name": "hacker.ingverb",
+   "args": ""
+  },
+  {
+   "name": "hacker.noun",
+   "args": ""
+  },
+  {
+   "name": "hacker.phrase",
+   "args": ""
+  },
+  {
+   "name": "hacker.verb",
+   "args": ""
+  },
+  {
+   "name": "helpers.arrayElement",
+   "args": "array: ReadonlyArray"
+  },
+  {
+   "name": "helpers.arrayElements",
+   "args": "array: ReadonlyArray, count?: NumberOrRange"
+  },
+  {
+   "name": "helpers.enumValue",
+   "args": "enumObject: T"
+  },
+  {
+   "name": "helpers.fake",
+   "args": "pattern: string | ReadonlyArray"
+  },
+  {
+   "name": "helpers.fromRegExp",
+   "args": "pattern: string | RegExp"
+  },
+  {
+   "name": "helpers.maybe",
+   "args": "callback: () => TResult, options?: {probability}"
+  },
+  {
+   "name": "helpers.multiple",
+   "args": "method: (v: unknown, index: number) => TResult, options?: {count}"
+  },
+  {
+   "name": "helpers.mustache",
+   "args": "text: string | undefined, data: Record<string, string | Parameters[1]>"
+  },
+  {
+   "name": "helpers.objectEntry",
+   "args": "object: T"
+  },
+  {
+   "name": "helpers.objectKey",
+   "args": "object: T"
+  },
+  {
+   "name": "helpers.objectValue",
+   "args": "object: T"
+  },
+  {
+   "name": "helpers.rangeToNumber",
+   "args": "numberOrRange: NumberOrRange"
+  },
+  {
+   "name": "helpers.replaceCreditCardSymbols",
+   "args": "string?: string, symbol?: string"
+  },
+  {
+   "name": "helpers.replaceSymbols",
+   "args": "string?: string"
+  },
+  {
+   "name": "helpers.shuffle",
+   "args": "list: ReadonlyArray, options?: {inplace}"
+  },
+  {
+   "name": "helpers.slugify",
+   "args": "string?: string"
+  },
+  {
+   "name": "helpers.uniqueArray",
+   "args": "source: ReadonlyArray | (() => T), length: number"
+  },
+  {
+   "name": "helpers.weightedArrayElement",
+   "args": "array: ReadonlyArray"
+  },
+  {
+   "name": "image.avatar",
+   "args": ""
+  },
+  {
+   "name": "image.avatarGitHub",
+   "args": ""
+  },
+  {
+   "name": "image.dataUri",
+   "args": "options?: {width, height, color, type}"
+  },
+  {
+   "name": "image.personPortrait",
+   "args": "options?: {sex, size}"
+  },
+  {
+   "name": "image.url",
+   "args": "options?: {width, height}"
+  },
+  {
+   "name": "image.urlLoremFlickr",
+   "args": "options?: {width, height, category}"
+  },
+  {
+   "name": "image.urlPicsumPhotos",
+   "args": "options?: {width, height, grayscale, blur}"
+  },
+  {
+   "name": "internet.displayName",
+   "args": "options?: {firstName, lastName}"
+  },
+  {
+   "name": "internet.domainName",
+   "args": ""
+  },
+  {
+   "name": "internet.domainSuffix",
+   "args": ""
+  },
+  {
+   "name": "internet.domainWord",
+   "args": ""
+  },
+  {
+   "name": "internet.email",
+   "args": "options?: {firstName, lastName, provider, allowSpecialCharacters}"
+  },
+  {
+   "name": "internet.emoji",
+   "args": "options?: {types}"
+  },
+  {
+   "name": "internet.exampleEmail",
+   "args": "options?: {firstName, lastName, allowSpecialCharacters}"
+  },
+  {
+   "name": "internet.httpMethod",
+   "args": ""
+  },
+  {
+   "name": "internet.httpStatusCode",
+   "args": "options?: {types}"
+  },
+  {
+   "name": "internet.ip",
+   "args": ""
+  },
+  {
+   "name": "internet.ipv4",
+   "args": "options?: {cidrBlock} | {network}"
+  },
+  {
+   "name": "internet.ipv6",
+   "args": ""
+  },
+  {
+   "name": "internet.jwt",
+   "args": "options?: {header, payload, refDate}"
+  },
+  {
+   "name": "internet.jwtAlgorithm",
+   "args": ""
+  },
+  {
+   "name": "internet.mac",
+   "args": "options?: string | {separator}"
+  },
+  {
+   "name": "internet.password",
+   "args": "options?: {length, memorable, pattern, prefix}"
+  },
+  {
+   "name": "internet.port",
+   "args": ""
+  },
+  {
+   "name": "internet.protocol",
+   "args": ""
+  },
+  {
+   "name": "internet.url",
+   "args": "options?: {appendSlash, protocol}"
+  },
+  {
+   "name": "internet.userAgent",
+   "args": ""
+  },
+  {
+   "name": "internet.username",
+   "args": "options?: {firstName, lastName}"
+  },
+  {
+   "name": "location.buildingNumber",
+   "args": ""
+  },
+  {
+   "name": "location.cardinalDirection",
+   "args": "options?: {abbreviated}"
+  },
+  {
+   "name": "location.city",
+   "args": ""
+  },
+  {
+   "name": "location.continent",
+   "args": ""
+  },
+  {
+   "name": "location.country",
+   "args": ""
+  },
+  {
+   "name": "location.countryCode",
+   "args": "options?: 'alpha-2' | 'alpha-3' | 'numeric' | {variant}"
+  },
+  {
+   "name": "location.county",
+   "args": ""
+  },
+  {
+   "name": "location.direction",
+   "args": "options?: {abbreviated}"
+  },
+  {
+   "name": "location.language",
+   "args": ""
+  },
+  {
+   "name": "location.latitude",
+   "args": "options?: {max, min, precision}"
+  },
+  {
+   "name": "location.longitude",
+   "args": "options?: {max, min, precision}"
+  },
+  {
+   "name": "location.nearbyGPSCoordinate",
+   "args": "options?: {origin, latitude, longitude, radius, isMetric}"
+  },
+  {
+   "name": "location.ordinalDirection",
+   "args": "options?: {abbreviated}"
+  },
+  {
+   "name": "location.postalAddress",
+   "args": ""
+  },
+  {
+   "name": "location.secondaryAddress",
+   "args": ""
+  },
+  {
+   "name": "location.state",
+   "args": "options?: {abbreviated}"
+  },
+  {
+   "name": "location.street",
+   "args": ""
+  },
+  {
+   "name": "location.streetAddress",
+   "args": "options?: boolean | {useFullAddress}"
+  },
+  {
+   "name": "location.timeZone",
+   "args": ""
+  },
+  {
+   "name": "location.zipCode",
+   "args": "options?: string | {state, format}"
+  },
+  {
+   "name": "lorem.lines",
+   "args": "lineCount?: NumberOrRange"
+  },
+  {
+   "name": "lorem.paragraph",
+   "args": "sentenceCount?: NumberOrRange"
+  },
+  {
+   "name": "lorem.paragraphs",
+   "args": "paragraphCount?: NumberOrRange, separator?: string"
+  },
+  {
+   "name": "lorem.sentence",
+   "args": "wordCount?: NumberOrRange"
+  },
+  {
+   "name": "lorem.sentences",
+   "args": "sentenceCount?: NumberOrRange, separator?: string"
+  },
+  {
+   "name": "lorem.slug",
+   "args": "wordCount?: NumberOrRange"
+  },
+  {
+   "name": "lorem.text",
+   "args": ""
+  },
+  {
+   "name": "lorem.word",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "lorem.words",
+   "args": "wordCount?: NumberOrRange"
+  },
+  {
+   "name": "music.album",
+   "args": ""
+  },
+  {
+   "name": "music.artist",
+   "args": ""
+  },
+  {
+   "name": "music.genre",
+   "args": ""
+  },
+  {
+   "name": "music.songName",
+   "args": ""
+  },
+  {
+   "name": "number.bigInt",
+   "args": "options?: bigint | number | string | boolean | {min, max, multipleOf}"
+  },
+  {
+   "name": "number.binary",
+   "args": "options?: number | {min, max}"
+  },
+  {
+   "name": "number.float",
+   "args": "options?: number | {min, max, fractionDigits, multipleOf, distributor}"
+  },
+  {
+   "name": "number.hex",
+   "args": "options?: number | {min, max}"
+  },
+  {
+   "name": "number.int",
+   "args": "options?: number | {min, max, multipleOf, distributor}"
+  },
+  {
+   "name": "number.octal",
+   "args": "options?: number | {min, max}"
+  },
+  {
+   "name": "number.romanNumeral",
+   "args": "options?: number | {min, max}"
+  },
+  {
+   "name": "person.bio",
+   "args": ""
+  },
+  {
+   "name": "person.firstName",
+   "args": "sex?: SexType"
+  },
+  {
+   "name": "person.fullName",
+   "args": "options?: {firstName, lastName, sex}"
+  },
+  {
+   "name": "person.gender",
+   "args": ""
+  },
+  {
+   "name": "person.jobArea",
+   "args": ""
+  },
+  {
+   "name": "person.jobDescriptor",
+   "args": ""
+  },
+  {
+   "name": "person.jobTitle",
+   "args": ""
+  },
+  {
+   "name": "person.jobType",
+   "args": ""
+  },
+  {
+   "name": "person.lastName",
+   "args": "sex?: SexType"
+  },
+  {
+   "name": "person.middleName",
+   "args": "sex?: SexType"
+  },
+  {
+   "name": "person.prefix",
+   "args": "sex?: SexType"
+  },
+  {
+   "name": "person.sex",
+   "args": ""
+  },
+  {
+   "name": "person.sexType",
+   "args": "options?: {includeGeneric}"
+  },
+  {
+   "name": "person.suffix",
+   "args": ""
+  },
+  {
+   "name": "person.zodiacSign",
+   "args": ""
+  },
+  {
+   "name": "phone.imei",
+   "args": ""
+  },
+  {
+   "name": "phone.number",
+   "args": "options?: {style}"
+  },
+  {
+   "name": "science.chemicalElement",
+   "args": ""
+  },
+  {
+   "name": "science.unit",
+   "args": ""
+  },
+  {
+   "name": "string.alpha",
+   "args": "options?: number | {length, casing, exclude}"
+  },
+  {
+   "name": "string.alphanumeric",
+   "args": "options?: number | {length, casing, exclude}"
+  },
+  {
+   "name": "string.binary",
+   "args": "options?: {length, prefix}"
+  },
+  {
+   "name": "string.fromCharacters",
+   "args": "characters: string | ReadonlyArray, length?: NumberOrRange"
+  },
+  {
+   "name": "string.hexadecimal",
+   "args": "options?: {length, casing, prefix}"
+  },
+  {
+   "name": "string.nanoid",
+   "args": "length?: NumberOrRange"
+  },
+  {
+   "name": "string.numeric",
+   "args": "options?: number | {length, allowLeadingZeros, exclude}"
+  },
+  {
+   "name": "string.octal",
+   "args": "options?: {length, prefix}"
+  },
+  {
+   "name": "string.sample",
+   "args": "length?: NumberOrRange"
+  },
+  {
+   "name": "string.symbol",
+   "args": "length?: NumberOrRange"
+  },
+  {
+   "name": "string.ulid",
+   "args": "options?: {refDate}"
+  },
+  {
+   "name": "string.uuid",
+   "args": "options?: {version, refDate}"
+  },
+  {
+   "name": "system.commonFileExt",
+   "args": ""
+  },
+  {
+   "name": "system.commonFileName",
+   "args": "extension?: string"
+  },
+  {
+   "name": "system.commonFileType",
+   "args": ""
+  },
+  {
+   "name": "system.cron",
+   "args": "options?: {includeYear, includeNonStandard}"
+  },
+  {
+   "name": "system.directoryPath",
+   "args": ""
+  },
+  {
+   "name": "system.fileExt",
+   "args": "mimeType?: string"
+  },
+  {
+   "name": "system.fileName",
+   "args": "options?: {extensionCount}"
+  },
+  {
+   "name": "system.filePath",
+   "args": ""
+  },
+  {
+   "name": "system.fileType",
+   "args": ""
+  },
+  {
+   "name": "system.mimeType",
+   "args": ""
+  },
+  {
+   "name": "system.networkInterface",
+   "args": "options?: {interfaceType, interfaceSchema}"
+  },
+  {
+   "name": "system.semver",
+   "args": ""
+  },
+  {
+   "name": "vehicle.bicycle",
+   "args": ""
+  },
+  {
+   "name": "vehicle.color",
+   "args": ""
+  },
+  {
+   "name": "vehicle.fuel",
+   "args": ""
+  },
+  {
+   "name": "vehicle.manufacturer",
+   "args": ""
+  },
+  {
+   "name": "vehicle.model",
+   "args": ""
+  },
+  {
+   "name": "vehicle.type",
+   "args": ""
+  },
+  {
+   "name": "vehicle.vehicle",
+   "args": ""
+  },
+  {
+   "name": "vehicle.vin",
+   "args": ""
+  },
+  {
+   "name": "vehicle.vrm",
+   "args": ""
+  },
+  {
+   "name": "word.adjective",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.adverb",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.conjunction",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.interjection",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.noun",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.preposition",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.sample",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.verb",
+   "args": "options?: number | {length, strategy}"
+  },
+  {
+   "name": "word.words",
+   "args": "options?: number | {count}"
+  }
+ ],
+ "exports": [
+  "Aircraft",
+  "BitcoinAddressFamily",
+  "BitcoinNetwork",
+  "CssFunction",
+  "CssSpace",
+  "Faker",
+  "FakerError",
+  "IPv4Network",
+  "LengthStrategy",
+  "Sex",
+  "SimpleFaker",
+  "af_ZA",
+  "allFakers",
+  "allLocales",
+  "ar",
+  "az",
+  "base",
+  "bn_BD",
+  "createFakerCore",
+  "cs_CZ",
+  "cy",
+  "da",
+  "de",
+  "de_AT",
+  "de_CH",
+  "dv",
+  "el",
+  "en",
+  "en_AU",
+  "en_AU_ocker",
+  "en_BORK",
+  "en_CA",
+  "en_GB",
+  "en_GH",
+  "en_HK",
+  "en_IE",
+  "en_IN",
+  "en_NG",
+  "en_NP",
+  "en_US",
+  "en_ZA",
+  "eo",
+  "es",
+  "es_MX",
+  "exponentialDistributor",
+  "fa",
+  "faker",
+  "fakerAF_ZA",
+  "fakerAR",
+  "fakerAZ",
+  "fakerBASE",
+  "fakerBN_BD",
+  "fakerCS_CZ",
+  "fakerCY",
+  "fakerDA",
+  "fakerDE",
+  "fakerDE_AT",
+  "fakerDE_CH",
+  "fakerDV",
+  "fakerEL",
+  "fakerEN",
+  "fakerEN_AU",
+  "fakerEN_AU_ocker",
+  "fakerEN_BORK",
+  "fakerEN_CA",
+  "fakerEN_GB",
+  "fakerEN_GH",
+  "fakerEN_HK",
+  "fakerEN_IE",
+  "fakerEN_IN",
+  "fakerEN_NG",
+  "fakerEN_NP",
+  "fakerEN_US",
+  "fakerEN_ZA",
+  "fakerEO",
+  "fakerES",
+  "fakerES_MX",
+  "fakerFA",
+  "fakerFI",
+  "fakerFR",
+  "fakerFR_BE",
+  "fakerFR_CA",
+  "fakerFR_CH",
+  "fakerFR_LU",
+  "fakerFR_SN",
+  "fakerHE",
+  "fakerHR",
+  "fakerHU",
+  "fakerHY",
+  "fakerID_ID",
+  "fakerIT",
+  "fakerJA",
+  "fakerKA_GE",
+  "fakerKO",
+  "fakerKU_ckb",
+  "fakerKU_kmr_latin",
+  "fakerLV",
+  "fakerMK",
+  "fakerMN_MN_cyrl",
+  "fakerNB_NO",
+  "fakerNE",
+  "fakerNL",
+  "fakerNL_BE",
+  "fakerPL",
+  "fakerPT_BR",
+  "fakerPT_PT",
+  "fakerRO",
+  "fakerRO_MD",
+  "fakerRU",
+  "fakerSK",
+  "fakerSL_SI",
+  "fakerSR_RS_latin",
+  "fakerSV",
+  "fakerTA_IN",
+  "fakerTH",
+  "fakerTR",
+  "fakerUK",
+  "fakerUR",
+  "fakerUZ_UZ_latin",
+  "fakerVI",
+  "fakerYO_NG",
+  "fakerZH_CN",
+  "fakerZH_TW",
+  "fakerZU_ZA",
+  "fi",
+  "fr",
+  "fr_BE",
+  "fr_CA",
+  "fr_CH",
+  "fr_LU",
+  "fr_SN",
+  "generateMersenne32Randomizer",
+  "generateMersenne53Randomizer",
+  "he",
+  "hr",
+  "hu",
+  "hy",
+  "id_ID",
+  "it",
+  "ja",
+  "ka_GE",
+  "ko",
+  "ku_ckb",
+  "ku_kmr_latin",
+  "lv",
+  "mergeLocales",
+  "mk",
+  "mn_MN_cyrl",
+  "nb_NO",
+  "ne",
+  "nl",
+  "nl_BE",
+  "pl",
+  "pt_BR",
+  "pt_PT",
+  "ro",
+  "ro_MD",
+  "ru",
+  "simpleFaker",
+  "sk",
+  "sl_SI",
+  "sr_RS_latin",
+  "sv",
+  "ta_IN",
+  "th",
+  "tr",
+  "uk",
+  "uniformDistributor",
+  "ur",
+  "uz_UZ_latin",
+  "vi",
+  "yo_NG",
+  "zh_CN",
+  "zh_TW",
+  "zu_ZA"
+ ]
+}

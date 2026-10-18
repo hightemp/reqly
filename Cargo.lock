@@ -5135,6 +5135,7 @@ dependencies = [
  "prost",
  "prost-reflect",
  "reqly-core",
+ "reqly-faker",
  "reqly-http",
  "reqly-interop",
  "reqly-protocols",
@@ -5181,6 +5182,16 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "reqly-faker"
+version = "0.6.0"
+dependencies = [
+ "reqly-core",
+ "rquickjs",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -5277,6 +5288,7 @@ name = "reqly-script"
 version = "0.6.0"
 dependencies = [
  "reqly-core",
+ "reqly-faker",
  "reqly-template",
  "rquickjs",
  "serde",
@@ -5352,6 +5364,7 @@ dependencies = [
  "rand_regex",
  "regex-syntax",
  "reqly-core",
+ "reqly-faker",
  "serde",
  "serde_json",
  "serde_json_path",

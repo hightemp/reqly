@@ -1,6 +1,6 @@
 # ADR-005: Faker and data locales
 
-- Status: accepted
+- Status: superseded by [ADR-009](009-faker-js.md)
 - Date: 2026-10-17
 
 ## Context
