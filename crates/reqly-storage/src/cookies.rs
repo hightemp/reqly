@@ -150,7 +150,7 @@ impl<'a> CookieRepo<'a> {
 
     /// Replaces the whole jar with curl's state after a request.
     pub async fn replace_all(&self, workspace_id: Id, lines: &[String]) -> CoreResult<()> {
-        let mut tx = self.storage.pool().begin().await.map_err(db_err)?;
+        let mut tx = self.storage.begin_write().await?;
         sqlx::query("DELETE FROM cookies WHERE workspace_id = ?")
             .bind(workspace_id.to_string())
             .execute(&mut *tx)

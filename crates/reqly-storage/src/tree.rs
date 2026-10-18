@@ -241,8 +241,8 @@ impl<'a> TreeRepo<'a> {
         self.storage.pool().acquire().await.map_err(db_err)
     }
 
-    async fn begin(&self) -> CoreResult<sqlx::Transaction<'static, sqlx::Sqlite>> {
-        self.storage.pool().begin().await.map_err(db_err)
+    async fn begin(&self) -> CoreResult<crate::db::WriteTx> {
+        self.storage.begin_write().await
     }
 
     // ----- workspaces ------------------------------------------------------

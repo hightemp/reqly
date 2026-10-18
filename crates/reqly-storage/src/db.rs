@@ -1,9 +1,12 @@
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Arc;
 
 use reqly_core::{CoreError, CoreResult};
 use sqlx::migrate::Migrator;
-use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions};
+use sqlx::sqlite::{
+    SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteSynchronous,
+};
 
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
@@ -25,6 +28,34 @@ impl Default for OpenOptions {
 pub struct Storage {
     pool: SqlitePool,
     secrets: crate::crypto::SecretBox,
+    /// Serializes write transactions before they take a pooled connection,
+    /// so waiting writers do not hold connections that readers need.
+    write_lock: Arc<tokio::sync::Mutex<()>>,
+}
+
+/// A write transaction holding the storage's write lock until it ends.
+pub struct WriteTx {
+    tx: sqlx::Transaction<'static, sqlx::Sqlite>,
+    _lock: tokio::sync::OwnedMutexGuard<()>,
+}
+
+impl WriteTx {
+    pub async fn commit(self) -> Result<(), sqlx::Error> {
+        self.tx.commit().await
+    }
+}
+
+impl std::ops::Deref for WriteTx {
+    type Target = sqlx::SqliteConnection;
+    fn deref(&self) -> &Self::Target {
+        &self.tx
+    }
+}
+
+impl std::ops::DerefMut for WriteTx {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.tx
+    }
 }
 
 pub(crate) fn db_err(e: impl std::fmt::Display) -> CoreError {
@@ -43,6 +74,9 @@ impl Storage {
             .filename(path)
             .create_if_missing(true)
             .journal_mode(SqliteJournalMode::Wal)
+            // Safe with WAL: a power loss can drop the last commits, never
+            // corrupt the database; commits no longer wait for fsync.
+            .synchronous(SqliteSynchronous::Normal)
             .foreign_keys(true)
             .busy_timeout(std::time::Duration::from_secs(5));
         let pool = SqlitePoolOptions::new()
@@ -50,7 +84,11 @@ impl Storage {
             .await
             .map_err(db_err)?;
         let secrets = crate::crypto::SecretBox::load_or_create(&path.with_file_name("secret.key"))?;
-        let storage = Self { pool, secrets };
+        let storage = Self {
+            pool,
+            secrets,
+            write_lock: Arc::default(),
+        };
 
         if existed && options.backup_before_migrate && storage.has_pending_migrations().await? {
             storage.backup(&backup_path(path)?).await?;
@@ -73,6 +111,7 @@ impl Storage {
         let storage = Self {
             pool,
             secrets: crate::crypto::SecretBox::random(),
+            write_lock: Arc::default(),
         };
         storage.migrate().await?;
         Ok(storage)
@@ -118,6 +157,21 @@ impl Storage {
 
     pub fn pool(&self) -> &SqlitePool {
         &self.pool
+    }
+
+    /// A transaction that writes. It takes the write lock up front
+    /// (`BEGIN IMMEDIATE`), waiting for other writers within the busy
+    /// timeout: a deferred transaction that reads first and writes later
+    /// fails with `SQLITE_BUSY` at once when another connection wrote
+    /// meanwhile.
+    pub async fn begin_write(&self) -> CoreResult<WriteTx> {
+        let lock = self.write_lock.clone().lock_owned().await;
+        let tx = self
+            .pool
+            .begin_with("BEGIN IMMEDIATE")
+            .await
+            .map_err(db_err)?;
+        Ok(WriteTx { tx, _lock: lock })
     }
 
     pub async fn close(&self) {

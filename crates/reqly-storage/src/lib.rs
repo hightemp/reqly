@@ -17,4 +17,4 @@ pub mod testing;
 pub mod tree;
 pub mod users;
 
-pub use db::{OpenOptions, Storage};
+pub use db::{OpenOptions, Storage, WriteTx};
