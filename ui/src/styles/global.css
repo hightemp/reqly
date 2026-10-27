@@ -26,6 +26,13 @@
   --radius: 6px;
   --radius-lg: 10px;
   --transition: 120ms ease;
+
+  /* Phone status and navigation bars (viewport-fit=cover). */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --touch-target: 44px;
 }
 
 :root[data-density='compact'] {
@@ -66,6 +73,7 @@ body {
 
 #app {
   height: 100%;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
 }
 
 input,

@@ -36,6 +36,8 @@
   import { tagEditor } from '../template/tagEditorState.svelte';
   import { provideTemplateHost } from '$lib/template/host';
   import { provideCollab } from '$lib/collab/collab';
+  import Drawer from '$lib/ui/overlay/Drawer.svelte';
+  import CompactBar, { type CompactPane } from './CompactBar.svelte';
   import Titlebar from './Titlebar.svelte';
 
   interface Props {
@@ -74,6 +76,23 @@
     | 'members'
     | null
   >(null);
+
+  // Compact (phone) layout: sidebar in a drawer, one pane at a time.
+  let drawerOpen = $state(false);
+  let pane = $state<CompactPane>('request');
+  const compact = $derived(services.viewport.compact);
+
+  // Opening a request closes the drawer and shows it.
+  $effect(() => {
+    void tabs.activeId;
+    drawerOpen = false;
+    pane = 'request';
+  });
+  // Sending shows the response.
+  $effect(() => {
+    const id = tabs.activeId;
+    if (id && services.responses.run(id).sending) pane = 'response';
+  });
 
   // Tell the others where this tab is (multi-user server).
   $effect(() => {
@@ -248,53 +267,83 @@
     <div class="banner" role="status">{t('app.connectionLost')}</div>
   {/if}
 
-  <main class="body">
-    <SplitPane
-      bind:size={() => prefs.value.sidebarWidth, (v) => void prefs.update({ sidebarWidth: v })}
-      collapsed={prefs.value.sidebarCollapsed}
-      min={200}
-      max={640}
-      defaultSize={280}
-      label={t('sidebar.title')}
-    >
-      {#snippet first()}
-        <Sidebar
-          {services}
-          onFolderSettings={(id) => (folderSettings = id)}
-          onCollapse={toggleSidebar}
-          onOpen={(m) => (modal = m)}
-          onSettings={() => (settingsOpen = true)}
-        />
-      {/snippet}
-      {#snippet second()}
-        <div class="workspace">
-          {#if !services.account.canEdit(services.workspace.activeWorkspaceId)}
-            <div class="read-only" role="status">{t('members.readOnly')}</div>
-          {/if}
-          <RequestTabs {services} />
-          <div class="editor">
-            <SplitPane
-              direction={prefs.value.responseLayout === 'right' ? 'horizontal' : 'vertical'}
-              bind:size={
-                () => prefs.value.requestPaneSize, (v) => void prefs.update({ requestPaneSize: v })
-              }
-              min={260}
-              max={1600}
-              defaultSize={520}
-              label={t('request.sections')}
-            >
-              {#snippet first()}
-                <section class="pane"><RequestPanel {services} /></section>
-              {/snippet}
-              {#snippet second()}
-                <section class="pane"><ResponsePanel {services} /></section>
-              {/snippet}
-            </SplitPane>
+  {#snippet sidebar(onCollapse: () => void)}
+    <Sidebar
+      {services}
+      onFolderSettings={(id) => (folderSettings = id)}
+      {onCollapse}
+      onOpen={(m) => (modal = m)}
+      onSettings={() => (settingsOpen = true)}
+    />
+  {/snippet}
+
+  {#if compact}
+    <main class="body compact">
+      <CompactBar {services} bind:pane onmenu={() => (drawerOpen = true)} />
+      {#if !services.account.canEdit(services.workspace.activeWorkspaceId)}
+        <div class="read-only" role="status">{t('members.readOnly')}</div>
+      {/if}
+      <section class="pane">
+        {#if pane === 'request'}
+          <RequestPanel {services} />
+        {:else}
+          <ResponsePanel {services} />
+        {/if}
+      </section>
+    </main>
+    {#if drawerOpen}
+      <Drawer
+        label={t('sidebar.title')}
+        closeLabel={t('shell.closeMenu')}
+        onclose={() => (drawerOpen = false)}
+      >
+        {@render sidebar(() => (drawerOpen = false))}
+      </Drawer>
+    {/if}
+  {:else}
+    <main class="body">
+      <SplitPane
+        bind:size={() => prefs.value.sidebarWidth, (v) => void prefs.update({ sidebarWidth: v })}
+        collapsed={prefs.value.sidebarCollapsed}
+        min={200}
+        max={640}
+        defaultSize={280}
+        label={t('sidebar.title')}
+      >
+        {#snippet first()}
+          {@render sidebar(toggleSidebar)}
+        {/snippet}
+        {#snippet second()}
+          <div class="workspace">
+            {#if !services.account.canEdit(services.workspace.activeWorkspaceId)}
+              <div class="read-only" role="status">{t('members.readOnly')}</div>
+            {/if}
+            <RequestTabs {services} />
+            <div class="editor">
+              <SplitPane
+                direction={prefs.value.responseLayout === 'right' ? 'horizontal' : 'vertical'}
+                bind:size={
+                  () => prefs.value.requestPaneSize,
+                  (v) => void prefs.update({ requestPaneSize: v })
+                }
+                min={260}
+                max={1600}
+                defaultSize={520}
+                label={t('request.sections')}
+              >
+                {#snippet first()}
+                  <section class="pane"><RequestPanel {services} /></section>
+                {/snippet}
+                {#snippet second()}
+                  <section class="pane"><ResponsePanel {services} /></section>
+                {/snippet}
+              </SplitPane>
+            </div>
           </div>
-        </div>
-      {/snippet}
-    </SplitPane>
-  </main>
+        {/snippet}
+      </SplitPane>
+    </main>
+  {/if}
 
   <OverlayHost />
   {#if modal === 'palette'}
@@ -351,7 +400,7 @@
   {/if}
 
   <footer class="statusbar">
-    {#if prefs.value.sidebarCollapsed}
+    {#if prefs.value.sidebarCollapsed && !compact}
       <IconButton icon="sidebar" size={14} label={t('sidebar.expand')} onclick={toggleSidebar} />
     {/if}
     <span class="spacer"></span>
@@ -361,12 +410,14 @@
       label={t('settings.title')}
       onclick={() => (settingsOpen = true)}
     />
-    <IconButton
-      icon={prefs.value.responseLayout === 'right' ? 'layout-right' : 'layout-bottom'}
-      size={14}
-      label={t('settings.layout')}
-      onclick={toggleLayout}
-    />
+    {#if !compact}
+      <IconButton
+        icon={prefs.value.responseLayout === 'right' ? 'layout-right' : 'layout-bottom'}
+        size={14}
+        label={t('settings.layout')}
+        onclick={toggleLayout}
+      />
+    {/if}
     <IconButton
       icon={THEME_ICON[prefs.value.theme] ?? 'sun'}
       size={14}
@@ -397,6 +448,14 @@
     font-size: var(--font-size-sm);
   }
   .body {
+    flex: 1;
+    min-height: 0;
+  }
+  .body.compact {
+    display: flex;
+    flex-direction: column;
+  }
+  .body.compact .pane {
     flex: 1;
     min-height: 0;
   }

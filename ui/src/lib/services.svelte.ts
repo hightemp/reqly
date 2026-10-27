@@ -14,6 +14,7 @@ import { ResponseStore } from './stores/responses.svelte';
 import { StreamStore } from './stores/streams.svelte';
 import { TabsStore } from './stores/tabs.svelte';
 import { TreeStore } from './stores/tree.svelte';
+import { Viewport } from './stores/viewport.svelte';
 import { WorkspaceStore } from './stores/workspace.svelte';
 import { ThemeManager, type MediaQuery } from './themes/manager.svelte';
 import { parseTheme } from './themes/theme';
@@ -50,12 +51,15 @@ export interface Services {
   collab: CollabService;
   presence: PresenceStore;
   scopes: FocusScopes;
+  viewport: Viewport;
 }
 
 export interface CreateServicesOptions {
   platform?: Platform;
   media?: MediaQuery;
   root?: HTMLElement;
+  /** Screen size and pointer; the current window when absent. */
+  viewport?: Viewport;
 }
 
 export async function createServices(
@@ -119,6 +123,7 @@ export async function createServices(
     collab,
     presence: new PresenceStore(transport, account),
     scopes: new FocusScopes(),
+    viewport: options.viewport ?? Viewport.fromWindow(),
   };
 }
 

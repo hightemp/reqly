@@ -1,21 +1,56 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, within } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { i18n } from '$lib/i18n';
 import { PREFERENCES_KEY } from '$lib/preferences.svelte';
 import { createServices } from '$lib/services.svelte';
+import { Viewport } from '$lib/stores/viewport.svelte';
 import { FakeTransport } from '$lib/testing/fakeTransport';
 import AppShell from './AppShell.svelte';
 
 const media = { matches: false, addEventListener() {}, removeEventListener() {} };
 
-async function setup() {
+function request(id: string, name: string) {
+  return {
+    id,
+    version: 1,
+    collectionId: 'c1',
+    parentId: null,
+    name,
+    sortKey: 'V',
+    createdAt: 0,
+    updatedAt: 0,
+    deletedAt: null,
+    data: {
+      kind: 'request',
+      method: 'GET',
+      url: 'http://a',
+      params: [],
+      pathParams: [],
+      headers: [],
+      body: { kind: 'none', text: '', fields: [], file: null },
+      auth: { type: 'inherit' },
+      settings: {},
+      scripts: { preRequest: '', afterResponse: '' },
+      variables: {},
+      eventStream: false,
+      description: '',
+    },
+  };
+}
+
+async function setup({ compact = false } = {}) {
   const transport = new FakeTransport();
   const saved = transport.withSettings();
   transport.withEmptyWorkspace();
+  const nodes = [request('r1', 'First'), request('r2', 'Second')];
+  transport.handle('node.get', ({ id }) => nodes.find((n) => n.id === id) as never);
+  transport.handle('response.list', () => [] as never);
   const services = await createServices(transport, {
     platform: 'linux',
     media,
     root: document.createElement('div'),
+    viewport: new Viewport({ compact: { ...media, matches: compact } }),
   });
   render(AppShell, { services });
   return { services, saved };
@@ -72,5 +107,68 @@ describe('AppShell', () => {
     await setup();
     await fireEvent.click(screen.getByRole('button', { name: /Language/ }));
     expect(await screen.findByText('Выберите или создайте запрос')).toBeInTheDocument();
+  });
+
+  describe('compact layout', () => {
+    it('keeps the sidebar in a drawer', async () => {
+      await setup({ compact: true });
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+      await fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+      const drawer = screen.getByRole('dialog', { name: 'Collections' });
+      expect(drawer).toContainElement(screen.getByRole('complementary'));
+      await fireEvent.click(screen.getByRole('button', { name: 'Close menu' }));
+      expect(screen.queryByRole('dialog', { name: 'Collections' })).not.toBeInTheDocument();
+    });
+
+    it('closes the drawer when a request is opened', async () => {
+      const { services } = await setup({ compact: true });
+      await fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+      services.tabs.open('r1');
+      await tick();
+      expect(screen.queryByRole('dialog', { name: 'Collections' })).not.toBeInTheDocument();
+    });
+
+    it('shows the request or the response', async () => {
+      await setup({ compact: true });
+      const request = screen.getByRole('button', { name: 'Request' });
+      const response = screen.getByRole('button', { name: 'Response' });
+      expect(request).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Select or create a request')).toBeInTheDocument();
+      expect(screen.queryByText('Send a request to see the response')).not.toBeInTheDocument();
+      await fireEvent.click(response);
+      expect(response).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.queryByText('Select or create a request')).not.toBeInTheDocument();
+      expect(screen.getByText('Send a request to see the response')).toBeInTheDocument();
+    });
+
+    it('switches to the response when a request is sent', async () => {
+      const { services } = await setup({ compact: true });
+      services.tabs.open('r1');
+      await tick();
+      services.responses.run('r1').sending = true;
+      await tick();
+      expect(screen.getByRole('button', { name: 'Response' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+
+    it('lists open requests instead of a tab strip', async () => {
+      const { services } = await setup({ compact: true });
+      services.tabs.open('r1', { preview: false });
+      services.tabs.open('r2', { preview: false });
+      await tick();
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+      await fireEvent.click(await screen.findByRole('button', { name: 'Open requests: 2' }));
+      const list = screen.getByRole('dialog', { name: 'Open requests' });
+      await fireEvent.click(within(list).getByRole('button', { name: /First/ }));
+      expect(services.tabs.activeId).toBe('r1');
+      expect(screen.queryByRole('dialog', { name: 'Open requests' })).not.toBeInTheDocument();
+
+      await fireEvent.click(screen.getByRole('button', { name: 'Open requests: 2' }));
+      const again = screen.getByRole('dialog', { name: 'Open requests' });
+      await fireEvent.click(within(again).getAllByRole('button', { name: 'Close' })[1]!);
+      expect(services.tabs.tabs.map((t) => t.id)).toEqual(['r1']);
+    });
   });
 });

@@ -97,6 +97,13 @@ export const en = {
     delete: 'Delete collection',
     deleteTitle: 'Delete collection “{name}”?',
   },
+  shell: {
+    menu: 'Menu',
+    closeMenu: 'Close menu',
+    request: 'Request',
+    response: 'Response',
+    openTabs: 'Open requests: {count}',
+  },
   tabs: {
     label: 'Open requests',
     all: 'All tabs',
@@ -106,6 +113,7 @@ export const en = {
     closeAll: 'Close all',
     pin: 'Pin',
     unpin: 'Unpin',
+    none: 'No open requests',
     unsaved: 'Unsaved changes',
   },
   auth: {

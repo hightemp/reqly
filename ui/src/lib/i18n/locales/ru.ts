@@ -109,6 +109,13 @@ export const ru: Translation<Messages> = {
     delete: 'Удалить коллекцию',
     deleteTitle: 'Удалить коллекцию «{name}»?',
   },
+  shell: {
+    menu: 'Меню',
+    closeMenu: 'Закрыть меню',
+    request: 'Запрос',
+    response: 'Ответ',
+    openTabs: 'Открытые запросы: {count}',
+  },
   tabs: {
     label: 'Открытые запросы',
     all: 'Все вкладки',
@@ -118,6 +125,7 @@ export const ru: Translation<Messages> = {
     closeAll: 'Закрыть все',
     pin: 'Закрепить',
     unpin: 'Открепить',
+    none: 'Нет открытых запросов',
     unsaved: 'Есть несохранённые изменения',
   },
   auth: {

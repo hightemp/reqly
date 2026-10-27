@@ -7,10 +7,10 @@
   import type { Tab } from '$lib/stores/tabs.svelte';
   import Icon from '$lib/ui/Icon.svelte';
   import IconButton from '$lib/ui/IconButton.svelte';
-  import { protocolOf } from '$lib/ui/badges';
   import MethodBadge from '$lib/ui/MethodBadge.svelte';
   import { contextMenu, menus, type MenuEntry } from '$lib/ui/overlay/menus.svelte';
   import Spinner from '$lib/ui/Spinner.svelte';
+  import { closeTab, tabInfo, trackTabs } from './info.svelte';
 
   let { services }: { services: Services } = $props();
   const tabs = $derived(services.tabs);
@@ -18,34 +18,11 @@
   let dragFrom = $state<number | null>(null);
   let dragOver = $state<number | null>(null);
 
-  // Tab titles come from drafts so tabs of other collections still show names.
-  $effect(() => {
-    for (const tab of tabs.tabs) {
-      void services.editor.open(tab.id).then(
-        (d) => {
-          if (d.node?.deletedAt) tabs.close(tab.id);
-        },
-        () => tabs.close(tab.id),
-      );
-    }
-  });
+  // svelte-ignore state_referenced_locally
+  trackTabs(services);
 
-  function info(tab: Tab) {
-    const draft = services.editor.get(tab.id);
-    const item = services.tree.byId.get(tab.id);
-    return {
-      name: draft?.node?.name ?? item?.label ?? '…',
-      method: draft?.request?.method ?? item?.method ?? 'GET',
-      protocol: draft?.node ? protocolOf(draft.node.data) : (item?.protocol ?? null),
-      dirty: draft?.dirty ?? false,
-      running: services.responses.run(tab.id).sending,
-    };
-  }
-
-  function close(id: string) {
-    void services.editor.release(id);
-    tabs.close(id);
-  }
+  const info = (tab: Tab) => tabInfo(services, tab);
+  const close = (id: string) => closeTab(services, id);
 
   function menuFor(tab: Tab, index: number): MenuEntry[] {
     return [

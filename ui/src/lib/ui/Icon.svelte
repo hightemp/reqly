@@ -6,6 +6,7 @@
     restore: 'M8 8h11v11H8z M5 16V5h11',
     close: 'M6 6l12 12M18 6L6 18',
     sidebar: 'M4 5h16v14H4z M9 5v14',
+    menu: 'M4 6h16M4 12h16M4 18h16',
     'layout-right': 'M4 5h16v14H4z M13 5v14',
     'layout-bottom': 'M4 5h16v14H4z M4 13h16',
     sun: 'M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z',
