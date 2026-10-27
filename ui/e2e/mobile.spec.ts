@@ -1,8 +1,19 @@
-import { devices, expect, test } from '@playwright/test';
+import { devices, expect, test, type Page } from '@playwright/test';
 
 // Phone-sized screen with touch input (the Android layout).
 const { defaultBrowserType: _, ...pixel } = devices['Pixel 7'];
 test.use({ ...pixel, locale: 'en-US' });
+
+/** Closes every open request so the next specs start without tabs. */
+async function closeAllRequests(page: Page) {
+  await page.reload();
+  await page.getByRole('button', { name: /^Open requests: \d+$/ }).click();
+  const list = page.getByRole('dialog', { name: 'Open requests' });
+  const close = list.getByRole('button', { name: 'Close', exact: true });
+  while ((await close.count()) > 0) await close.first().click();
+  await expect(list.getByText('No open requests')).toBeVisible();
+  await page.keyboard.press('Escape');
+}
 
 test('compact layout: drawer, open requests and request / response switch', async ({
   page,
@@ -42,6 +53,7 @@ test('compact layout: drawer, open requests and request / response switch', asyn
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
+  await closeAllRequests(page);
 });
 
 test('touch: finger-sized rows and long press for the context menu', async ({ page }) => {
@@ -70,4 +82,5 @@ test('touch: finger-sized rows and long press for the context menu', async ({ pa
   await expect(menu.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
   // Releasing the finger does not pick a menu item.
   await expect(drawer).toBeVisible();
+  await closeAllRequests(page);
 });
