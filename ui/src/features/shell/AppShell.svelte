@@ -275,7 +275,10 @@
       window.removeEventListener('pointerdown', onSwipeStart, true);
       window.removeEventListener('pointerup', onSwipeEnd, true);
     });
-    const onBeforeUnload = () => void services.editor.flushAll();
+    const onBeforeUnload = () => {
+      void services.editor.flushAll();
+      void services.tabs.flush();
+    };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
       offs.forEach((off) => off());

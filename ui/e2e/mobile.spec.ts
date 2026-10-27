@@ -12,7 +12,8 @@ async function closeAllRequests(page: Page) {
   const close = list.getByRole('button', { name: 'Close', exact: true });
   while ((await close.count()) > 0) await close.first().click();
   await expect(list.getByText('No open requests')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Open requests: 0' })).toBeVisible();
 }
 
 test('compact layout: drawer, open requests and request / response switch', async ({

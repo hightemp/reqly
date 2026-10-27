@@ -109,6 +109,14 @@ describe('AppShell', () => {
     expect(await screen.findByText('Выберите или создайте запрос')).toBeInTheDocument();
   });
 
+  it('saves open tabs at once when the page unloads', async () => {
+    const { services, saved } = await setup();
+    services.tabs.open('r1', { preview: false });
+    window.dispatchEvent(new Event('beforeunload'));
+    await tick();
+    expect(saved.get('ui.tabs.w1')).toMatchObject({ tabs: [{ id: 'r1' }], activeId: 'r1' });
+  });
+
   describe('compact layout', () => {
     it('keeps the sidebar in a drawer', async () => {
       await setup({ compact: true });
