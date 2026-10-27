@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
+import { LONG_PRESS_MS } from '../touch';
 import Harness from './TreeHarness.test.svelte';
 
 const row = (name: string) => screen.getByRole('treeitem', { name: new RegExp(`^${name}`) });
@@ -158,5 +159,59 @@ describe('Tree', () => {
     await fireEvent.pointerMove(window, { clientX: 10, clientY: 39 });
     await fireEvent.pointerUp(window);
     expect(onmove).not.toHaveBeenCalled();
+  });
+
+  describe('on touch screens', () => {
+    function prepare() {
+      const spies = setup({ expanded: ['api'] });
+      const viewport = screen.getByRole('tree').querySelector<HTMLElement>('.viewport')!;
+      viewport.getBoundingClientRect = () => ({
+        top: 0,
+        bottom: 400,
+        left: 0,
+        right: 300,
+        width: 300,
+        height: 400,
+        x: 0,
+        y: 0,
+        toJSON() {},
+      });
+      document.elementFromPoint = () => row('users');
+      return spies;
+    }
+    const touch = { pointerType: 'touch', isPrimary: true };
+
+    it('scrolls instead of dragging when the finger moves at once', async () => {
+      const { onmove } = prepare();
+      await fireEvent.pointerDown(row('readme'), { ...touch, button: 0, clientX: 10, clientY: 90 });
+      await fireEvent.pointerMove(window, { ...touch, clientX: 10, clientY: 39 });
+      await fireEvent.pointerUp(window, touch);
+      expect(onmove).not.toHaveBeenCalled();
+    });
+
+    it('drags after holding the row', async () => {
+      vi.useFakeTimers();
+      try {
+        const { onmove } = prepare();
+        await fireEvent.pointerDown(row('readme'), {
+          ...touch,
+          button: 0,
+          clientX: 10,
+          clientY: 90,
+        });
+        vi.advanceTimersByTime(LONG_PRESS_MS);
+        const move = new Event('touchmove', { cancelable: true, bubbles: true });
+        window.dispatchEvent(move);
+        expect(move.defaultPrevented).toBe(true);
+        await fireEvent.pointerMove(window, { ...touch, clientX: 10, clientY: 39 });
+        await fireEvent.pointerUp(window, touch);
+        expect(onmove).toHaveBeenCalledWith(
+          ['readme'],
+          expect.objectContaining({ id: 'users', position: 'inside' }),
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

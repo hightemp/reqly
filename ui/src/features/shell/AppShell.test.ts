@@ -120,6 +120,23 @@ describe('AppShell', () => {
       expect(screen.queryByRole('dialog', { name: 'Collections' })).not.toBeInTheDocument();
     });
 
+    it('opens the drawer with a swipe from the left edge and closes it with a swipe left', async () => {
+      await setup({ compact: true });
+      const touch = { pointerType: 'touch', isPrimary: true };
+      const main = screen.getByRole('main');
+      await fireEvent.pointerDown(main, { ...touch, clientX: 200, clientY: 300 });
+      await fireEvent.pointerUp(window, { ...touch, clientX: 330, clientY: 300 });
+      expect(screen.queryByRole('dialog', { name: 'Collections' })).not.toBeInTheDocument();
+
+      await fireEvent.pointerDown(main, { ...touch, clientX: 4, clientY: 300 });
+      await fireEvent.pointerUp(window, { ...touch, clientX: 160, clientY: 310 });
+      const drawer = screen.getByRole('dialog', { name: 'Collections' });
+
+      await fireEvent.pointerDown(drawer, { ...touch, clientX: 250, clientY: 300 });
+      await fireEvent.pointerUp(window, { ...touch, clientX: 60, clientY: 300 });
+      expect(screen.queryByRole('dialog', { name: 'Collections' })).not.toBeInTheDocument();
+    });
+
     it('closes the drawer when a request is opened', async () => {
       const { services } = await setup({ compact: true });
       await fireEvent.click(screen.getByRole('button', { name: 'Menu' }));

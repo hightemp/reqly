@@ -3,6 +3,7 @@
   selected folder (recursively), grouped by subfolder path or flat.
 -->
 <script lang="ts">
+  import { TOUCH_ROW_HEIGHT } from '$lib/ui/touch';
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
   import type { RequestTreeItem } from '$lib/stores/tree.svelte';
@@ -93,6 +94,7 @@
 >
   {#snippet first()}
     <Tree
+      rowHeight={services.viewport.touch ? TOUCH_ROW_HEIGHT : undefined}
       items={folderItems}
       label={t('sidebar.categories')}
       bind:expanded={
@@ -123,6 +125,7 @@
   {/snippet}
   {#snippet second()}
     <Tree
+      rowHeight={services.viewport.touch ? TOUCH_ROW_HEIGHT : undefined}
       items={list}
       label={t('sidebar.requests')}
       expanded={list.filter((i) => i.isFolder).map((i) => i.id)}

@@ -1,5 +1,6 @@
 <!-- Tree mode: folders and requests in one tree. -->
 <script lang="ts">
+  import { TOUCH_ROW_HEIGHT } from '$lib/ui/touch';
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
   import type { RequestTreeItem } from '$lib/stores/tree.svelte';
@@ -36,7 +37,7 @@
   bind:active={tree.active}
   bind:renaming={tree.renaming}
   {filter}
-  rowHeight={26}
+  rowHeight={services.viewport.touch ? TOUCH_ROW_HEIGHT : 26}
   onactivate={(id) => open(id, true)}
   onopen={(id) => open(id, false)}
   onrename={(id, name) => void tree.rename(id, name)}

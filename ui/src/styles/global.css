@@ -35,6 +35,16 @@
   --touch-target: 44px;
 }
 
+/* Touch screens: finger-sized controls whatever the density. */
+@media (pointer: coarse) {
+  :root,
+  :root[data-density='compact'] {
+    --control-height: 36px;
+    --row-height: 36px;
+    --statusbar-height: 40px;
+  }
+}
+
 :root[data-density='compact'] {
   --space-1: 3px;
   --space-2: 6px;

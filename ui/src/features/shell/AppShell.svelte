@@ -37,6 +37,7 @@
   import { provideTemplateHost } from '$lib/template/host';
   import { provideCollab } from '$lib/collab/collab';
   import Drawer from '$lib/ui/overlay/Drawer.svelte';
+  import { installLongPress, swipeDirection, type TouchPoint } from '$lib/ui/touch';
   import CompactBar, { type CompactPane } from './CompactBar.svelte';
   import Titlebar from './Titlebar.svelte';
 
@@ -88,6 +89,24 @@
     drawerOpen = false;
     pane = 'request';
   });
+  /** Swipes start this close to the left edge to open the drawer. */
+  const EDGE = 40;
+  let swipeStart: TouchPoint | null = null;
+  function onSwipeStart(e: PointerEvent) {
+    swipeStart =
+      compact && e.pointerType === 'touch' && e.isPrimary
+        ? { x: e.clientX, y: e.clientY, t: e.timeStamp }
+        : null;
+  }
+  function onSwipeEnd(e: PointerEvent) {
+    if (!swipeStart || e.pointerType !== 'touch') return;
+    const start = swipeStart;
+    swipeStart = null;
+    const direction = swipeDirection(start, { x: e.clientX, y: e.clientY, t: e.timeStamp });
+    if (direction === 'right' && !drawerOpen && start.x <= EDGE) drawerOpen = true;
+    else if (direction === 'left' && drawerOpen) drawerOpen = false;
+  }
+
   // Sending shows the response.
   $effect(() => {
     const id = tabs.activeId;
@@ -248,6 +267,14 @@
       hotkeys.handle(e, services.scopes.list);
     };
     window.addEventListener('keydown', onKeyDown);
+    // Touch: holding a finger opens context menus; swipes move the drawer.
+    offs.push(installLongPress(window));
+    window.addEventListener('pointerdown', onSwipeStart, true);
+    window.addEventListener('pointerup', onSwipeEnd, true);
+    offs.push(() => {
+      window.removeEventListener('pointerdown', onSwipeStart, true);
+      window.removeEventListener('pointerup', onSwipeEnd, true);
+    });
     const onBeforeUnload = () => void services.editor.flushAll();
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
@@ -504,5 +531,13 @@
   .status-button:hover {
     background: var(--c-bg-hover);
     color: var(--c-fg);
+  }
+  @media (pointer: coarse) {
+    .statusbar {
+      --control-height: 36px;
+    }
+    .status-button {
+      height: 36px;
+    }
   }
 </style>

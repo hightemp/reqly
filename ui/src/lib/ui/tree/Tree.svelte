@@ -5,7 +5,9 @@
 -->
 <script lang="ts" generics="T extends TreeItem">
   import { onMount, type Snippet } from 'svelte';
+  import { menus } from '../overlay/menus.svelte';
   import { portal } from '../overlay/portal';
+  import { LONG_PRESS_MS, MOVE_TOLERANCE } from '../touch';
   import VirtualList from '../VirtualList.svelte';
   import { treeDnd, type DropTarget } from './dnd.svelte';
   import {
@@ -84,7 +86,9 @@
   let renameValue = $state('');
   let typeBuffer = '';
   let typeTimer: ReturnType<typeof setTimeout> | undefined;
-  let pending: { id: string; x: number; y: number } | null = null;
+  // A touch drag starts only after holding the row (a quick move scrolls).
+  let pending: { id: string; x: number; y: number; touch: boolean; held: boolean } | null = null;
+  let holdTimer: ReturnType<typeof setTimeout> | undefined;
   let autoExpandTimer: ReturnType<typeof setTimeout> | undefined;
 
   const indexOf = (id: string | null) => (id === null ? -1 : visibleIds.indexOf(id));
@@ -264,12 +268,22 @@
 
   function onPointerDown(e: PointerEvent, r: TreeRow<T>) {
     if (!draggable || e.button !== 0 || renaming) return;
-    pending = { id: r.id, x: e.clientX, y: e.clientY };
+    const touch = e.pointerType === 'touch';
+    pending = { id: r.id, x: e.clientX, y: e.clientY, touch, held: !touch };
+    clearTimeout(holdTimer);
+    if (touch) holdTimer = setTimeout(() => pending && (pending.held = true), LONG_PRESS_MS);
   }
 
   function onWindowPointerMove(e: PointerEvent) {
     if (pending && !treeDnd.dragging) {
-      if (Math.hypot(e.clientX - pending.x, e.clientY - pending.y) < 5) return;
+      const distance = Math.hypot(e.clientX - pending.x, e.clientY - pending.y);
+      if (!pending.held) {
+        if (distance > MOVE_TOLERANCE) pending = null;
+        return;
+      }
+      if (distance < 5) return;
+      // The long press opened the context menu; dragging wins.
+      if (pending.touch) menus.close();
       const ids = selectedSet.has(pending.id) ? normalizeSelection(items, selected) : [pending.id];
       const first = items.find((i) => i.id === ids[0]);
       treeDnd.start(
@@ -285,8 +299,20 @@
   }
 
   function onWindowPointerUp() {
+    clearTimeout(holdTimer);
     pending = null;
     if (treeDnd.dragging?.source === treeId) treeDnd.end(true);
+  }
+
+  function onWindowPointerCancel() {
+    clearTimeout(holdTimer);
+    pending = null;
+    if (treeDnd.dragging?.source === treeId) treeDnd.end(false);
+  }
+
+  // Keep the page from scrolling under a held or dragged row.
+  function onWindowTouchMove(e: TouchEvent) {
+    if (pending?.touch && pending.held && e.cancelable) e.preventDefault();
   }
 
   onMount(() => {
@@ -296,9 +322,14 @@
     });
     window.addEventListener('pointermove', onWindowPointerMove);
     window.addEventListener('pointerup', onWindowPointerUp);
+    window.addEventListener('pointercancel', onWindowPointerCancel);
+    window.addEventListener('touchmove', onWindowTouchMove, { passive: false });
     return () => {
       unregister();
       clearTimeout(autoExpandTimer);
+      clearTimeout(holdTimer);
+      window.removeEventListener('pointercancel', onWindowPointerCancel);
+      window.removeEventListener('touchmove', onWindowTouchMove);
       window.removeEventListener('pointermove', onWindowPointerMove);
       window.removeEventListener('pointerup', onWindowPointerUp);
     };

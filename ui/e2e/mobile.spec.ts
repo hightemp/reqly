@@ -43,3 +43,31 @@ test('compact layout: drawer, open requests and request / response switch', asyn
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test('touch: finger-sized rows and long press for the context menu', async ({ page }) => {
+  await page.goto('/');
+  const drawer = page.getByRole('dialog', { name: 'Collections' });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await drawer.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await expect(drawer).toBeHidden();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  const row = drawer.getByRole('treeitem').first();
+  await expect(row).toBeVisible();
+  // Let the drawer finish sliding in.
+  await page.waitForTimeout(300);
+  const box = (await row.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(40);
+
+  // Hold a finger on the row.
+  const cdp = await page.context().newCDPSession(page);
+  const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+  await page.waitForTimeout(800);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
+  // Releasing the finger does not pick a menu item.
+  await expect(drawer).toBeVisible();
+});
