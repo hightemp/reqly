@@ -9,12 +9,24 @@ class TooltipState {
 
 export const tooltipState = new TooltipState();
 
+// Touch screens have no hover: after a tap, focus and emulated mouse events
+// must not pop tooltips up. A mouse or the keyboard turns them back on.
+let touching = false;
+let watching = false;
+function watchInput() {
+  if (watching || typeof window === 'undefined') return;
+  watching = true;
+  window.addEventListener('pointerdown', (e) => (touching = e.pointerType === 'touch'), true);
+  window.addEventListener('keydown', () => (touching = false), true);
+}
+
 export function tooltip(node: HTMLElement, text: string | null | undefined) {
   let current = text;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
+  watchInput();
   const show = () => {
-    if (!current) return;
+    if (!current || touching) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       tooltipState.text = current ?? null;

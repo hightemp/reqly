@@ -194,6 +194,25 @@ describe('tooltip', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     vi.useRealTimers();
   });
+
+  it('stays hidden after a tap until the keyboard or a mouse is used', async () => {
+    vi.useFakeTimers();
+    render(Harness, {});
+    const target = screen.getByTestId('tip-target');
+    await fireEvent.pointerDown(target, { pointerType: 'touch' });
+    await fireEvent.mouseEnter(target);
+    await fireEvent.focusIn(target);
+    vi.advanceTimersByTime(600);
+    await tick();
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+    await fireEvent.keyDown(window, { key: 'Tab' });
+    await fireEvent.focusIn(target);
+    vi.advanceTimersByTime(600);
+    await tick();
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+    vi.useRealTimers();
+  });
 });
 
 describe('Select', () => {
