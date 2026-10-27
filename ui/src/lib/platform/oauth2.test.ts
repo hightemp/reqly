@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CALLBACK_PATH, handleCallbackPage, signIn, SignInError, webRedirectUri } from './oauth2';
+import {
+  CALLBACK_PATH,
+  handleCallbackPage,
+  isRedirectOf,
+  signIn,
+  SignInError,
+  webRedirectUri,
+} from './oauth2';
 
 describe('oauth2 sign-in (web)', () => {
   afterEach(() => {
@@ -41,5 +48,34 @@ describe('oauth2 sign-in (web)', () => {
     );
     expect(close).toHaveBeenCalled();
     Object.defineProperty(window, 'opener', { value: null, configurable: true });
+  });
+});
+
+describe('oauth2 sign-in (Android)', () => {
+  const redirect = 'http://localhost:8000/callback';
+
+  it('opens the browser and takes the redirected URL the user pastes', async () => {
+    const open = vi.fn(async () => {});
+    const ask = vi.fn(async () => `  ${redirect}?code=42  `);
+    const url = await signIn('https://idp.test/authorize', redirect, 'Sign in', {
+      mobile: { open, ask },
+    });
+    expect(open).toHaveBeenCalledWith('https://idp.test/authorize');
+    expect(ask).toHaveBeenCalledWith(redirect);
+    expect(url).toBe(`${redirect}?code=42`);
+  });
+
+  it('is cancelled when nothing is pasted', async () => {
+    const pending = signIn('https://idp.test/', redirect, '', {
+      mobile: { open: async () => {}, ask: async () => null },
+    });
+    await expect(pending).rejects.toMatchObject({ code: 'cancelled' });
+  });
+
+  it('accepts only URLs of the redirect URI', () => {
+    expect(isRedirectOf(`${redirect}?code=1`, redirect)).toBe(true);
+    expect(isRedirectOf(`${redirect}#access_token=1`, redirect)).toBe(true);
+    expect(isRedirectOf('http://evil.test/callback?code=1', redirect)).toBe(false);
+    expect(isRedirectOf('not a url', redirect)).toBe(false);
   });
 });

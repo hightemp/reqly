@@ -97,6 +97,9 @@ export const en = {
     delete: 'Delete collection',
     deleteTitle: 'Delete collection “{name}”?',
   },
+  platform: {
+    unavailableAndroid: 'Not available on Android',
+  },
   shell: {
     menu: 'Menu',
     closeMenu: 'Close menu',
@@ -209,6 +212,10 @@ export const en = {
     desktopOnly: 'Only available in the desktop app.',
     serverHint: 'Signed when the request is sent; secrets stay on this device.',
     token2: {
+      pasteTitle: 'Finish signing in',
+      pasteLabel: 'Sign in in the browser, then paste the address of the page it ends up on',
+      pasteConfirm: 'Continue',
+      pasteInvalid: 'This is not the redirect URI of this configuration',
       title: 'Token',
       none: 'No token yet.',
       valid: 'Valid',
@@ -1004,6 +1011,7 @@ export const en = {
     'http.http3_unsupported': 'This build of Reqly does not support HTTP/3',
     'http.invalid_setting': 'Invalid setting: {setting}',
     'http.not_allowed': '“{setting}” is not available on the server',
+    'http.unavailable': '“{setting}” is not available on Android',
     'import.unknown_format': 'The format of “{name}” was not recognized',
     'import.invalid': 'This is not a valid {format} file',
     'import.empty': 'Nothing to import',
@@ -1030,6 +1038,7 @@ export const en = {
     'template.response_header': 'The referenced response has no header "{name}"',
     'template.cookie_missing': 'Cookie "{name}" not found',
     'template.not_allowed': '"{function}" is not available on the server',
+    'template.unavailable': '"{function}" is not available on Android',
     'template.file': 'Cannot read file {path}',
     'environment.base_delete': 'The base environment cannot be deleted',
     'storage.secret_decrypt': 'Cannot decrypt a secret: was secret.key replaced?',

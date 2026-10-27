@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Android: saving files to the content URI the save dialog returns, opening OAuth 2.0 sign-in in the browser",
+  "windows": ["main"],
+  "platforms": ["android", "iOS"],
+  "permissions": ["fs:allow-write-file", "opener:allow-open-url"]
+}

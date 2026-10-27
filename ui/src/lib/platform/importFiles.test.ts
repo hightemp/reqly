@@ -72,6 +72,22 @@ describe('saveExportFiles', () => {
     ).toBe(false);
   });
 
+  it('android: every file goes through the save dialog', async () => {
+    const saveBytes = vi.fn(async (_name: string, _bytes: Uint8Array) => true);
+    const ok = await saveExportFiles(new FakeTransport(), files, { saveBytes });
+    expect(ok).toBe(true);
+    expect(saveBytes.mock.calls.map((c) => [c[0], new TextDecoder().decode(c[1])])).toEqual([
+      ['a.json', '{}'],
+      ['b.json', '[]'],
+    ]);
+  });
+
+  it('android: cancelling stops saving', async () => {
+    const saveBytes = vi.fn(async () => false);
+    expect(await saveExportFiles(new FakeTransport(), files, { saveBytes })).toBe(false);
+    expect(saveBytes).toHaveBeenCalledOnce();
+  });
+
   it('browser: downloads each file', async () => {
     const download = vi.fn();
     await saveExportFiles(new FakeTransport(), files, { download });

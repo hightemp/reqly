@@ -32,7 +32,9 @@ async fn dispatch(core: State<'_, Core>, name: String, input: Value) -> Result<V
 }
 
 /// Opens the provider's sign-in page in a window and resolves with the URL
-/// it redirects to (`redirect_uri…`), which is never loaded.
+/// it redirects to (`redirect_uri…`), which is never loaded. Desktop only:
+/// Android has one webview and signs in through the system browser.
+#[cfg(desktop)]
 #[tauri::command]
 async fn oauth2_sign_in<R: Runtime>(
     app: AppHandle<R>,
@@ -100,11 +102,12 @@ async fn open_core<R: Runtime>(app: &AppHandle<R>) -> Result<Core, Box<dyn std::
     let storage = Storage::open(&data_dir.join("reqly.db"), OpenOptions::default()).await?;
     tracing::info!(data_dir = %data_dir.display(), "storage opened");
     let blobs = BlobStore::new(data_dir.join("blobs"));
-    Ok(Core::new(AppContext::new(
-        Platform::Desktop,
-        storage,
-        blobs,
-    )))
+    let platform = if cfg!(mobile) {
+        Platform::Mobile
+    } else {
+        Platform::Desktop
+    };
+    Ok(Core::new(AppContext::new(platform, storage, blobs)))
 }
 
 /// Forwards core events to every webview until the bus closes.
@@ -148,7 +151,17 @@ pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tau
         forward_events(handle, &app.state::<Core>());
         Ok(())
     })
-    .invoke_handler(tauri::generate_handler![dispatch, oauth2_sign_in])
+    .invoke_handler(handlers())
+}
+
+#[cfg(desktop)]
+fn handlers<R: Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static {
+    tauri::generate_handler![dispatch, oauth2_sign_in]
+}
+
+#[cfg(mobile)]
+fn handlers<R: Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static {
+    tauri::generate_handler![dispatch]
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -161,7 +174,12 @@ pub fn run() {
         .init();
 
     configure(
-        tauri::Builder::default().plugin(tauri_plugin_dialog::init()),
+        tauri::Builder::default()
+            .plugin(tauri_plugin_dialog::init())
+            // Android saves through content URIs (ui/src/lib/platform/files.ts).
+            .plugin(tauri_plugin_fs::init())
+            // Android: OAuth 2.0 sign-in in the system browser.
+            .plugin(tauri_plugin_opener::init()),
         None,
     )
     .run(tauri::generate_context!())

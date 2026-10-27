@@ -16,6 +16,7 @@ import { TabsStore } from './stores/tabs.svelte';
 import { TreeStore } from './stores/tree.svelte';
 import { Viewport } from './stores/viewport.svelte';
 import { WorkspaceStore } from './stores/workspace.svelte';
+import { capabilities } from './platform/capabilities.svelte';
 import { ThemeManager, type MediaQuery } from './themes/manager.svelte';
 import { parseTheme } from './themes/theme';
 
@@ -76,6 +77,9 @@ export async function createServices(
 
   await loadUserCustomizations(transport, themes, hotkeys);
 
+  await capabilities
+    .load(transport)
+    .catch((e: unknown) => console.warn('[app] info not loaded', e));
   const account = new AccountStore(transport);
   await account.load().catch((e: unknown) => console.warn('[account] load failed', e));
   const collab = new CollabService(transport, () =>

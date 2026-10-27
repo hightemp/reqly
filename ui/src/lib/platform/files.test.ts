@@ -75,6 +75,15 @@ describe('response bodies', () => {
     expect(saveBody).toHaveBeenCalledWith({ id: 'id', path: '/tmp/body.json' });
   });
 
+  it('android save writes the bytes where the save dialog points', async () => {
+    const t = transportWithBody(3, () => 'abc');
+    const saveBytes = vi.fn(async (_name: string, _bytes: Uint8Array) => true);
+    const ok = await saveResponseBody(t, 'id', 'body.txt', { saveBytes });
+    expect(ok).toBe(true);
+    const [name, bytes] = saveBytes.mock.calls[0]!;
+    expect([name, new TextDecoder().decode(bytes)]).toEqual(['body.txt', 'abc']);
+  });
+
   it('web save triggers a download', async () => {
     const t = transportWithBody(3, () => 'abc');
     const download = vi.fn();

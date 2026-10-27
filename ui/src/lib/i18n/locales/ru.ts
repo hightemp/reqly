@@ -109,6 +109,9 @@ export const ru: Translation<Messages> = {
     delete: 'Удалить коллекцию',
     deleteTitle: 'Удалить коллекцию «{name}»?',
   },
+  platform: {
+    unavailableAndroid: 'Недоступно на Android',
+  },
   shell: {
     menu: 'Меню',
     closeMenu: 'Закрыть меню',
@@ -221,6 +224,10 @@ export const ru: Translation<Messages> = {
     desktopOnly: 'Доступно только в настольном приложении.',
     serverHint: 'Подпись вычисляется при отправке; секреты не покидают это устройство.',
     token2: {
+      pasteTitle: 'Завершение входа',
+      pasteLabel: 'Войдите в браузере, затем вставьте адрес страницы, на которой он остановился',
+      pasteConfirm: 'Продолжить',
+      pasteInvalid: 'Это не redirect URI этой конфигурации',
       title: 'Токен',
       none: 'Токена пока нет.',
       valid: 'Действителен',
@@ -1054,6 +1061,7 @@ export const ru: Translation<Messages> = {
     'http.http3_unsupported': 'Эта сборка Reqly не поддерживает HTTP/3',
     'http.invalid_setting': 'Неверная настройка: {setting}',
     'http.not_allowed': '«{setting}» недоступно на сервере',
+    'http.unavailable': '«{setting}» недоступно на Android',
     'import.unknown_format': 'Не удалось определить формат «{name}»',
     'import.invalid': 'Это не корректный файл {format}',
     'import.empty': 'Нечего импортировать',
@@ -1079,6 +1087,7 @@ export const ru: Translation<Messages> = {
     'template.response_header': 'В ответе-источнике нет заголовка «{name}»',
     'template.cookie_missing': 'Cookie «{name}» не найдена',
     'template.not_allowed': '«{function}» недоступна на сервере',
+    'template.unavailable': '«{function}» недоступна на Android',
     'template.file': 'Не удалось прочитать файл {path}',
     'environment.base_delete': 'Базовое окружение нельзя удалить',
     'storage.secret_decrypt': 'Не удалось расшифровать секрет: файл secret.key заменён?',

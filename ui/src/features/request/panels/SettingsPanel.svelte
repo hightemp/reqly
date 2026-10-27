@@ -5,6 +5,7 @@
   import type { TlsVersion } from '$lib/api/generated/TlsVersion';
   import { isTauri } from '$lib/api/transport';
   import { t } from '$lib/i18n';
+  import { capabilities } from '$lib/platform/capabilities.svelte';
   import Input from '$lib/ui/Input.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
   import Textarea from '$lib/ui/Textarea.svelte';
@@ -206,15 +207,22 @@
   {/each}
   {#if desktop}
     {#each texts as x (x.key)}
-      <label class="row">
+      {@const available = capabilities.has(x.key)}
+      <label class="row" class:top={!available}>
         <span class="label">{x.label()}</span>
-        <Input
-          mono
-          value={settings[x.key] ?? ''}
-          placeholder={x.placeholder}
-          aria-label={x.label()}
-          onchange={(e) => setText(x.key, e.currentTarget.value)}
-        />
+        <span class="stack">
+          <Input
+            mono
+            value={settings[x.key] ?? ''}
+            placeholder={x.placeholder}
+            aria-label={x.label()}
+            disabled={!available}
+            onchange={(e) => setText(x.key, e.currentTarget.value)}
+          />
+          {#if !available}
+            <span class="unit">{t('platform.unavailableAndroid')}</span>
+          {/if}
+        </span>
       </label>
     {/each}
   {/if}

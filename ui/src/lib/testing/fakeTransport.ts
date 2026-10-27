@@ -77,6 +77,13 @@ export class FakeTransport implements Transport {
     }));
     this.handle('template.prompts', () => []);
     this.handle('account.me', () => ({ user: null, roles: {} }));
+    this.handle('app.info', () => ({
+      name: 'Reqly',
+      version: '0.0.0',
+      platform: 'test',
+      dataDir: null,
+      unavailable: [],
+    }));
     return this;
   }
 

@@ -1,8 +1,12 @@
 // Interactive OAuth 2.0 sign-in. Desktop opens a native window and catches
 // the redirect before it loads; the browser opens a pop-up that lands on
 // `/oauth2/callback` of this app, which hands the URL back to the opener.
+// Android has a single webview: the sign-in page opens in the system
+// browser and the user pastes the URL it redirected to.
 
-import { isTauri } from '$lib/api/transport';
+import { isMobile, isTauri } from '$lib/api/transport';
+import { t } from '$lib/i18n';
+import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
 
 export const CALLBACK_PATH = '/oauth2/callback';
 const MESSAGE = 'reqly-oauth2-callback';
@@ -18,12 +22,58 @@ export function webRedirectUri(): string | undefined {
   return isTauri() ? undefined : `${window.location.origin}${CALLBACK_PATH}`;
 }
 
+export interface MobileSignIn {
+  /** Opens the URL in the system browser. */
+  open(url: string): Promise<void>;
+  /** Asks for the URL the browser ended up on; null when cancelled. */
+  ask(redirectUri: string): Promise<string | null>;
+}
+
+/** Whether `url` is where the provider sends the user back (`redirectUri`). */
+export function isRedirectOf(url: string, redirectUri: string): boolean {
+  const base = (u: string) => {
+    const parsed = new URL(u);
+    return `${parsed.origin}${parsed.pathname}`;
+  };
+  try {
+    return base(url) === base(redirectUri);
+  } catch {
+    return false;
+  }
+}
+
+function mobileSignIn(): MobileSignIn {
+  return {
+    open: async (url) => {
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      await openUrl(url);
+    },
+    ask: (redirectUri) =>
+      dialogs.prompt({
+        title: t('auth.token2.pasteTitle'),
+        label: t('auth.token2.pasteLabel'),
+        placeholder: `${redirectUri}?code=…`,
+        confirmLabel: t('auth.token2.pasteConfirm'),
+        validate: (v) =>
+          isRedirectOf(v.trim(), redirectUri) ? null : t('auth.token2.pasteInvalid'),
+      }),
+  };
+}
+
 /** Opens `authorizeUrl`; resolves with the URL the provider redirected to. */
 export async function signIn(
   authorizeUrl: string,
   redirectUri: string,
   title: string,
+  deps: { mobile?: MobileSignIn } = {},
 ): Promise<string> {
+  const mobile = deps.mobile ?? (isTauri() && isMobile() ? mobileSignIn() : undefined);
+  if (mobile) {
+    await mobile.open(authorizeUrl);
+    const url = (await mobile.ask(redirectUri))?.trim();
+    if (!url) throw new SignInError('cancelled');
+    return url;
+  }
   if (isTauri()) {
     const { invoke } = await import('@tauri-apps/api/core');
     return invoke<string>('oauth2_sign_in', { url: authorizeUrl, redirectUri, title });

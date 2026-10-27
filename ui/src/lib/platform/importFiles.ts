@@ -3,8 +3,8 @@
 import type { ExportFile } from '$lib/api/generated/ExportFile';
 import type { ImportSource } from '$lib/api/generated/ImportSource';
 import type { Transport } from '$lib/api/transport';
-import { isTauri } from '$lib/api/transport';
-import { toBase64 } from './files';
+import { isMobile, isTauri } from '$lib/api/transport';
+import { mobileSaveBytes, toBase64, type SaveBytes } from './files';
 
 /** Larger single files are rejected before reading. */
 export const MAX_IMPORT_FILE_BYTES = 64 * 1024 * 1024;
@@ -99,6 +99,7 @@ export async function dropToSources(data: DataTransfer): Promise<ImportSource[]>
 }
 
 interface SaveDeps {
+  saveBytes?: SaveBytes;
   save?: (options: { defaultPath?: string }) => Promise<string | null>;
   openDirectory?: () => Promise<string | null>;
   download?: (blob: Blob, name: string) => void;
@@ -106,6 +107,7 @@ interface SaveDeps {
 
 async function tauriSaveDeps(): Promise<SaveDeps | undefined> {
   if (!isTauri()) return undefined;
+  if (isMobile()) return { saveBytes: await mobileSaveBytes() };
   const { open, save } = await import('@tauri-apps/plugin-dialog');
   return {
     save,
@@ -127,7 +129,8 @@ function download(blob: Blob, name: string) {
 
 /**
  * Saves exported files. Desktop: a save dialog for one file, a folder
- * picker for several. Browser: downloads. Returns false when cancelled.
+ * picker for several. Android: a save dialog per file. Browser: downloads.
+ * Returns false when cancelled.
  */
 export async function saveExportFiles(
   transport: Transport,
@@ -135,6 +138,13 @@ export async function saveExportFiles(
   deps?: SaveDeps,
 ): Promise<boolean> {
   const d = deps ?? (await tauriSaveDeps());
+  if (d?.saveBytes) {
+    // Android: no folder picker, one save dialog per file.
+    for (const f of files) {
+      if (!(await d.saveBytes(f.name, new TextEncoder().encode(f.content)))) return false;
+    }
+    return true;
+  }
   if (d?.save && d.openDirectory) {
     if (files.length === 1) {
       const path = await d.save({ defaultPath: files[0]!.name });

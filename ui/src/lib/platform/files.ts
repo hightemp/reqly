@@ -1,9 +1,11 @@
-// File access that differs between desktop (native dialogs, local paths)
-// and the browser (uploads to the server blob store, downloads).
+// File access that differs between desktop (native dialogs, local paths),
+// Android (the browser chooser for picking; the save dialog returns a
+// content URI that only the fs plugin can write) and the browser (uploads
+// to the server blob store, downloads).
 
 import type { FileRef } from '$lib/api/generated/FileRef';
 import type { Transport } from '$lib/api/transport';
-import { isTauri } from '$lib/api/transport';
+import { isMobile, isTauri } from '$lib/api/transport';
 
 export interface PickedFile {
   name: string;
@@ -21,8 +23,12 @@ interface TauriDialogs {
   save?: (options?: { defaultPath?: string }) => Promise<string | null>;
 }
 
+/** Saves bytes under a name the user picks; false when cancelled (Android). */
+export type SaveBytes = (name: string, bytes: Uint8Array) => Promise<boolean>;
+
 export interface FileDeps {
   tauri?: TauriDialogs;
+  saveBytes?: SaveBytes;
   /** Browser file chooser (tests inject a fake). */
   choose?: () => Promise<File | null>;
   download?: (blob: Blob, name: string) => void;
@@ -30,10 +36,26 @@ export interface FileDeps {
 
 const basename = (path: string) => path.split(/[\\/]/).pop() ?? path;
 
+/** Desktop dialogs; absent on Android, whose paths the core cannot open. */
 async function tauriDialogs(): Promise<TauriDialogs | undefined> {
-  if (!isTauri()) return undefined;
+  if (!isTauri() || isMobile()) return undefined;
   const { open, save } = await import('@tauri-apps/plugin-dialog');
   return { open, save };
+}
+
+/** Android: the save dialog, then the fs plugin writes to the content URI. */
+export async function mobileSaveBytes(): Promise<SaveBytes | undefined> {
+  if (!isTauri() || !isMobile()) return undefined;
+  const [{ save }, { writeFile }] = await Promise.all([
+    import('@tauri-apps/plugin-dialog'),
+    import('@tauri-apps/plugin-fs'),
+  ]);
+  return async (name, bytes) => {
+    const uri = await save({ defaultPath: name });
+    if (!uri) return false;
+    await writeFile(uri, bytes);
+    return true;
+  };
 }
 
 /** Opens the system file chooser via a hidden `<input type="file">`. */
@@ -135,7 +157,12 @@ export async function saveResponseBody(
   suggestedName: string,
   deps: FileDeps = {},
 ): Promise<boolean> {
-  const tauri = deps.tauri ?? (deps.download ? undefined : await tauriDialogs());
+  const injected = deps.tauri || deps.download || deps.saveBytes;
+  const saveBytes = deps.saveBytes ?? (injected ? undefined : await mobileSaveBytes());
+  if (saveBytes) {
+    return saveBytes(suggestedName, await readResponseBody(transport, responseId));
+  }
+  const tauri = deps.tauri ?? (injected ? undefined : await tauriDialogs());
   if (tauri?.save) {
     const path = await tauri.save({ defaultPath: suggestedName });
     if (!path) return false;
