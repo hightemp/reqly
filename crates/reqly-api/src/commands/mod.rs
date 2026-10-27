@@ -15,7 +15,7 @@ pub mod users;
 
 use std::sync::Arc;
 
-use reqly_core::{Clock, CoreResult, SystemClock};
+use reqly_core::{Clock, CoreError, CoreResult, SystemClock};
 use reqly_storage::Storage;
 use reqly_storage::blobs::BlobStore;
 use reqly_storage::settings::SettingsRepo;
@@ -32,8 +32,32 @@ use crate::registry::{Command, Registry};
 #[ts(export)]
 pub enum Platform {
     Desktop,
+    /// The Android app (Tauri mobile).
+    Mobile,
     Server,
     Test,
+}
+
+impl Platform {
+    /// Features this platform cannot offer, as named in `app.info`.
+    pub fn unavailable(self) -> &'static [&'static str] {
+        match self {
+            // No Unix sockets or interface binding for apps, and the `os`
+            // tag would describe the phone rather than a dev machine.
+            Platform::Mobile => &["unixSocket", "interface", "osTag"],
+            _ => &[],
+        }
+    }
+
+    pub fn supports(self, feature: &str) -> bool {
+        !self.unavailable().contains(&feature)
+    }
+}
+
+/// Error for a feature the platform cannot offer.
+pub(crate) fn unavailable(code: &str, feature: &str, param: &str) -> CoreError {
+    CoreError::new(code, format!("{feature} is not available on this platform"))
+        .with_param(param, feature)
 }
 
 pub struct AppContext {
@@ -167,6 +191,8 @@ pub struct AppInfoOutput {
     pub version: String,
     pub platform: Platform,
     pub data_dir: Option<String>,
+    /// Features this platform cannot offer (see [`Platform::unavailable`]).
+    pub unavailable: Vec<String>,
 }
 
 pub struct AppInfo;
@@ -182,6 +208,12 @@ impl Command<AppContext> for AppInfo {
             version: env!("CARGO_PKG_VERSION").into(),
             platform: ctx.platform,
             data_dir: ctx.data_dir.clone(),
+            unavailable: ctx
+                .platform
+                .unavailable()
+                .iter()
+                .map(|f| f.to_string())
+                .collect(),
         })
     }
 }

@@ -363,6 +363,9 @@ impl SendHost<'_> {
     }
 
     fn os(&self, args: &[Value]) -> CoreResult<Value> {
+        if !self.ctx.platform.supports("osTag") {
+            return Err(super::unavailable("template.unavailable", "os", "function"));
+        }
         let field = arg(args, 0);
         Ok(Value::String(match field.as_str() {
             "platform" => std::env::consts::OS.to_string(),
@@ -1055,9 +1058,13 @@ command!(
     "template.functions",
     Empty,
     TemplateFunctionsOutput,
-    |_ctx, _input| {
+    |ctx, _input| {
+        let os = ctx.platform.supports("osTag");
         Ok(TemplateFunctionsOutput {
-            functions: reqly_template::catalog(),
+            functions: reqly_template::catalog()
+                .into_iter()
+                .filter(|f| os || f.name != "os")
+                .collect(),
             faker: reqly_faker::functions()
                 .iter()
                 .map(|f| FakerInfo {

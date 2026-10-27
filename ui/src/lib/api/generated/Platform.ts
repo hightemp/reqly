@@ -3,4 +3,4 @@
 /**
  * Which shell hosts the core.
  */
-export type Platform = "desktop" | "server" | "test";
+export type Platform = "desktop" | "mobile" | "server" | "test";

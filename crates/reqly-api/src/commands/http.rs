@@ -436,6 +436,21 @@ pub(crate) async fn render_in_request(
         .await
 }
 
+/// Refuses settings the platform cannot honour (Android: Unix sockets,
+/// interface binding).
+fn check_platform(ctx: &AppContext, prepared: &PreparedRequest) -> CoreResult<()> {
+    let set = |v: &Option<String>| v.as_deref().is_some_and(|s| !s.trim().is_empty());
+    for (feature, on) in [
+        ("unixSocket", set(&prepared.settings.unix_socket)),
+        ("interface", set(&prepared.settings.interface)),
+    ] {
+        if on && !ctx.platform.supports(feature) {
+            return Err(super::unavailable("http.unavailable", feature, "setting"));
+        }
+    }
+    Ok(())
+}
+
 /// Sends through the network policy when the server has one.
 pub(crate) async fn execute(
     ctx: &AppContext,
@@ -443,6 +458,7 @@ pub(crate) async fn execute(
     options: ExecOptions,
     cancel: CancelToken,
 ) -> CoreResult<HttpResponse> {
+    check_platform(ctx, &prepared)?;
     match &ctx.network_policy {
         Some(policy) => {
             reqly_http::policy::send_checked(prepared, options, cancel, None, policy).await
@@ -590,12 +606,15 @@ pub async fn send_request_with(
         }
     });
 
-    let result = match &ctx.network_policy {
-        Some(policy) => {
+    let result = match (check_platform(ctx, &prepared), &ctx.network_policy) {
+        (Err(e), _) => Err(e),
+        (Ok(()), Some(policy)) => {
             reqly_http::policy::send_checked(prepared, options, cancel, Some(progress), policy)
                 .await
         }
-        None => reqly_http::engine::execute(prepared, options, cancel, Some(progress)).await,
+        (Ok(()), None) => {
+            reqly_http::engine::execute(prepared, options, cancel, Some(progress)).await
+        }
     };
 
     let history = history(ctx, workspace_id).await?;
