@@ -71,8 +71,9 @@ jobs:
             echo
             echo '---'
             echo
-            echo '**Downloads:** desktop installers for Linux, Windows and macOS and the'
-            echo 'server binary (`reqly-server-*-linux-*.tar.gz`) are attached below.'
+            echo '**Downloads:** desktop installers for Linux, Windows and macOS, the'
+            echo 'Android app (`*_android*.apk`, `.aab`) and the server binary'
+            echo '(`reqly-server-*-linux-*.tar.gz`) are attached below.'
             echo "Docker: \`docker pull ghcr.io/hightemp/reqly-server:$version\`"
             if [ -n "$HUB_USER" ]; then
               echo "or \`docker pull $HUB_USER/reqly-server:$version\`."
@@ -176,6 +177,75 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "$TAG" dist/* --clobber
+
+  android:
+    name: Android (APK, AAB)
+    needs: release
+    if: needs.release.outputs.desktop != '[]' && (inputs.only || 'all') == 'all'
+    runs-on: ubuntu-24.04
+    env:
+      NDK_VERSION: 28.0.12433566
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - run: pnpm install --frozen-lockfile
+      # Release signing only when the secrets exist; otherwise the APK and
+      # AAB are unsigned (see docs/android.md).
+      - name: Signing
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then
+            echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.jks"
+            {
+              echo "REQLY_ANDROID_KEYSTORE=$RUNNER_TEMP/release.jks"
+              echo "REQLY_ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+              echo "REQLY_ANDROID_KEY_ALIAS=$KEY_ALIAS"
+              echo "REQLY_ANDROID_KEY_PASSWORD=$KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+          fi
+      - name: Build
+        run: |
+          unset RUSTFLAGS
+          pnpm -C apps/desktop tauri android build --apk --aab --target aarch64 --target armv7 --target x86_64
+        env:
+          CARGO_PROFILE_RELEASE_STRIP: symbols
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          out=apps/desktop/gen/android/app/build/outputs
+          version="${TAG#v}"
+          mkdir dist
+          apk=$(ls "$out"/apk/universal/release/*.apk | head -n1)
+          aab=$(ls "$out"/bundle/universalRelease/*.aab | head -n1)
+          suffix=$(case "$apk" in *unsigned*) echo "-unsigned" ;; esac)
+          cp "$apk" "dist/Reqly_${version}_android${suffix}.apk"
+          cp "$aab" "dist/Reqly_${version}_android.aab"
+          gh release upload "$TAG" dist/* --clobber
 
   docker:
     name: Docker image

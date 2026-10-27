@@ -8,8 +8,8 @@
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00.svg?logo=svelte)](https://svelte.dev)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fhightemp%2Freqly--server-2496ED.svg?logo=docker)](https://github.com/hightemp/reqly/pkgs/container/reqly-server)
 
-Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS) and a
-self-hosted web version served by a single Rust binary.
+Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS),
+Android and a self-hosted web version served by a single Rust binary.
 
 > Status: v0.3 (stage 3 of the [roadmap](PRD.md)). HTTP requests,
 > environments and templates, import/export and code generation are
@@ -50,6 +50,8 @@ self-hosted web version served by a single Rust binary.
 - Collaboration on a team server: live updates, field-level merging of
   concurrent edits, real-time co-editing of bodies and scripts with
   others' cursors, presence avatars, personal or shared response history
+- Android app with a phone layout (drawer, request / response switch) and
+  touch gestures — see [docs/android.md](docs/android.md)
 
 ## Run with Docker
 

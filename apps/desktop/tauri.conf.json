@@ -29,6 +29,7 @@
     "active": true,
     "targets": "all",
     "category": "DeveloperTool",
+    "android": { "minSdkVersion": 29 },
     "shortDescription": "API client",
     "longDescription": "Reqly is a fast, themeable API client for HTTP, GraphQL, WebSocket, SSE and gRPC.",
     "license": "MIT",

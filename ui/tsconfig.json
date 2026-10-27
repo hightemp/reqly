@@ -20,7 +20,9 @@
     "src/**/*.ts",
     "src/**/*.svelte",
     "e2e/**/*.ts",
+    "e2e-android/**/*.ts",
     "vite.config.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "playwright.android.config.ts"
   ]
 }

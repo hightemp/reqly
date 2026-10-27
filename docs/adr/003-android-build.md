@@ -33,3 +33,20 @@ stack (Tauri 2, sqlx/SQLite, tokio, rustls, libcurl) does not block it.
 ## Decision
 
 The stack is confirmed for Android. Android builds are added to CI in stage 8.
+
+## Update (stage 8)
+
+- `minSdk` is 29 (Android 10), as the PRD requires; the NDK stays at 28.
+- The Gradle build calls the Tauri CLI through `pnpm` (`BuildTask.kt`), so it
+  runs the version in `apps/desktop/package.json`; a globally installed
+  `cargo tauri` of another version breaks the build.
+- `MainActivity` applies the status bar, navigation bar, display cutout and
+  keyboard insets as padding: in edge-to-edge mode the WebView reports only
+  the cutout to CSS (`env(safe-area-inset-*)`).
+- One webview only: the OAuth 2.0 sign-in window of the desktop app is
+  replaced by the system browser and a pasted redirect URL.
+- Saving files goes through the dialog plugin (a content URI) and the fs
+  plugin; the core cannot open content URIs.
+- The smoke test drives the app with Playwright's Android support
+  (`_android.devices()` → `webView()`); `connectOverCDP` does not work with
+  Android WebView. Details: [docs/android.md](../android.md).

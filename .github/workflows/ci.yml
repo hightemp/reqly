@@ -123,3 +123,62 @@ jobs:
           name: reqly-desktop-${{ matrix.os }}
           path: target/release/bundle/
           if-no-files-found: error
+
+  android:
+    name: Android (APK + emulator smoke)
+    runs-on: ubuntu-24.04
+    needs: [rust, ui]
+    env:
+      NDK_VERSION: 28.0.12433566
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - run: pnpm install --frozen-lockfile
+      # The Tauri CLI passes the Android link flags as target rustflags, which
+      # a global RUSTFLAGS would override.
+      - name: Build the debug APK (x86_64)
+        run: |
+          unset RUSTFLAGS
+          pnpm -C apps/desktop tauri android build --debug --target x86_64 --apk
+        env:
+          CARGO_PROFILE_DEV_DEBUG: 0
+          CARGO_PROFILE_DEV_STRIP: symbols
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reqly-android-debug
+          path: apps/desktop/gen/android/app/build/outputs/apk/universal/debug/*.apk
+          if-no-files-found: error
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Smoke test on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          disable-animations: true
+          script: |
+            adb install -r apps/desktop/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+            pnpm -C ui e2e:android

@@ -13,16 +13,31 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// Release signing from the environment (CI secrets); without it the release
+// build is unsigned. See docs/android.md.
+val signingKeystore: String? = System.getenv("REQLY_ANDROID_KEYSTORE")?.takeIf { it.isNotBlank() }
+
 android {
     compileSdk = 36
     namespace = "dev.reqly.app"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "dev.reqly.app"
-        minSdk = 24
+        // Android 10+ (PRD).
+        minSdk = 29
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    signingConfigs {
+        if (signingKeystore != null) {
+            create("release") {
+                storeFile = file(signingKeystore)
+                storePassword = System.getenv("REQLY_ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("REQLY_ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("REQLY_ANDROID_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -37,6 +52,7 @@ android {
             }
         }
         getByName("release") {
+            if (signingKeystore != null) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }

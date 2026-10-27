@@ -16,7 +16,8 @@ open class BuildTask : DefaultTask() {
 
     @TaskAction
     fun assemble() {
-        val executable = """cargo""";
+        // The Tauri CLI of apps/desktop/package.json (same version as the outer build).
+        val executable = """pnpm""";
         try {
             runTauriCli(executable)
         } catch (e: Exception) {
