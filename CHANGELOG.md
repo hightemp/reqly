@@ -5,6 +5,38 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-10-27
+
+Stage 8: Android.
+
+### Added
+
+- Android app (Android 10 and later): a universal APK and an AAB are
+  attached to releases, signed when the keystore secrets are configured
+  (`docs/android.md`).
+- Phone layout below 768 px: the sidebar opens as a drawer, the request and
+  the response are switched with a segmented control (sending shows the
+  response), and open requests are listed in a sheet instead of the tab
+  strip.
+- Touch: holding a finger opens context menus, a held tree row can be
+  dragged, a swipe from the left edge opens the drawer and a swipe left
+  closes it; controls and rows are finger-sized on touch screens.
+- `app.info` lists the features the platform cannot offer.
+
+### Changed
+
+- On Android, Unix socket and network interface settings are disabled with
+  an explanation (requests that set them fail with `http.unavailable`), and
+  the `os` tag is unavailable (`template.unavailable`).
+- On Android, files are picked with the system chooser and kept in the blob
+  store, saved through the system save dialog, and OAuth 2.0 signs in
+  through the system browser with the redirected address pasted back.
+
+### Fixed
+
+- Tooltips no longer pop up after a tap on touch screens.
+- Tabs opened or closed right before a reload or quit are no longer lost.
+
 ## [0.7.0] — 2026-10-18
 
 Stage 7: multi-user server and collaboration; faker-js.

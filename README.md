@@ -11,9 +11,10 @@
 Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS),
 Android and a self-hosted web version served by a single Rust binary.
 
-> Status: v0.3 (stage 3 of the [roadmap](PRD.md)). HTTP requests,
-> environments and templates, import/export and code generation are
-> supported; more auth types and protocols come next. Planning docs are in Russian: [PRD.md](PRD.md), [TASKS.md](TASKS.md).
+> Status: v0.8 (stage 8 of the [roadmap](PRD.md)): HTTP, GraphQL,
+> WebSocket, SSE and gRPC, scripts, a team server with collaboration and
+> the Android app. Tests, the collection runner and the CLI come next.
+> Planning docs are in Russian: [PRD.md](PRD.md), [TASKS.md](TASKS.md).
 
 ## Features
 
