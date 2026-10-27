@@ -48,7 +48,16 @@ pnpm -C apps/desktop tauri android build --apk --aab --target aarch64 --target a
 ```
 
 A global `RUSTFLAGS` overrides the link flags the Tauri CLI passes for
-Android targets; unset it when building.
+Android targets; unset it when building. OpenSSL and the QuickJS bindings
+need the NDK archiver and sysroot, per target (`x86_64_linux_android`,
+`aarch64_linux_android`, `armv7_linux_androideabi`):
+
+```sh
+tc="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
+export AR_x86_64_linux_android="$tc/bin/llvm-ar"
+export RANLIB_x86_64_linux_android="$tc/bin/llvm-ranlib"
+export BINDGEN_EXTRA_CLANG_ARGS_x86_64_linux_android="--sysroot=$tc/sysroot"
+```
 
 ### Signing
 
