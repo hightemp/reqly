@@ -364,6 +364,10 @@ async fn skip_request_and_next_request() {
     .await;
     assert!(out.skip_request);
     assert_eq!(out.next_request, Some(Some("Other".into())));
+    let out = exec(input(Phase::Post, "postman.setNextRequest(null);")).await;
+    assert_eq!(out.next_request, Some(None));
+    let out = exec(input(Phase::Post, "1")).await;
+    assert_eq!(out.next_request, None);
 }
 
 #[tokio::test]

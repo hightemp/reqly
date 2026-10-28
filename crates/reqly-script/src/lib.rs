@@ -230,8 +230,17 @@ struct Collected {
     changes: Vec<VariableChange>,
     tests: Vec<TestResult>,
     skip_request: bool,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "present")]
     next_request: Option<Option<String>>,
+}
+
+/// A present field is `Some`, even when `null` (`setNextRequest(null)`).
+fn present<'de, D, T>(d: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    T::deserialize(d).map(Some)
 }
 
 fn script_error(code: &str, label: &str, message: impl Into<String>) -> CoreError {
