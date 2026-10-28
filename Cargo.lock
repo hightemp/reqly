@@ -5430,6 +5430,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "reqly-cli"
+version = "0.8.0"
+dependencies = [
+ "axum",
+ "base64 0.22.1",
+ "curl",
+ "reqly-api",
+ "reqly-core",
+ "reqly-server",
+ "reqly-storage",
+ "reqly-testing",
+ "reqly-testserver",
+ "serde_json",
+ "sxd-document",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "reqly-core"
 version = "0.8.0"
 dependencies = [

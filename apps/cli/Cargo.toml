@@ -1,0 +1,31 @@
+[package]
+name = "reqly-cli"
+description = "Runs Reqly collections from the command line (CI)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "reqly-cli"
+path = "src/main.rs"
+
+[dependencies]
+reqly-api.workspace = true
+reqly-core.workspace = true
+reqly-storage.workspace = true
+reqly-testing.workspace = true
+base64 = "0.22"
+curl = { version = "0.4", default-features = false, features = ["ssl", "static-curl", "static-ssl", "http2"] }
+serde_json.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+axum.workspace = true
+reqly-server = { path = "../server" }
+reqly-testserver.workspace = true
+sxd-document = "0.3"
+
+[lints]
+workspace = true

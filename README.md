@@ -53,6 +53,11 @@ Android and a self-hosted web version served by a single Rust binary.
   others' cursors, presence avatars, personal or shared response history
 - Android app with a phone layout (drawer, request / response switch) and
   touch gestures — see [docs/android.md](docs/android.md)
+- Tests: no-code assertions (status, time, headers, body, JSONPath / jq,
+  JSON Schema) and script tests; a collection runner with iterations, CSV /
+  JSON data files and HTML / JUnit / JSON reports — see
+  [docs/testing.md](docs/testing.md); `reqly-cli` runs collections in CI —
+  see [docs/cli.md](docs/cli.md)
 
 ## Run with Docker
 
@@ -147,8 +152,10 @@ crates/reqly-core        domain model, ids, sort keys, errors
 crates/reqly-storage     SQLite (migrations, tree, history, cookies, search, sessions), blob store
 crates/reqly-http        request preparation, libcurl engine, filters, cURL, network policy
 crates/reqly-api         typed commands/events shared by both shells (+ TS bindings)
+crates/reqly-testing     assertions, run data files and reports
 crates/reqly-testserver  local HTTP(S)/mTLS fixtures for tests
 apps/server              axum server: embedded web UI, API, auth
+apps/cli                 reqly-cli: runs collections in CI
 apps/desktop             Tauri 2 app
 ui/                      Svelte 5 + Vite SPA used by both
 docs/adr                 architecture decision records

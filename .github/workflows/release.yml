@@ -72,8 +72,9 @@ jobs:
             echo '---'
             echo
             echo '**Downloads:** desktop installers for Linux, Windows and macOS, the'
-            echo 'Android app (`*_android*.apk`, `.aab`) and the server binary'
-            echo '(`reqly-server-*-linux-*.tar.gz`) are attached below.'
+            echo 'Android app (`*_android*.apk`, `.aab`), the server binary'
+            echo '(`reqly-server-*-linux-*.tar.gz`) and the CLI for CI (`reqly-cli-*`)'
+            echo 'are attached below.'
             echo "Docker: \`docker pull ghcr.io/hightemp/reqly-server:$version\`"
             if [ -n "$HUB_USER" ]; then
               echo "or \`docker pull $HUB_USER/reqly-server:$version\`."
@@ -169,11 +170,46 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm -C ui build
-      - run: cargo build --release -p reqly-server --locked
+      - run: cargo build --release -p reqly-server -p reqly-cli --locked
       - run: |
           mkdir dist
           tar -C target/release -czf "dist/reqly-server-$TAG-linux-${{ matrix.arch }}.tar.gz" reqly-server
+          tar -C target/release -czf "dist/reqly-cli-$TAG-linux-${{ matrix.arch }}.tar.gz" reqly-cli
       - name: Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$TAG" dist/* --clobber
+
+  cli:
+    name: CLI (${{ matrix.os }})
+    needs: release
+    if: needs.release.outputs.desktop != '[]' && (inputs.only || 'all') == 'all'
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            runner: macos-latest
+          - os: windows
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release -p reqly-cli --locked
+      - name: Package
+        shell: bash
+        run: |
+          mkdir dist
+          if [ "${{ matrix.os }}" = windows ]; then
+            7z a "dist/reqly-cli-$TAG-windows-x86_64.zip" ./target/release/reqly-cli.exe
+          else
+            tar -C target/release -czf "dist/reqly-cli-$TAG-macos-aarch64.tar.gz" reqly-cli
+          fi
+      - name: Upload
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "$TAG" dist/* --clobber
