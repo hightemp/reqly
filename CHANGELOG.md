@@ -5,6 +5,37 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-10-28
+
+Stage 9: tests, the collection runner and the CLI.
+
+### Added
+
+- No-code assertions in a request's **Tests** tab: status, response time,
+  a header, the body, or a JSONPath / jq value with equals, contains, regex,
+  number comparisons, exists and JSON Schema; templates in them render after
+  the scripts (`docs/testing.md`).
+- The response's **Tests** tab lists assertion results with the value
+  received, before script test results; results are kept in the history.
+- Collection runner for a collection or a folder: choose and order the
+  requests, the environment, iterations, a CSV or JSON data file, a delay
+  and stop on failure; results stream in per iteration and failed requests
+  can be rerun. Scripts see `iterationData`, the iteration number and can
+  call `setNextRequest`.
+- Run reports as HTML, JUnit XML or JSON.
+- `reqly-cli run` runs a collection from an export file or from a Reqly
+  server (API token) in CI, with pretty, JSON or JUnit output, report files
+  and exit codes; binaries for Linux, macOS and Windows are attached to
+  releases (`docs/cli.md`).
+- Commands `runner.run`, `runner.cancel`, `runner.report` and events
+  `runner.progress`, `runner.finished`.
+
+### Fixed
+
+- `setNextRequest(null)` in scripts now ends the iteration instead of being
+  ignored.
+- Filter errors (JSONPath, jq, XPath) have readable messages.
+
 ## [0.8.0] — 2026-10-27
 
 Stage 8: Android.
