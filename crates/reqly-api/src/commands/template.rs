@@ -106,6 +106,8 @@ pub enum VariableSource {
     Sub,
     Folder,
     Request,
+    /// A row of the data file of a collection run.
+    Data,
     /// Set by scripts (`pm.variables.set`) for this session.
     Runtime,
 }
@@ -159,7 +161,11 @@ impl Scope {
             layers.push((VariableSource::Global, env.name, env.data, env.secrets));
         }
         let collection_envs = envs.list_for_collection(collection_id).await?;
-        let active = get_id(ctx, &active_key(collection_id)).await?;
+        let run = super::runner::current(collection_id);
+        let active = match run.as_ref().and_then(|r| r.environment_id) {
+            Some(id) => Some(id),
+            None => get_id(ctx, &active_key(collection_id)).await?,
+        };
         for env in collection_envs {
             match env.kind {
                 EnvironmentKind::Base => {
@@ -201,6 +207,11 @@ impl Scope {
             }
         }
 
+        if let Some(run) = run
+            && !run.data.is_empty()
+        {
+            layers.push((VariableSource::Data, String::new(), run.data, Vec::new()));
+        }
         let runtime = ctx.runtime_variables(collection_id);
         if !runtime.is_empty() {
             layers.push((VariableSource::Runtime, String::new(), runtime, Vec::new()));

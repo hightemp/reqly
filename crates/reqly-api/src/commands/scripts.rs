@@ -249,7 +249,14 @@ async fn scopes(ctx: &AppContext, request_id: Id) -> CoreResult<(Scopes, Targets
         scopes.globals = env.data;
         targets.globals = Some(id);
     }
-    let active = get_id(ctx, &active_key(collection.meta.id)).await?;
+    let run = super::runner::current(collection.meta.id);
+    let active = match run.as_ref().and_then(|r| r.environment_id) {
+        Some(id) => Some(id),
+        None => get_id(ctx, &active_key(collection.meta.id)).await?,
+    };
+    if let Some(run) = &run {
+        scopes.data = run.data.clone();
+    }
     for env in envs.list_for_collection(collection.meta.id).await? {
         match env.kind {
             EnvironmentKind::Base => {
@@ -549,6 +556,7 @@ async fn run_phase(
     let host = host(ctx, collection.workspace_id).await?;
     let limits = limits(ctx).await?;
     let locale = super::template::faker_locale(ctx, node.collection_id).await;
+    let run = super::runner::current(node.collection_id);
     for source in list {
         // Each script sees what the previous ones changed.
         let (variables, targets, collection_id) = scopes(ctx, request_id).await?;
@@ -562,8 +570,8 @@ async fn run_phase(
             info: ScriptInfo {
                 request_name: node.name.clone(),
                 request_id: request_id.to_string(),
-                iteration: 0,
-                iteration_count: 1,
+                iteration: run.as_ref().map_or(0, |r| r.iteration),
+                iteration_count: run.as_ref().map_or(1, |r| r.iteration_count),
             },
             limits,
             locale,
@@ -571,6 +579,9 @@ async fn run_phase(
         match reqly_script::run(host.clone(), input).await {
             Ok(out) => {
                 apply_changes(ctx, &out.changes, &targets, collection_id).await?;
+                if let (Some(run), Some(next)) = (&run, &out.next_request) {
+                    run.set_next_request(next.clone());
+                }
                 if phase == Phase::Pre {
                     apply_request(request, &out.request);
                 }

@@ -7,6 +7,7 @@ pub mod http;
 pub mod interop;
 pub mod oauth2;
 pub mod presence;
+pub mod runner;
 pub mod scripts;
 pub mod stream;
 pub mod template;
@@ -88,6 +89,8 @@ pub struct AppContext {
     pub runtime_vars: std::sync::Mutex<
         std::collections::HashMap<reqly_core::Id, serde_json::Map<String, serde_json::Value>>,
     >,
+    /// Collection runs in progress.
+    pub runs: runner::Runs,
 }
 
 impl AppContext {
@@ -109,6 +112,7 @@ impl AppContext {
             presence: Default::default(),
             streams: Default::default(),
             runtime_vars: Default::default(),
+            runs: Default::default(),
         }
     }
 
@@ -157,6 +161,7 @@ pub fn registry() -> Registry<AppContext> {
     users::register(&mut r);
     collab::register(&mut r);
     presence::register(&mut r);
+    runner::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

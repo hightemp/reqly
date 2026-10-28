@@ -106,6 +106,7 @@ pub const RULES: &[(&str, Need)] = {
         ("stream.log", Global),
         ("stream.clearLog", Global),
         ("stream.end", Global),
+        ("runner.cancel", Global),
         ("account.me", Account),
         ("account.update", Account),
         ("account.changePassword", Account),
@@ -121,6 +122,7 @@ pub const RULES: &[(&str, Need)] = {
         ("trash.list", Read),
         ("search.nodes", Read),
         ("request.send", Read),
+        ("runner.run", Read),
         ("request.cancel", Read),
         ("request.toCurl", Read),
         ("response.list", Read),
@@ -222,6 +224,7 @@ const NOT_ENTITIES: &[&str] = &[
     "inviteId",
     "docId",
     "clientId",
+    "runId",
 ];
 
 fn is_id_field(key: &str) -> bool {

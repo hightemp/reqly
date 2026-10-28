@@ -889,6 +889,7 @@ export const en = {
       sub: 'Environment',
       folder: 'Folder',
       request: 'Request',
+      data: 'Data file (runner)',
       runtime: 'Runtime (scripts)',
     },
   },

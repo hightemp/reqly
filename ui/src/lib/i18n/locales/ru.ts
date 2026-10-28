@@ -933,6 +933,7 @@ export const ru: Translation<Messages> = {
       sub: 'Окружение',
       folder: 'Папка',
       request: 'Запрос',
+      data: 'Файл данных (Runner)',
       runtime: 'Runtime (скрипты)',
     },
   },

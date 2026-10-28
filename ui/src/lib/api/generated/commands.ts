@@ -98,6 +98,9 @@ import type { ResponseRecord } from "./ResponseRecord";
 import type { ResponseSaveInput } from "./ResponseSaveInput";
 import type { ResponseSummary } from "./ResponseSummary";
 import type { RevokeInviteInput } from "./RevokeInviteInput";
+import type { RunReport } from "./RunReport";
+import type { RunnerCancelInput } from "./RunnerCancelInput";
+import type { RunnerInput } from "./RunnerInput";
 import type { RuntimeVariablesInput } from "./RuntimeVariablesInput";
 import type { RuntimeVariablesOutput } from "./RuntimeVariablesOutput";
 import type { SearchInput } from "./SearchInput";
@@ -237,6 +240,8 @@ export type Commands = {
   "collab.update": { input: CollabUpdateInput; output: Empty };
   "collab.awareness": { input: CollabAwarenessInput; output: Empty };
   "presence.set": { input: PresenceSetInput; output: Array<PresencePerson> };
+  "runner.run": { input: RunnerInput; output: RunReport };
+  "runner.cancel": { input: RunnerCancelInput; output: Empty };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 
