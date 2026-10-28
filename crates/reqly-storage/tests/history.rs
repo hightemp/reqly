@@ -23,6 +23,7 @@ fn record(request_id: Id, size: u64, hash: &str) -> NewResponse {
         error: None,
         script_logs: serde_json::json!([]),
         tests: serde_json::json!([]),
+        assertions: serde_json::json!([{ "id": "a", "passed": true }]),
     }
 }
 
@@ -47,6 +48,7 @@ async fn insert_list_get_newest_first() {
     assert_eq!(got.status, Some(200));
     assert_eq!(got.timings["totalMs"], 12.5);
     assert_eq!(got.headers[0].0, "content-type");
+    assert_eq!(got.assertions[0]["passed"], true);
 }
 
 #[tokio::test]

@@ -46,6 +46,10 @@ pub struct ResponseRecord {
     #[serde(default)]
     #[ts(type = "import('./TestResult').TestResult[]")]
     pub tests: Value,
+    /// Results of the request's no-code assertions (`AssertionResult[]`).
+    #[serde(default)]
+    #[ts(type = "import('./AssertionResult').AssertionResult[]")]
+    pub assertions: Value,
 }
 
 /// Row in the response history dropdown / workspace log.

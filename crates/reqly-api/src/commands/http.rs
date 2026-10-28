@@ -18,6 +18,7 @@ use reqly_storage::history::{HistoryLimits, HistoryRepo, NewResponse};
 use reqly_storage::settings::SettingsRepo;
 use reqly_storage::tree::TreeRepo;
 use reqly_template::{RenderOptions, Renderer};
+use reqly_testing::{AssertionResult, ResponseFacts};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use ts_rs::TS;
@@ -500,6 +501,7 @@ async fn script_failure(
             error: Some(err),
             script_logs: logs,
             tests,
+            assertions: Value::Array(Vec::new()),
         })
         .await?;
     ctx.events.publish(Event::new(
@@ -510,6 +512,41 @@ async fn script_failure(
         },
     ));
     Ok(record)
+}
+
+fn has_assertions(data: &NodeData) -> bool {
+    matches!(data, NodeData::Request(r) if r.assertions.iter().any(|a| a.enabled))
+}
+
+/// Evaluates a request's enabled assertions (`AssertionResult[]`). Templates
+/// in the property and the expected value render after the scripts ran.
+async fn run_assertions(
+    ctx: &AppContext,
+    request_id: Id,
+    data: &NodeData,
+    facts: ResponseFacts<'_>,
+) -> Value {
+    let NodeData::Request(request) = data else {
+        return Value::Array(Vec::new());
+    };
+    let mut results = Vec::new();
+    for assertion in request.assertions.iter().filter(|a| a.enabled) {
+        let mut assertion = assertion.clone();
+        let rendered = async {
+            assertion.property = render_in_request(ctx, request_id, &assertion.property).await?;
+            assertion.value = render_in_request(ctx, request_id, &assertion.value).await?;
+            Ok::<_, CoreError>(())
+        }
+        .await;
+        results.push(match rendered {
+            Ok(()) => reqly_testing::evaluate(&assertion, &facts),
+            Err(e) => AssertionResult {
+                error: Some(e),
+                ..AssertionResult::new(&assertion)
+            },
+        });
+    }
+    serde_json::to_value(results).unwrap_or_default()
 }
 
 pub async fn send_request(ctx: &AppContext, request_id: Id) -> CoreResult<ResponseRecord> {
@@ -647,17 +684,21 @@ pub async fn send_request_with(
                 .find(|(k, _)| k.eq_ignore_ascii_case("content-type"))
                 .map(|(_, v)| v.clone());
             let mut phase = pre;
+            let has_post =
+                super::scripts::has_scripts(ctx, request_id, reqly_script::Phase::Post).await?;
+            let body_text = (has_post || has_assertions(&node.data)).then(|| {
+                body.to_vec()
+                    .map(|b| String::from_utf8_lossy(&b).into_owned())
+                    .unwrap_or_default()
+            });
             if let NodeData::Request(r) = &node.data
-                && super::scripts::has_scripts(ctx, request_id, reqly_script::Phase::Post).await?
+                && has_post
             {
                 let response = reqly_script::ScriptResponse {
                     code: status,
                     status: status_text.clone(),
                     headers: headers.clone(),
-                    body: body
-                        .to_vec()
-                        .map(|b| String::from_utf8_lossy(&b).into_owned())
-                        .unwrap_or_default(),
+                    body: body_text.clone().unwrap_or_default(),
                     time_ms: timings.total_ms,
                     size: body_size,
                     error: None,
@@ -667,6 +708,18 @@ pub async fn send_request_with(
                 phase.logs.extend(post.logs);
                 phase.tests.extend(post.tests);
             }
+            let assertions = run_assertions(
+                ctx,
+                request_id,
+                &node.data,
+                ResponseFacts {
+                    status: Some(status),
+                    total_ms: Some(timings.total_ms),
+                    headers: &headers,
+                    body: body_text.as_deref().unwrap_or_default(),
+                },
+            )
+            .await;
             let body_hash = store_body(ctx, body).await?;
             history
                 .insert(NewResponse {
@@ -689,6 +742,7 @@ pub async fn send_request_with(
                     error: None,
                     script_logs: serde_json::to_value(&phase.logs).unwrap_or_default(),
                     tests: serde_json::to_value(&phase.tests).unwrap_or_default(),
+                    assertions,
                 })
                 .await?
         }
@@ -712,6 +766,18 @@ pub async fn send_request_with(
                 .and_then(Value::as_str)
                 .unwrap_or_default()
                 .to_string();
+            let assertions = run_assertions(
+                ctx,
+                request_id,
+                &node.data,
+                ResponseFacts {
+                    status: None,
+                    total_ms: None,
+                    headers: &[],
+                    body: "",
+                },
+            )
+            .await;
             history
                 .insert(NewResponse {
                     request_id,
@@ -733,6 +799,7 @@ pub async fn send_request_with(
                     error: Some(err),
                     script_logs: serde_json::to_value(&pre.logs).unwrap_or_default(),
                     tests: serde_json::to_value(&pre.tests).unwrap_or_default(),
+                    assertions,
                 })
                 .await?
         }

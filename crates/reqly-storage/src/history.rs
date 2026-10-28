@@ -31,6 +31,7 @@ pub struct NewResponse {
     pub error: Option<CoreError>,
     pub script_logs: Value,
     pub tests: Value,
+    pub assertions: Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -96,6 +97,7 @@ fn record_from_row(row: &SqliteRow) -> CoreResult<ResponseRecord> {
             .map_err(db_err)?,
         script_logs: json(row, "script_logs")?,
         tests: json(row, "tests")?,
+        assertions: json(row, "assertions")?,
     })
 }
 
@@ -164,8 +166,8 @@ impl<'a> HistoryRepo<'a> {
             "INSERT INTO response_records (id, request_id, workspace_id, created_at, status, \
              status_text, http_version, headers, body_hash, body_size, headers_size, content_type, \
              timings, timeline, request_snapshot, redirects, final_url, remote_addr, error, method, url, \
-             script_logs, tests, user_id) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             script_logs, tests, assertions, user_id) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(id.to_string())
         .bind(r.request_id.to_string())
@@ -190,6 +192,7 @@ impl<'a> HistoryRepo<'a> {
         .bind(url)
         .bind(if r.script_logs.is_null() { "[]".to_string() } else { r.script_logs.to_string() })
         .bind(if r.tests.is_null() { "[]".to_string() } else { r.tests.to_string() })
+        .bind(if r.assertions.is_null() { "[]".to_string() } else { r.assertions.to_string() })
         .bind(self.author.map(|id| id.to_string()))
         .execute(self.storage.pool())
         .await

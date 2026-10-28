@@ -3,7 +3,9 @@
 
 use reqly_core::CoreError;
 use reqly_core::id::Id;
-use reqly_core::model::{Assertion, AssertionOperator as Op, AssertionSource as Src};
+use reqly_core::model::{
+    Assertion, AssertionOperator, AssertionOperator as Op, AssertionSource, AssertionSource as Src,
+};
 use reqly_http::filter::{FilterKind, query_json};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -24,6 +26,12 @@ pub struct ResponseFacts<'a> {
 pub struct AssertionResult {
     /// The assertion's id.
     pub id: Id,
+    /// The check as evaluated (templates rendered), so a stored result
+    /// describes itself after the assertion changes.
+    pub source: AssertionSource,
+    pub property: String,
+    pub operator: AssertionOperator,
+    pub expected: String,
     pub passed: bool,
     /// The checked value as text; absent when the response has none.
     #[ts(optional)]
@@ -34,6 +42,58 @@ pub struct AssertionResult {
     /// The assertion could not be evaluated (bad expression, regex, schema).
     #[ts(optional)]
     pub error: Option<CoreError>,
+}
+
+impl AssertionResult {
+    /// A result for `assertion` that has not been evaluated yet (failed).
+    pub fn new(assertion: &Assertion) -> Self {
+        Self {
+            id: assertion.id,
+            source: assertion.source,
+            property: assertion.property.clone(),
+            operator: assertion.operator,
+            expected: assertion.value.clone(),
+            passed: false,
+            actual: None,
+            detail: None,
+            error: None,
+        }
+    }
+
+    /// The check in English, for reports: `header Content-Type contains json`.
+    pub fn describe(&self) -> String {
+        let source = match self.source {
+            Src::Status => "status",
+            Src::ResponseTime => "response time",
+            Src::Header => "header",
+            Src::Body => "body",
+            Src::JsonPath => "JSONPath",
+            Src::Jq => "jq",
+        };
+        let operator = match self.operator {
+            Op::Equals => "equals",
+            Op::NotEquals => "does not equal",
+            Op::Contains => "contains",
+            Op::NotContains => "does not contain",
+            Op::Matches => "matches",
+            Op::LessThan => "less than",
+            Op::LessThanOrEqual => "at most",
+            Op::GreaterThan => "greater than",
+            Op::GreaterThanOrEqual => "at least",
+            Op::Exists => "exists",
+            Op::NotExists => "does not exist",
+            Op::MatchesSchema => "matches schema",
+        };
+        let mut parts = vec![source];
+        if matches!(self.source, Src::Header | Src::JsonPath | Src::Jq) {
+            parts.push(self.property.trim());
+        }
+        parts.push(operator);
+        if !self.operator.is_unary() && self.operator != Op::MatchesSchema {
+            parts.push(&self.expected);
+        }
+        parts.join(" ")
+    }
 }
 
 /// Longest `actual` kept in a result.
@@ -49,13 +109,7 @@ pub fn evaluate_all(assertions: &[Assertion], facts: &ResponseFacts) -> Vec<Asse
 }
 
 pub fn evaluate(assertion: &Assertion, facts: &ResponseFacts) -> AssertionResult {
-    let mut result = AssertionResult {
-        id: assertion.id,
-        passed: false,
-        actual: None,
-        detail: None,
-        error: None,
-    };
+    let mut result = AssertionResult::new(assertion);
     let actual = match actual_value(assertion, facts) {
         Ok(v) => v,
         Err(e) => {

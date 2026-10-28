@@ -230,6 +230,32 @@ fn json_schema() {
 }
 
 #[test]
+fn results_describe_the_check() {
+    let r = check(Src::Header, "Content-Type", Op::Contains, "json");
+    assert_eq!(r.source, Src::Header);
+    assert_eq!(r.property, "Content-Type");
+    assert_eq!(r.operator, Op::Contains);
+    assert_eq!(r.expected, "json");
+    assert_eq!(r.describe(), "header Content-Type contains json");
+    assert_eq!(
+        check(Src::Status, "", Op::Equals, "200").describe(),
+        "status equals 200"
+    );
+    assert_eq!(
+        check(Src::ResponseTime, "", Op::LessThan, "500").describe(),
+        "response time less than 500"
+    );
+    assert_eq!(
+        check(Src::JsonPath, "$.id", Op::Exists, "x").describe(),
+        "JSONPath $.id exists"
+    );
+    assert_eq!(
+        check(Src::Body, "", Op::MatchesSchema, "{}").describe(),
+        "body matches schema"
+    );
+}
+
+#[test]
 fn evaluate_all_skips_disabled_and_keeps_ids() {
     let mut off = Assertion::new(Src::Status, "", Op::Equals, "500");
     off.enabled = false;

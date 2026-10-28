@@ -470,6 +470,7 @@ async fn import_history(
             final_url: r.final_url,
             script_logs: r.script_logs,
             tests: r.tests,
+            assertions: r.assertions,
             remote_addr: r.remote_addr,
             error: r.error,
         })

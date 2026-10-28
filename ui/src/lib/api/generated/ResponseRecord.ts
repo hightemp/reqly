@@ -34,4 +34,8 @@ scriptLogs: import('./LogEntry').LogEntry[],
 /**
  * Test results of the request's scripts (`TestResult[]`).
  */
-tests: import('./TestResult').TestResult[], };
+tests: import('./TestResult').TestResult[], 
+/**
+ * Results of the request's no-code assertions (`AssertionResult[]`).
+ */
+assertions: import('./AssertionResult').AssertionResult[], };
