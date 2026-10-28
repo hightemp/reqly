@@ -1,4 +1,4 @@
-<!-- Editor for the active tab's request: URL bar and Params/Body/Auth/Headers/Settings/Docs. -->
+<!-- Editor for the active tab's request: URL bar and Params/Body/Auth/Headers/Scripts/Tests/Settings/Docs. -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { HttpRequest } from '$lib/api/generated/HttpRequest';
@@ -23,6 +23,7 @@
   import SettingsPanel from './panels/SettingsPanel.svelte';
   import { streamKind } from '$lib/protocols';
   import ScriptsPanel from '../scripts/ScriptsPanel.svelte';
+  import AssertionsPanel from '../tests/AssertionsPanel.svelte';
   import GrpcPanel from '../stream/GrpcPanel.svelte';
   import WebSocketPanel from '../stream/WebSocketPanel.svelte';
   import UrlBar from './UrlBar.svelte';
@@ -31,7 +32,15 @@
   let { services }: { services: Services } = $props();
 
   type Section =
-    'params' | 'body' | 'auth' | 'headers' | 'scripts' | 'variables' | 'settings' | 'docs';
+    | 'params'
+    | 'body'
+    | 'auth'
+    | 'headers'
+    | 'scripts'
+    | 'tests'
+    | 'variables'
+    | 'settings'
+    | 'docs';
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- remembered tab per request, not rendered state
   const sections = new Map<string, Section>();
 
@@ -199,6 +208,11 @@
         : false,
     },
     {
+      id: 'tests' as const,
+      label: t('assertions.title'),
+      count: req ? req.assertions.filter((a) => a.enabled).length : 0,
+    },
+    {
       id: 'variables' as const,
       label: t('request.variables'),
       count: req ? Object.keys(req.variables).length : 0,
@@ -305,6 +319,12 @@
           nodeId={activeId}
           scripts={req.scripts}
           onchange={(scripts) => edit((r) => ({ ...r, scripts }))}
+        />
+      {:else if section === 'tests'}
+        <AssertionsPanel
+          nodeId={activeId}
+          assertions={req.assertions}
+          onchange={(assertions) => edit((r) => ({ ...r, assertions }))}
         />
       {:else if section === 'variables'}
         <VariablesEditor

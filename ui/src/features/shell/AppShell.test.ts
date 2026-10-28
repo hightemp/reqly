@@ -32,6 +32,7 @@ function request(id: string, name: string) {
       auth: { type: 'inherit' },
       settings: {},
       scripts: { preRequest: '', afterResponse: '' },
+      assertions: [],
       variables: {},
       eventStream: false,
       description: '',

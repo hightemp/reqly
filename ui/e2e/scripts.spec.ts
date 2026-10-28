@@ -41,7 +41,10 @@ test('pre-request and after-response scripts', async ({ page, baseURL }) => {
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByText('200 OK')).toBeVisible();
 
-  await page.getByRole('tab', { name: /^Tests/ }).click();
+  await page
+    .getByRole('tablist', { name: 'Response sections' })
+    .getByRole('tab', { name: /^Tests/ })
+    .click();
   await expect(page.getByText('1 passed')).toBeVisible();
   await expect(page.getByText('1 failed')).toBeVisible();
   await expect(page.getByText('expected 1 to equal 2')).toBeVisible();

@@ -58,7 +58,7 @@
   $effect(() => {
     if (
       (section === 'console' && !record?.scriptLogs.length) ||
-      (section === 'tests' && !record?.tests.length)
+      (section === 'tests' && !record?.tests.length && !record?.assertions.length)
     )
       section = 'body';
   });
@@ -190,13 +190,15 @@
             { id: 'headers', label: t('response.headers'), count: record.headers.length },
             { id: 'cookies', label: t('response.cookies'), count: setCookies.length },
             { id: 'timeline', label: t('response.timeline') },
-            ...(record.tests.length
+            ...(record.tests.length || record.assertions.length
               ? [
                   {
                     id: 'tests' as const,
                     label: t('scripts.tests'),
-                    count: record.tests.length,
-                    dot: record.tests.some((x) => !x.passed),
+                    count: record.tests.length + record.assertions.length,
+                    dot:
+                      record.tests.some((x) => !x.passed) ||
+                      record.assertions.some((x) => !x.passed),
                   },
                 ]
               : []),
@@ -277,7 +279,7 @@
             </table>
           {/if}
         {:else if section === 'tests'}
-          <TestResults tests={record.tests} />
+          <TestResults tests={record.tests} assertions={record.assertions} />
         {:else if section === 'console'}
           <ScriptConsole logs={record.scriptLogs} />
         {:else}

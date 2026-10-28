@@ -1,16 +1,53 @@
-<!-- Test results of a response's scripts. -->
+<!-- Results of a response's assertions and script tests. -->
 <script lang="ts">
+  import type { AssertionResult } from '$lib/api/generated/AssertionResult';
   import type { TestResult } from '$lib/api/generated/TestResult';
+  import { errorMessage } from '$lib/errors';
   import { t } from '$lib/i18n';
   import EmptyState from '$lib/ui/EmptyState.svelte';
+  import { describeAssertion } from '../tests/assertions';
 
-  let { tests }: { tests: TestResult[] } = $props();
-  const passed = $derived(tests.filter((x) => x.passed && !x.skipped).length);
-  const failed = $derived(tests.filter((x) => !x.passed).length);
-  const skipped = $derived(tests.filter((x) => x.skipped).length);
+  let { tests, assertions = [] }: { tests: TestResult[]; assertions?: AssertionResult[] } =
+    $props();
+
+  interface Row {
+    name: string;
+    state: 'passed' | 'failed' | 'skipped';
+    /** What came back, for failed assertions. */
+    got?: string;
+    error?: string;
+    detail?: string;
+  }
+
+  const rows = $derived<Row[]>([
+    ...assertions.map((a) => ({
+      name: describeAssertion(a),
+      state: a.passed ? ('passed' as const) : ('failed' as const),
+      got:
+        a.passed || a.error
+          ? undefined
+          : a.actual != null
+            ? t('assertions.got', { value: a.actual })
+            : t('assertions.noValue'),
+      error: a.error ? errorMessage(a.error) : undefined,
+      detail: a.detail,
+    })),
+    ...tests.map((x) => ({
+      name: x.name,
+      state: x.skipped
+        ? ('skipped' as const)
+        : x.passed
+          ? ('passed' as const)
+          : ('failed' as const),
+      error: x.error,
+    })),
+  ]);
+  const passed = $derived(rows.filter((r) => r.state === 'passed').length);
+  const failed = $derived(rows.filter((r) => r.state === 'failed').length);
+  const skipped = $derived(rows.filter((r) => r.state === 'skipped').length);
 </script>
 
-{#if tests.length === 0}
+{#if rows.length === 0}
   <EmptyState title={t('scripts.noTests')} />
 {:else}
   <div class="tests">
@@ -20,11 +57,15 @@
       {#if skipped}<span class="skip">{t('scripts.skipped', { count: skipped })}</span>{/if}
     </p>
     <ul>
-      {#each tests as test, i (i)}
-        <li data-state={test.skipped ? 'skipped' : test.passed ? 'passed' : 'failed'}>
-          <span class="mark">{test.skipped ? '–' : test.passed ? '✓' : '✗'}</span>
-          <span class="name">{test.name}</span>
-          {#if test.error}<span class="error selectable">{test.error}</span>{/if}
+      {#each rows as row, i (i)}
+        <li data-state={row.state}>
+          <span class="mark"
+            >{row.state === 'skipped' ? '–' : row.state === 'passed' ? '✓' : '✗'}</span
+          >
+          <span class="name">{row.name}</span>
+          {#if row.got}<span class="got selectable">{row.got}</span>{/if}
+          {#if row.error}<span class="error selectable">{row.error}</span>{/if}
+          {#if row.detail}<pre class="error selectable">{row.detail}</pre>{/if}
         </li>
       {/each}
     </ul>
@@ -68,9 +109,17 @@
   li[data-state='skipped'] {
     color: var(--c-fg-subtle);
   }
+  .got,
   .error {
     grid-column: 2;
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
+  }
+  .got {
+    color: var(--c-fg-muted);
+  }
+  pre.error {
+    margin: 0;
+    white-space: pre-wrap;
   }
 </style>
