@@ -1,5 +1,6 @@
 //! Domain model: workspaces, collections and the folder/request tree.
 
+mod assertion;
 mod auth;
 mod body;
 mod environment;
@@ -10,6 +11,7 @@ mod request;
 mod response;
 mod settings;
 
+pub use assertion::{Assertion, AssertionOperator, AssertionSource};
 pub use auth::{
     ApiKeyLocation, Auth, HawkAlgorithm, JwtLocation, OAuth1Location, OAuth1Method,
     OAuth2ClientAuth, OAuth2Config, OAuth2Grant,

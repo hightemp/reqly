@@ -449,6 +449,7 @@ impl Importer {
             description: text(&blocks, "docs").into(),
             variables: Self::variables(&blocks),
             scripts: self.scripts(&path, &blocks),
+            assertions: Vec::new(),
             event_stream: false,
         };
         Some((seq, ImportedItem::request(name, request)))

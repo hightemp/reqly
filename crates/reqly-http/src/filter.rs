@@ -33,20 +33,47 @@ pub fn apply_filter(kind: FilterKind, body: &str, expression: &str) -> CoreResul
     }
 }
 
-fn json_path(body: &str, expression: &str) -> CoreResult<String> {
+/// Values a JSONPath or jq expression selects from a JSON body, for
+/// assertions. XPath is not supported here.
+pub fn query_json(
+    kind: FilterKind,
+    body: &str,
+    expression: &str,
+) -> CoreResult<Vec<serde_json::Value>> {
+    match kind {
+        FilterKind::JsonPath => json_path_values(body, expression),
+        FilterKind::Jq => jq_values(body, expression)?
+            .into_iter()
+            .map(|v| serde_json::from_str(&v).map_err(runtime))
+            .collect(),
+        FilterKind::XPath => Err(CoreError::new(
+            "filter.unsupported",
+            "XPath does not produce JSON values",
+        )),
+    }
+}
+
+fn json_path_values(body: &str, expression: &str) -> CoreResult<Vec<serde_json::Value>> {
     let path = serde_json_path::JsonPath::parse(expression).map_err(syntax)?;
     let value: serde_json::Value = serde_json::from_str(body).map_err(input)?;
-    let nodes = path.query(&value).all();
+    Ok(path.query(&value).all().into_iter().cloned().collect())
+}
+
+fn json_path(body: &str, expression: &str) -> CoreResult<String> {
+    let nodes = json_path_values(body, expression)?;
     let pretty = |v: &serde_json::Value| serde_json::to_string_pretty(v).unwrap_or_default();
     Ok(match nodes.as_slice() {
         [single] => pretty(single),
-        many => pretty(&serde_json::Value::Array(
-            many.iter().map(|v| (*v).clone()).collect(),
-        )),
+        many => pretty(&serde_json::Value::Array(many.to_vec())),
     })
 }
 
 fn jq(body: &str, expression: &str) -> CoreResult<String> {
+    Ok(jq_values(body, expression)?.join("\n"))
+}
+
+/// Each output of a jq program, as compact JSON.
+fn jq_values(body: &str, expression: &str) -> CoreResult<Vec<String>> {
     use jaq_core::load::{Arena, File, Loader};
     use jaq_core::{Compiler, Ctx, Vars, data, unwrap_valr};
     use jaq_json::{Val, read};
@@ -82,7 +109,7 @@ fn jq(body: &str, expression: &str) -> CoreResult<String> {
             break;
         }
     }
-    Ok(out.join("\n"))
+    Ok(out)
 }
 
 fn escape_xml(s: &str, attr: bool) -> String {

@@ -465,7 +465,7 @@
 
 ## Этап 9. Тесты, Runner, CLI
 
-- [ ] **T9.1** `reqly-testing`: модель ассертов (status, время, header, JSONPath или jq — equals, contains, regex, JSON Schema).
+- [x] **T9.1** `reqly-testing`: модель ассертов (status, время, header, JSONPath или jq — equals, contains, regex, JSON Schema).
   - **Тесты:** каждый тип ассерта и оператора.
 - [ ] **T9.2** UI no-code ассертов (вкладка Tests) и панель результатов в ответе.
 - [ ] **T9.3** Скриптовые тесты `rq.test`, `rq.expect`, `pm.test`; результаты в той же панели.

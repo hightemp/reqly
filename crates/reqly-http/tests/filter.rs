@@ -1,4 +1,5 @@
-use reqly_http::filter::{FilterKind, apply_filter};
+use reqly_http::filter::{FilterKind, apply_filter, query_json};
+use serde_json::json;
 
 const JSON: &str =
     r#"{"store":{"books":[{"title":"A","price":8},{"title":"B","price":12}],"open":true}}"#;
@@ -73,6 +74,34 @@ fn jq_errors() {
             .unwrap_err()
             .code,
         "filter.runtime"
+    );
+}
+
+#[test]
+fn query_json_returns_every_value() {
+    assert_eq!(
+        query_json(FilterKind::JsonPath, JSON, "$.store.books[*].price").unwrap(),
+        vec![json!(8), json!(12)]
+    );
+    assert_eq!(
+        query_json(FilterKind::JsonPath, JSON, "$.missing").unwrap(),
+        Vec::<serde_json::Value>::new()
+    );
+    assert_eq!(
+        query_json(FilterKind::Jq, JSON, ".store.books[0]").unwrap(),
+        vec![json!({"title": "A", "price": 8})]
+    );
+    assert_eq!(
+        query_json(FilterKind::Jq, JSON, ".store.books[] | .title").unwrap(),
+        vec![json!("A"), json!("B")]
+    );
+    assert_eq!(
+        query_json(FilterKind::Jq, JSON, ".[").unwrap_err().code,
+        "filter.syntax"
+    );
+    assert_eq!(
+        query_json(FilterKind::XPath, JSON, "/a").unwrap_err().code,
+        "filter.unsupported"
     );
 }
 

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use super::assertion::Assertion;
 use super::auth::Auth;
 use super::body::Body;
 use super::kv::KeyValue;
@@ -28,6 +29,8 @@ pub struct HttpRequest {
     pub variables: serde_json::Map<String, serde_json::Value>,
     /// Imported scripts; not executed until scripting lands (stage 6).
     pub scripts: Scripts,
+    /// No-code tests on the response.
+    pub assertions: Vec<Assertion>,
     /// Server-sent events: keep the connection open and parse the stream.
     pub event_stream: bool,
 }
@@ -61,6 +64,7 @@ impl Default for HttpRequest {
             description: String::new(),
             variables: serde_json::Map::new(),
             scripts: Scripts::default(),
+            assertions: Vec::new(),
             event_stream: false,
         }
     }
@@ -82,5 +86,8 @@ impl HttpRequest {
         KeyValue::regenerate_ids(&mut self.path_params);
         KeyValue::regenerate_ids(&mut self.headers);
         KeyValue::regenerate_ids(&mut self.body.fields);
+        self.assertions
+            .iter_mut()
+            .for_each(|a| a.id = crate::id::Id::new());
     }
 }

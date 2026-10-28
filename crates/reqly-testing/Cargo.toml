@@ -1,0 +1,19 @@
+[package]
+name = "reqly-testing"
+description = "No-code assertions and the collection runner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+reqly-http.workspace = true
+jsonschema = { version = "0.59", default-features = false }
+regex = "1"
+serde.workspace = true
+serde_json.workspace = true
+ts-rs.workspace = true
+
+[lints]
+workspace = true

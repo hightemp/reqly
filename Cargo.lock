@@ -5631,6 +5631,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "reqly-testing"
+version = "0.8.0"
+dependencies = [
+ "jsonschema",
+ "regex",
+ "reqly-core",
+ "reqly-http",
+ "serde",
+ "serde_json",
+ "ts-rs",
+]
+
+[[package]]
 name = "reqly-testserver"
 version = "0.8.0"
 dependencies = [

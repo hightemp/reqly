@@ -527,6 +527,7 @@ impl Importer {
             variables,
             scripts: self.scripts(&path, arr(item, "event")),
             headers,
+            assertions: Vec::new(),
             event_stream: false,
         };
         let mut out = ImportedItem::request(name, data);
