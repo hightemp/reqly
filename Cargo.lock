@@ -5396,7 +5396,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-api"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5431,7 +5431,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-cli"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -5450,7 +5450,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-core"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "proptest",
  "serde",
@@ -5462,7 +5462,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-desktop"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "reqly-api",
  "reqly-core",
@@ -5481,7 +5481,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-faker"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "reqly-core",
  "rquickjs",
@@ -5491,7 +5491,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-http"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "base64 0.22.1",
  "curl",
@@ -5527,7 +5527,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-interop"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "base64 0.22.1",
  "insta",
@@ -5547,7 +5547,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-protocols"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -5580,7 +5580,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-script"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "reqly-core",
  "reqly-faker",
@@ -5595,7 +5595,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-server"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -5624,7 +5624,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-storage"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "argon2",
  "base64 0.22.1",
@@ -5645,7 +5645,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-template"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5673,7 +5673,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-testing"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "csv",
  "jsonschema",
@@ -5690,7 +5690,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-testserver"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "async-graphql",
