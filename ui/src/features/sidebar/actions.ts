@@ -215,9 +215,15 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
         title: single?.label ?? t('actions.exportSelection', { count: ids.length }),
       }),
   });
-  if (single?.isFolder) {
+  if (single?.isFolder && s.tree.collectionId) {
+    const collectionId = s.tree.collectionId;
     entries.push(
       { separator: true },
+      {
+        id: 'run',
+        label: t('runner.menu'),
+        onSelect: () => s.runner.open({ collectionId, folderId: single.id, name: single.label }),
+      },
       {
         id: 'folder-settings',
         label: t('actions.folderSettings'),

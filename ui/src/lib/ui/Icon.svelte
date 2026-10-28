@@ -23,6 +23,7 @@
     tree: 'M4 5h6 M8 5v14 M8 12h6 M8 19h6 M14 9h6v6h-6z',
     list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
     send: 'M5 12h14 M13 6l6 6-6 6',
+    play: 'M7 5l12 7-12 7z',
     stop: 'M7 7h10v10H7z',
     copy: 'M9 9h10v10H9z M5 15V5h10',
     download: 'M12 4v12 M7 11l5 5 5-5 M5 20h14',

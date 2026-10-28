@@ -15,6 +15,8 @@
   import EnvironmentEditor from '../environments/EnvironmentEditor.svelte';
   import { interopDialogs } from '../interop/dialogs.svelte';
   import ExportDialog from '../interop/ExportDialog.svelte';
+  import { runnableRequests } from '../runner/plan';
+  import RunnerDialog from '../runner/RunnerDialog.svelte';
   import ImportWizard from '../interop/ImportWizard.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
   import CollectionScripts from '../scripts/CollectionScripts.svelte';
@@ -182,6 +184,20 @@
                   collectionId: workspace.activeCollection!.id,
                 },
                 title: workspace.activeCollection!.name,
+              }),
+          },
+        ]
+      : []),
+    ...(workspace.activeCollection
+      ? [
+          {
+            id: 'run-collection',
+            label: t('runner.collectionMenu'),
+            run: () =>
+              services.runner.open({
+                collectionId: workspace.activeCollection!.id,
+                folderId: null,
+                name: workspace.activeCollection!.name,
               }),
           },
         ]
@@ -414,6 +430,15 @@
       {services}
       requestId={interopDialogs.codegen}
       onclose={() => (interopDialogs.codegen = null)}
+    />
+  {/if}
+  {#if services.runner.target}
+    <RunnerDialog
+      runner={services.runner}
+      requests={runnableRequests(services.tree.items, services.runner.target.folderId)}
+      environments={services.environments.subs}
+      activeEnvironment={services.environments.active}
+      onbeforerun={() => services.editor.flushAll()}
     />
   {/if}
   {#if tagEditor.request}

@@ -151,6 +151,14 @@
             title: current.name,
           }),
       },
+      {
+        id: 'run',
+        label: t('runner.collectionMenu'),
+        disabled: !current,
+        onSelect: () =>
+          current &&
+          services.runner.open({ collectionId: current.id, folderId: null, name: current.name }),
+      },
       { separator: true },
       { id: 'trash', label: t('trash.title'), onSelect: () => onOpen('trash') },
       { separator: true },

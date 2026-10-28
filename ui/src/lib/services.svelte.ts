@@ -11,6 +11,7 @@ import { EditorStore } from './stores/editor.svelte';
 import { PresenceStore } from './stores/presence.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
+import { RunnerStore } from './stores/runner.svelte';
 import { StreamStore } from './stores/streams.svelte';
 import { TabsStore } from './stores/tabs.svelte';
 import { TreeStore } from './stores/tree.svelte';
@@ -47,6 +48,7 @@ export interface Services {
   editor: EditorStore;
   responses: ResponseStore;
   streams: StreamStore;
+  runner: RunnerStore;
   environments: EnvironmentStore;
   account: AccountStore;
   collab: CollabService;
@@ -122,6 +124,7 @@ export async function createServices(
     editor,
     responses,
     streams,
+    runner: new RunnerStore(transport),
     environments,
     account,
     collab,
