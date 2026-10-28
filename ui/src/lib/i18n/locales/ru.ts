@@ -444,6 +444,10 @@ export const ru: Translation<Messages> = {
     took: 'Заняло {time}',
     noResults: 'Ни один запрос не отправлен.',
     results: 'Результаты',
+    reportFormat: 'Формат отчёта',
+    saveReport: 'Сохранить отчёт',
+    reportSaved: 'Отчёт сохранён',
+    formats: { html: 'HTML', junit: 'JUnit XML', json: 'JSON' },
   },
   scripts: {
     title: 'Скрипты',

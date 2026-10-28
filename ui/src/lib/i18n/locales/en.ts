@@ -406,6 +406,10 @@ export const en = {
     took: 'Took {time}',
     noResults: 'No requests were sent.',
     results: 'Results',
+    reportFormat: 'Report format',
+    saveReport: 'Save report',
+    reportSaved: 'Report saved',
+    formats: { html: 'HTML', junit: 'JUnit XML', json: 'JSON' },
   },
   scripts: {
     title: 'Scripts',

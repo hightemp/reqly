@@ -19,3 +19,7 @@ ts-rs.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+sxd-document = "0.3"
+sxd-xpath = "0.4"

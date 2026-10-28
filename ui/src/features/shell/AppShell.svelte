@@ -17,6 +17,7 @@
   import ExportDialog from '../interop/ExportDialog.svelte';
   import { runnableRequests } from '../runner/plan';
   import RunnerDialog from '../runner/RunnerDialog.svelte';
+  import { saveExportFiles } from '$lib/platform/importFiles';
   import ImportWizard from '../interop/ImportWizard.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
   import CollectionScripts from '../scripts/CollectionScripts.svelte';
@@ -439,6 +440,7 @@
       environments={services.environments.subs}
       activeEnvironment={services.environments.active}
       onbeforerun={() => services.editor.flushAll()}
+      onsave={(file) => saveExportFiles(services.transport, [file])}
     />
   {/if}
   {#if tagEditor.request}

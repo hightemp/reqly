@@ -2,6 +2,7 @@
 //! runner.
 
 pub mod data;
+pub mod report;
 pub mod run;
 
 use reqly_core::CoreError;

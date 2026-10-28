@@ -87,6 +87,7 @@ import type { PresencePerson } from "./PresencePerson";
 import type { PresenceSetInput } from "./PresenceSetInput";
 import type { PromptInfo } from "./PromptInfo";
 import type { RenameInput } from "./RenameInput";
+import type { RenderedReport } from "./RenderedReport";
 import type { RequestIdInput } from "./RequestIdInput";
 import type { RequestSendInput } from "./RequestSendInput";
 import type { ResponseBodyChunkOutput } from "./ResponseBodyChunkOutput";
@@ -101,6 +102,7 @@ import type { RevokeInviteInput } from "./RevokeInviteInput";
 import type { RunReport } from "./RunReport";
 import type { RunnerCancelInput } from "./RunnerCancelInput";
 import type { RunnerInput } from "./RunnerInput";
+import type { RunnerReportInput } from "./RunnerReportInput";
 import type { RuntimeVariablesInput } from "./RuntimeVariablesInput";
 import type { RuntimeVariablesOutput } from "./RuntimeVariablesOutput";
 import type { SearchInput } from "./SearchInput";
@@ -242,6 +244,7 @@ export type Commands = {
   "presence.set": { input: PresenceSetInput; output: Array<PresencePerson> };
   "runner.run": { input: RunnerInput; output: RunReport };
   "runner.cancel": { input: RunnerCancelInput; output: Empty };
+  "runner.report": { input: RunnerReportInput; output: RenderedReport };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

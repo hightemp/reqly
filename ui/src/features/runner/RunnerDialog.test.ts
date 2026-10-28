@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Environment } from '$lib/api/generated/Environment';
 import type { RunItem } from '$lib/api/generated/RunItem';
 import type { RunnerInput } from '$lib/api/generated/RunnerInput';
@@ -57,15 +57,21 @@ function setup() {
       stopped: false,
     };
   });
+  transport.handle('runner.report', ({ format }) => ({
+    fileName: `Demo-report.${format === 'junit' ? 'xml' : format}`,
+    text: `<${format}>`,
+  }));
   const runner = new RunnerStore(transport);
   runner.open({ collectionId: 'c1', folderId: null, name: 'Demo' });
+  const onsave = vi.fn(async () => true);
   render(RunnerDialog, {
     runner,
     requests,
     environments: [env('e1', 'dev'), env('e2', 'prod')],
     activeEnvironment: env('e1', 'dev'),
+    onsave,
   });
-  return { inputs, runner };
+  return { inputs, runner, onsave };
 }
 
 describe('RunnerDialog', () => {
@@ -89,6 +95,22 @@ describe('RunnerDialog', () => {
       stopOnFailure: true,
     });
     expect(inputs[0]!.environmentId).toBeUndefined();
+  });
+
+  it('saves a report in the chosen format', async () => {
+    const { onsave } = setup();
+    await fireEvent.click(screen.getByRole('button', { name: 'Run' }));
+    await screen.findByText('2 requests passed');
+    await fireEvent.click(screen.getByRole('combobox', { name: 'Report format' }));
+    await fireEvent.click(screen.getByRole('option', { name: 'JUnit XML' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Save report' }));
+    await waitFor(() =>
+      expect(onsave).toHaveBeenCalledWith({
+        name: 'Demo-report.xml',
+        mime: 'application/xml',
+        content: '<junit>',
+      }),
+    );
   });
 
   it('shows results and reruns the failed requests', async () => {

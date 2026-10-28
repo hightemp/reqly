@@ -16,6 +16,7 @@ use reqly_storage::environments::EnvironmentRepo;
 use reqly_storage::tree::TreeRepo;
 use reqly_testing::AssertionResult;
 use reqly_testing::data::{DataFormat, parse_data};
+use reqly_testing::report::{RenderedReport, ReportFormat, render_report};
 use reqly_testing::run::{RunItem, RunReport};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -27,7 +28,9 @@ use crate::events::Event;
 use crate::registry::{Command, Registry};
 
 pub fn register(r: &mut Registry<AppContext>) {
-    r.register::<RunnerRun>().register::<RunnerCancel>();
+    r.register::<RunnerRun>()
+        .register::<RunnerCancel>()
+        .register::<RunnerReport>();
 }
 
 // ----- run scope ---------------------------------------------------------------------
@@ -206,6 +209,27 @@ impl Command<AppContext> for RunnerCancel {
             }
         }
         Ok(Empty {})
+    }
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct RunnerReportInput {
+    pub report: RunReport,
+    pub format: ReportFormat,
+}
+
+/// Renders a finished run as a file (JSON, JUnit XML or HTML).
+pub struct RunnerReport;
+
+impl Command<AppContext> for RunnerReport {
+    const NAME: &'static str = "runner.report";
+    type Input = RunnerReportInput;
+    type Output = RenderedReport;
+
+    async fn run(_ctx: &AppContext, input: RunnerReportInput) -> CoreResult<RenderedReport> {
+        Ok(render_report(&input.report, input.format))
     }
 }
 

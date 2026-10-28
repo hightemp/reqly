@@ -170,6 +170,25 @@ async fn iterations_use_data_rows_in_templates_scripts_and_assertions() {
 }
 
 #[tokio::test]
+async fn reports_render_in_each_format() {
+    let fx = Fx::new().await;
+    fx.echo(&Value::Null, "a", json!({})).await;
+    let report = fx.run(json!({})).await;
+    for (format, ext) in [("json", "json"), ("junit", "xml"), ("html", "html")] {
+        let out = call(
+            &fx.ctx,
+            "runner.report",
+            json!({ "report": report, "format": format }),
+        )
+        .await
+        .unwrap();
+        let name = out["fileName"].as_str().unwrap();
+        assert!(name.ends_with(&format!("-report.{ext}")), "{name}");
+        assert!(out["text"].as_str().unwrap().contains('a'));
+    }
+}
+
+#[tokio::test]
 async fn bad_data_is_refused() {
     let fx = Fx::new().await;
     fx.echo(&Value::Null, "a", json!({})).await;

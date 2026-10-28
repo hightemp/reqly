@@ -1,6 +1,8 @@
 <!-- Collection runner: options, then live results of the run. -->
 <script lang="ts">
   import type { Environment } from '$lib/api/generated/Environment';
+  import type { ExportFile } from '$lib/api/generated/ExportFile';
+  import type { ReportFormat } from '$lib/api/generated/ReportFormat';
   import type { RunItem } from '$lib/api/generated/RunItem';
   import { errorMessage } from '$lib/errors';
   import { i18n, t } from '$lib/i18n';
@@ -25,9 +27,23 @@
     activeEnvironment: Environment | null;
     /** Saves pending edits before a run. */
     onbeforerun?: () => Promise<void>;
+    /** Saves a report file; false when the user cancelled. */
+    onsave?: (file: ExportFile) => Promise<boolean>;
   }
 
-  let { runner, requests, environments, activeEnvironment, onbeforerun }: Props = $props();
+  let { runner, requests, environments, activeEnvironment, onbeforerun, onsave }: Props = $props();
+
+  const REPORT_MIME: Record<ReportFormat, string> = {
+    json: 'application/json',
+    junit: 'application/xml',
+    html: 'text/html',
+  };
+  const reportFormats = $derived<{ value: ReportFormat; label: string }[]>([
+    { value: 'html', label: t('runner.formats.html') },
+    { value: 'junit', label: t('runner.formats.junit') },
+    { value: 'json', label: t('runner.formats.json') },
+  ]);
+  let reportFormat = $state<ReportFormat>('html');
 
   // svelte-ignore state_referenced_locally
   let order = $state(requests.map((r) => ({ ...r, selected: true })));
@@ -114,6 +130,23 @@
       delayMs: pause > 0 ? pause : undefined,
       stopOnFailure,
     });
+  }
+
+  async function saveReport() {
+    const report = runner.report;
+    if (!report || !onsave) return;
+    try {
+      const out = await runner.renderReport(reportFormat);
+      if (!out) return;
+      const saved = await onsave({
+        name: out.fileName,
+        mime: REPORT_MIME[reportFormat],
+        content: out.text,
+      });
+      if (saved) toasts.show({ message: t('runner.reportSaved'), kind: 'success' });
+    } catch (e) {
+      toasts.error(errorMessage(e));
+    }
   }
 
   function statusText(i: RunItem): string {
@@ -283,6 +316,17 @@
     {:else if runner.status === 'running'}
       <Button variant="danger" onclick={() => void runner.cancel()}>{t('runner.stop')}</Button>
     {:else}
+      {#if runner.report && onsave}
+        <div class="report">
+          <Select
+            label={t('runner.reportFormat')}
+            compact
+            bind:value={reportFormat}
+            options={reportFormats}
+          />
+          <Button onclick={() => void saveReport()}>{t('runner.saveReport')}</Button>
+        </div>
+      {/if}
       {#if runner.report && items.some((i) => !ok(i))}
         <Button onclick={() => void runner.rerunFailed()}>{t('runner.rerunFailed')}</Button>
       {/if}
@@ -422,6 +466,11 @@
   }
   .details {
     padding: var(--space-2) var(--space-2) var(--space-3) calc(var(--space-2) + 16px);
+  }
+  .report {
+    display: flex;
+    gap: var(--space-2);
+    margin-right: auto;
   }
   .url {
     font-family: var(--font-mono);

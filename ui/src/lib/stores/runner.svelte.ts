@@ -1,5 +1,7 @@
 // The collection runner: one run at a time, kept while its dialog is closed.
 
+import type { RenderedReport } from '$lib/api/generated/RenderedReport';
+import type { ReportFormat } from '$lib/api/generated/ReportFormat';
 import type { RunItem } from '$lib/api/generated/RunItem';
 import type { RunProgress } from '$lib/api/generated/RunProgress';
 import type { RunReport } from '$lib/api/generated/RunReport';
@@ -94,6 +96,12 @@ export class RunnerStore {
   async cancel() {
     if (this.runId && this.status === 'running')
       await this.transport.call('runner.cancel', { runId: this.runId });
+  }
+
+  /** The finished run as a report file. */
+  async renderReport(format: ReportFormat): Promise<RenderedReport | null> {
+    if (!this.report) return null;
+    return this.transport.call('runner.report', { report: this.report, format });
   }
 
   async rerunFailed() {
