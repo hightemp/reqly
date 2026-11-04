@@ -24,6 +24,21 @@ Android and a self-hosted web version served by a single Rust binary.
 > server sync comes next.
 > Planning docs are in Russian: [PRD.ru.md](PRD.ru.md), [TASKS.ru.md](TASKS.ru.md).
 
+## Screenshots
+
+![Reqly with a collection open and a JSON response, dark theme](docs/screenshots/dark.png)
+
+<table>
+  <tr>
+    <td width="70%"><img src="docs/screenshots/light.png" alt="Command palette, light theme"></td>
+    <td width="30%"><img src="docs/screenshots/mobile.png" alt="Response view on a phone"></td>
+  </tr>
+  <tr>
+    <td align="center">Command palette, light theme</td>
+    <td align="center">Mobile layout</td>
+  </tr>
+</table>
+
 ## Features
 
 - Workspaces → collections → nested folders and requests; tree view or
