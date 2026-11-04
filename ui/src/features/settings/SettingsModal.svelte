@@ -3,6 +3,7 @@
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
+  import SyncSettings from '../sync/SyncSettings.svelte';
   import About from './sections/About.svelte';
   import Account from './sections/Account.svelte';
   import Admin from './sections/Admin.svelte';
@@ -24,6 +25,7 @@
     | 'certificates'
     | 'history'
     | 'keybindings'
+    | 'sync'
     | 'account'
     | 'admin'
     | 'about';
@@ -82,6 +84,17 @@
     },
     { id: 'history', label: t('settings.history'), keywords: t('settings.historyPerRequest') },
     { id: 'keybindings', label: t('settings.keybindings'), keywords: t('hotkeys.change') },
+    ...(services.sync
+      ? [
+          {
+            id: 'sync' as const,
+            label: t('settings.sync'),
+            keywords: [t('sync.heading'), t('sync.url'), t('sync.now'), t('sync.secrets')].join(
+              ' ',
+            ),
+          },
+        ]
+      : []),
     ...(services.account.user
       ? [
           {
@@ -163,6 +176,8 @@
         <Account {services} />
       {:else if section === 'admin'}
         <Admin {services} />
+      {:else if section === 'sync' && services.sync}
+        <SyncSettings sync={services.sync} />
       {:else if section === 'keybindings'}
         <Keybindings {services} filter={query} />
       {:else}

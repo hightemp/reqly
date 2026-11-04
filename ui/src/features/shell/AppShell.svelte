@@ -8,6 +8,7 @@
   import type { WindowController } from '$lib/platform/window';
   import { bindPreferences, type Services } from '$lib/services.svelte';
   import type { IconName } from '$lib/ui/Icon.svelte';
+  import Icon from '$lib/ui/Icon.svelte';
   import IconButton from '$lib/ui/IconButton.svelte';
   import OverlayHost from '$lib/ui/overlay/OverlayHost.svelte';
   import SplitPane from '$lib/ui/SplitPane.svelte';
@@ -44,6 +45,7 @@
   import CompactBar, { type CompactPane } from './CompactBar.svelte';
   import Titlebar from './Titlebar.svelte';
   import UpdateDialog from '../updates/UpdateDialog.svelte';
+  import SyncConflictsDialog from '../sync/SyncConflictsDialog.svelte';
   import { openExternal } from '$lib/platform/links';
   import { errorMessage } from '$lib/errors';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
@@ -74,6 +76,7 @@
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
+  let settingsInitial = $state<'general' | 'sync'>('general');
   let modal = $state<
     | 'palette'
     | 'cookies'
@@ -224,6 +227,9 @@
     ...(services.updates
       ? [{ id: 'check-updates', label: t('updates.check'), run: () => void checkForUpdates() }]
       : []),
+    ...(services.sync?.connected
+      ? [{ id: 'sync-now', label: t('sync.now'), run: () => void syncNow() }]
+      : []),
     { id: 'cookies', label: t('cookieManager.title'), run: () => (modal = 'cookies') },
     { id: 'log', label: t('log.title'), run: () => (modal = 'log') },
     { id: 'trash', label: t('trash.title'), run: () => (modal = 'trash') },
@@ -276,6 +282,23 @@
     else if (updates.status === 'upToDate') toasts.show({ message: t('updates.upToDate') });
     else if (updates.status === 'error') toasts.error(updates.error ?? '');
     else if (!updates.enabled) toasts.show({ message: t('updates.disabled') });
+  }
+
+  async function syncNow() {
+    const sync = services.sync;
+    if (!sync) return;
+    await sync.syncNow();
+    if (sync.error) toasts.error(sync.error);
+  }
+
+  // i18n-dynamic: sync.status.
+  /** The sync indicator: conflicts open their dialog, anything else the settings. */
+  function openSync() {
+    if (services.sync?.state === 'conflicts') services.sync.conflictsOpen = true;
+    else {
+      settingsInitial = 'sync';
+      settingsOpen = true;
+    }
   }
 
   function openLink(url: string) {
@@ -483,7 +506,17 @@
     <PromptDialog request={promptState.request} />
   {/if}
   {#if settingsOpen}
-    <SettingsModal {services} onclose={() => (settingsOpen = false)} />
+    <SettingsModal
+      {services}
+      initial={settingsInitial}
+      onclose={() => {
+        settingsOpen = false;
+        settingsInitial = 'general';
+      }}
+    />
+  {/if}
+  {#if services.sync?.conflictsOpen}
+    <SyncConflictsDialog sync={services.sync} />
   {/if}
   {#if services.updates?.dialogOpen}
     <UpdateDialog updates={services.updates} onopen={openLink} />
@@ -506,6 +539,18 @@
         {services.updates.status === 'ready'
           ? t('updates.statusReady')
           : t('updates.status', { version: services.updates.release.version })}
+      </button>
+    {/if}
+    {#if services.sync?.connected}
+      <button
+        type="button"
+        class="status-button sync {services.sync.state}"
+        aria-label={t(`sync.status.${services.sync.state as 'ok'}`)}
+        title={t(`sync.status.${services.sync.state as 'ok'}`)}
+        onclick={openSync}
+      >
+        <Icon name="cloud" size={14} />
+        {#if services.sync.state === 'conflicts'}{services.sync.status?.conflicts}{/if}
       </button>
     {/if}
     <IconButton
@@ -611,6 +656,19 @@
   }
   .status-button.update {
     color: var(--c-accent);
+  }
+  .status-button.sync {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .status-button.sync.syncing,
+  .status-button.sync.pending {
+    color: var(--c-accent);
+  }
+  .status-button.sync.error,
+  .status-button.sync.conflicts {
+    color: var(--c-danger);
   }
   @media (pointer: coarse) {
     .statusbar {

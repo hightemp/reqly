@@ -12,6 +12,7 @@ import { PresenceStore } from './stores/presence.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
 import { RunnerStore } from './stores/runner.svelte';
+import { SyncStore } from './stores/sync.svelte';
 import { UpdatesStore } from './stores/updates.svelte';
 import { StreamStore } from './stores/streams.svelte';
 import { TabsStore } from './stores/tabs.svelte';
@@ -54,6 +55,8 @@ export interface Services {
   runner: RunnerStore;
   /** Update checks: the apps, and the admin of a server. */
   updates: UpdatesStore | null;
+  /** Desktop ↔ server sync (desktop and Android only). */
+  sync: SyncStore | null;
   environments: EnvironmentStore;
   account: AccountStore;
   collab: CollabService;
@@ -104,6 +107,8 @@ export async function createServices(
   const responses = new ResponseStore(transport, (id) => editor.flush(id));
   const streams = new StreamStore(transport, (id) => editor.flush(id));
   const environments = new EnvironmentStore(transport);
+  const sync = transport.kind === 'tauri' ? new SyncStore(transport) : null;
+  await sync?.load().catch((e: unknown) => console.warn('[sync] status failed', e));
   try {
     await workspace.load();
     if (workspace.activeCollectionId) {
@@ -136,6 +141,7 @@ export async function createServices(
         : !account.user || account.user.isAdmin
           ? new UpdatesStore(transport, null, { server: true })
           : null,
+    sync,
     environments,
     account,
     collab,
