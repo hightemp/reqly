@@ -190,7 +190,7 @@ reqly/
 |---|---|
 | UI | Svelte 5 (runes), Vite, TypeScript strict, CodeMirror 6, pnpm |
 | UI-тесты | Vitest, @testing-library/svelte, Playwright (e2e против server) |
-| Desktop | Tauri 2, плагины: dialog, fs, window-state, updater (позже) |
+| Desktop | Tauri 2, плагины: dialog, fs, window-state, updater, process |
 | Server | axum, tokio, tower-http, sqlx (SQLite) |
 | Rust-тесты | `cargo test`, `insta` (snapshot), `wiremock` или собственный тестовый HTTP-сервер, `proptest` |
 | Типы | `ts-rs` |
@@ -454,7 +454,7 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 - История ответов личная или общая (настройка workspace). По умолчанию личная.
 - Audit log действий в workspace (бэклог).
 
-### 7.18. Синхронизация desktop ↔ server [Э10]
+### 7.18. Синхронизация desktop ↔ server [Э11]
 
 - Desktop подключается к серверу (URL, логин или токен) и выбирает workspaces для синхронизации.
 - Offline-first: локальные изменения пишутся в журнал операций и отправляются при подключении.
@@ -525,6 +525,14 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 - Ограничения: нет кастомного titlebar, выбор файлов через Android-диалоги, клиентские сертификаты через импорт файла.
 - Функциональный паритет с desktop, кроме: Unix sockets, network interface binding, `os`-тега.
 
+### 7.21. Обновления [Э10]
+
+- **Проверка обновлений** на всех платформах: при старте и по интервалу (по умолчанию раз в сутки) и вручную («Проверить обновления» в меню и в «О программе»). Источник — манифест последнего релиза на GitHub; каналы stable и pre-release; «пропустить эту версию». Проверку можно отключить; телеметрия не отправляется, используются прокси и сертификаты из настроек.
+- **Автообновление desktop** через Tauri updater: уведомление с версией и changelog, загрузка с прогрессом, проверка подписи (minisign), установка и перезапуск по подтверждению или автоматически (настройка). Поддерживаются AppImage, macOS (`.app`), Windows (NSIS и MSI); для deb и rpm — уведомление со ссылкой на релиз.
+- **Android:** уведомление о новой версии и ссылка на APK релиза (установка средствами системы).
+- **Server:** администратор видит в web UI баннер о новой версии сервера с командой обновления; проверка отключается `REQLY_UPDATE_CHECK=false`.
+- **CLI:** `reqly-cli version --check`.
+
 ---
 
 ## 8. Нефункциональные требования
@@ -556,7 +564,8 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 | **7** | Многопользовательский сервер и collab | Режим `multi`, роли, приглашения, real-time синхронизация сущностей, CRDT-редактирование, presence |
 | **8** | Android | Мобильная сборка, адаптивный UI, touch |
 | **9** | Тесты и Runner | Ассерты, скриптовые тесты, Collection Runner, отчёты, `reqly-cli` |
-| **10** | Синхронизация desktop ↔ server | Offline-first sync, журнал операций, конфликты |
+| **10** | Обновления | Автообновление desktop (Tauri updater, подписанные релизы), проверка обновлений на desktop, Android, server и в CLI |
+| **11** | Синхронизация desktop ↔ server | Offline-first sync, журнал операций, конфликты |
 
 Каждый этап заканчивается релизом (тег `vX.Y.0`) с changelog.
 
@@ -614,5 +623,4 @@ Workspace ─┬─ GlobalEnvironment[]           (этап 2)
 - OIDC/SSO для сервера, audit log.
 - PostgreSQL backend.
 - OS keychain для секретов.
-- Автообновление desktop (Tauri updater).
 - iOS.
