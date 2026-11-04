@@ -5,6 +5,28 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-11-04
+
+Stage 10: updates.
+
+### Added
+
+- Update checks on every platform: at start and once a day (configurable),
+  one anonymous request for the GitHub release list through the proxy and
+  CA certificates of the HTTP settings; stable and pre-release channels,
+  **Skip this version**, **Check for updates** in Settings → About and the
+  command palette (`docs/updates.md`).
+- The desktop app updates itself (AppImage, macOS, Windows): release notes,
+  download with progress, signature check, install and restart, or
+  automatic installs. deb and rpm installs link to the release instead.
+- Android links to the APK of the new release.
+- Server admins (everyone on a single-user server) are told about a newer
+  release with the Docker command to update; `REQLY_UPDATE_CHECK=false`
+  turns checks off, `REQLY_UPDATE_URL` points them at a mirror.
+- `reqly-cli version --check`.
+- Releases carry signed updater bundles and `latest.json`.
+- Command `update.check`.
+
 ## [0.9.0] — 2026-10-28
 
 Stage 9: tests, the collection runner and the CLI.
@@ -328,7 +350,10 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/hightemp/reqly/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/hightemp/reqly/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/hightemp/reqly/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/hightemp/reqly/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/hightemp/reqly/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/hightemp/reqly/compare/v0.4.0...v0.5.0

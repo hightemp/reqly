@@ -11,10 +11,10 @@
 Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS),
 Android and a self-hosted web version served by a single Rust binary.
 
-> Status: v0.9 (stage 9 of the [roadmap](PRD.md)): HTTP, GraphQL,
+> Status: v0.10 (stage 10 of the [roadmap](PRD.md)): HTTP, GraphQL,
 > WebSocket, SSE and gRPC, scripts, a team server with collaboration, the
-> Android app, tests, the collection runner and a CLI. Desktop ↔ server
-> sync comes next.
+> Android app, tests, the collection runner, a CLI and updates. Desktop ↔
+> server sync comes next.
 > Planning docs are in Russian: [PRD.md](PRD.md), [TASKS.md](TASKS.md).
 
 ## Features
@@ -32,6 +32,8 @@ Android and a self-hosted web version served by a single Rust binary.
   XPath filters, headers, cookies, a raw timeline like Insomnia's, history
 - libcurl engine: HTTP/2, proxies (HTTP/HTTPS/SOCKS), custom CAs, client
   certificates (PEM/PKCS#12), cookies per workspace, cancel in flight
+- Update checks everywhere and signed in-place updates of the desktop app
+  ([docs/updates.md](docs/updates.md))
 - 10 built-in themes plus a theme editor (JSON import/export), density,
   fonts, zoom; custom window frame; remappable shortcuts; English and Russian
 - Variables and environments like Insomnia: global, base and switchable
