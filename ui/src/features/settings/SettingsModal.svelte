@@ -103,7 +103,13 @@
     {
       id: 'about',
       label: t('settings.about'),
-      keywords: [t('settings.version'), t('settings.cleanup')].join(' '),
+      keywords: [
+        t('settings.version'),
+        t('settings.cleanup'),
+        t('updates.heading'),
+        t('updates.check'),
+        t('updates.channel'),
+      ].join(' '),
     },
   ]);
   const visible = $derived(

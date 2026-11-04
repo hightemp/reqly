@@ -5,6 +5,7 @@
   import type { Services } from '$lib/services.svelte';
   import Button from '$lib/ui/Button.svelte';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
+  import UpdateSettings from '../../updates/UpdateSettings.svelte';
   import Field from '../Field.svelte';
 
   let { services }: { services: Services } = $props();
@@ -52,6 +53,9 @@
       }}>{t('login.signOut')}</Button
     >
   </Field>
+{/if}
+{#if services.updates}
+  <UpdateSettings updates={services.updates} />
 {/if}
 <Field label={t('settings.cleanup')} hint={t('settings.cleanupHint')}>
   <Button size="sm" loading={cleaning} onclick={() => void cleanup()}

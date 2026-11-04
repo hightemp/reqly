@@ -224,7 +224,8 @@ impl Command<AppContext> for UpdateCheck {
 }
 
 fn network(message: impl Into<String>) -> CoreError {
-    CoreError::new("update.network", message)
+    let message = message.into();
+    CoreError::new("update.network", message.clone()).with_param("detail", message)
 }
 
 async fn fetch(ctx: &AppContext, url: &str) -> CoreResult<Vec<GithubRelease>> {

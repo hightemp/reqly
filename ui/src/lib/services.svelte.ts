@@ -12,12 +12,15 @@ import { PresenceStore } from './stores/presence.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
 import { RunnerStore } from './stores/runner.svelte';
+import { UpdatesStore } from './stores/updates.svelte';
 import { StreamStore } from './stores/streams.svelte';
 import { TabsStore } from './stores/tabs.svelte';
 import { TreeStore } from './stores/tree.svelte';
 import { Viewport } from './stores/viewport.svelte';
 import { WorkspaceStore } from './stores/workspace.svelte';
 import { capabilities } from './platform/capabilities.svelte';
+import { platformInstaller } from './platform/updater';
+import { isMobile } from './api/transport';
 import { ThemeManager, type MediaQuery } from './themes/manager.svelte';
 import { parseTheme } from './themes/theme';
 
@@ -49,6 +52,8 @@ export interface Services {
   responses: ResponseStore;
   streams: StreamStore;
   runner: RunnerStore;
+  /** Update checks; the apps only (the server is updated by its admin). */
+  updates: UpdatesStore | null;
   environments: EnvironmentStore;
   account: AccountStore;
   collab: CollabService;
@@ -125,6 +130,10 @@ export async function createServices(
     responses,
     streams,
     runner: new RunnerStore(transport),
+    updates:
+      transport.kind === 'tauri'
+        ? new UpdatesStore(transport, await platformInstaller(), { mobile: isMobile() })
+        : null,
     environments,
     account,
     collab,

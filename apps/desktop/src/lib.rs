@@ -12,6 +12,9 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 /// Name of the webview event carrying core events (see ui/src/lib/api/transport.ts).
 pub const EVENT_NAME: &str = "reqly://event";
 
+#[cfg(desktop)]
+pub mod updater;
+
 pub struct Core {
     ctx: AppContext,
     registry: Registry<AppContext>,
@@ -149,6 +152,8 @@ pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tau
             app.manage(core);
         }
         forward_events(handle, &app.state::<Core>());
+        #[cfg(desktop)]
+        updater::init(app)?;
         Ok(())
     })
     .invoke_handler(handlers())
@@ -156,7 +161,13 @@ pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tau
 
 #[cfg(desktop)]
 fn handlers<R: Runtime>() -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static {
-    tauri::generate_handler![dispatch, oauth2_sign_in]
+    tauri::generate_handler![
+        dispatch,
+        oauth2_sign_in,
+        updater::update_installable,
+        updater::update_install,
+        updater::update_restart
+    ]
 }
 
 #[cfg(mobile)]

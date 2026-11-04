@@ -43,6 +43,10 @@
   import { installLongPress, swipeDirection, type TouchPoint } from '$lib/ui/touch';
   import CompactBar, { type CompactPane } from './CompactBar.svelte';
   import Titlebar from './Titlebar.svelte';
+  import UpdateDialog from '../updates/UpdateDialog.svelte';
+  import { openExternal } from '$lib/platform/links';
+  import { errorMessage } from '$lib/errors';
+  import { toasts } from '$lib/ui/overlay/toasts.svelte';
 
   interface Props {
     services: Services;
@@ -217,6 +221,9 @@
       label: `${t('environments.label')}: ${e.name}`,
       run: () => void environments.setActive(e.id),
     })),
+    ...(services.updates
+      ? [{ id: 'check-updates', label: t('updates.check'), run: () => void checkForUpdates() }]
+      : []),
     { id: 'cookies', label: t('cookieManager.title'), run: () => (modal = 'cookies') },
     { id: 'log', label: t('log.title'), run: () => (modal = 'log') },
     { id: 'trash', label: t('trash.title'), run: () => (modal = 'trash') },
@@ -260,8 +267,34 @@
     void prefs.update({ locale: next });
   }
 
+  /** "Check for updates": the dialog when there is one, a toast otherwise. */
+  async function checkForUpdates() {
+    const updates = services.updates;
+    if (!updates) return;
+    await updates.check(true);
+    if (updates.release) updates.dialogOpen = true;
+    else if (updates.status === 'upToDate') toasts.show({ message: t('updates.upToDate') });
+    else if (updates.status === 'error') toasts.error(updates.error ?? '');
+    else if (!updates.enabled) toasts.show({ message: t('updates.disabled') });
+  }
+
+  function openLink(url: string) {
+    openExternal(url).catch((e: unknown) => toasts.error(errorMessage(e)));
+  }
+
   onMount(() => {
+    const updates = services.updates;
+    if (updates) {
+      updates.onFound = (release) =>
+        toasts.show({
+          message: t('updates.found', { version: release.version }),
+          action: { label: t('updates.details'), run: () => (updates.dialogOpen = true) },
+          timeoutMs: 12_000,
+        });
+      void updates.start();
+    }
     const offs = [
+      () => updates?.stop(),
       hotkeys.on('sidebar.toggle', toggleSidebar),
       hotkeys.on('layout.toggle', toggleLayout),
       hotkeys.on('request.new', () => void createRequest(services, selectedOne())),
@@ -452,6 +485,9 @@
   {#if settingsOpen}
     <SettingsModal {services} onclose={() => (settingsOpen = false)} />
   {/if}
+  {#if services.updates?.dialogOpen}
+    <UpdateDialog updates={services.updates} onopen={openLink} />
+  {/if}
   {#if folderSettings}
     <FolderSettings {services} folderId={folderSettings} onclose={() => (folderSettings = null)} />
   {/if}
@@ -461,6 +497,17 @@
       <IconButton icon="sidebar" size={14} label={t('sidebar.expand')} onclick={toggleSidebar} />
     {/if}
     <span class="spacer"></span>
+    {#if services.updates?.release && ['available', 'downloading', 'ready'].includes(services.updates.status)}
+      <button
+        type="button"
+        class="status-button update"
+        onclick={() => (services.updates!.dialogOpen = true)}
+      >
+        {services.updates.status === 'ready'
+          ? t('updates.statusReady')
+          : t('updates.status', { version: services.updates.release.version })}
+      </button>
+    {/if}
     <IconButton
       icon="settings"
       size={14}
@@ -561,6 +608,9 @@
   .status-button:hover {
     background: var(--c-bg-hover);
     color: var(--c-fg);
+  }
+  .status-button.update {
+    color: var(--c-accent);
   }
   @media (pointer: coarse) {
     .statusbar {
