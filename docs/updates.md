@@ -34,6 +34,24 @@ button for the release page instead.
 
 The dialog links to the APK of the new release; Android installs it.
 
+### Server
+
+In the web UI of a server, administrators (everyone on a single-user server)
+are told about a newer release, with the command to update the image:
+
+```sh
+docker pull ghcr.io/hightemp/reqly-server:<version>
+```
+
+then recreate the container (`docker compose up -d`). For the binary,
+download `reqly-server-<version>-linux-<arch>.tar.gz` from the release and
+restart it. Other users of a multi-user server see nothing.
+
+### CLI
+
+`reqly-cli version --check` prints the version and whether a newer stable
+release exists; it exits with 2 when the check fails.
+
 ### Turning checks off
 
 `REQLY_UPDATE_CHECK=false` in the environment turns update checks off (closed

@@ -186,3 +186,25 @@ describe('UpdatesStore on Android', () => {
     expect(store.downloadUrl).toBe('https://dl.test/v0.10.0/Reqly_0.10.0_android-unsigned.apk');
   });
 });
+
+describe('UpdatesStore on a server', () => {
+  it('tells the admin how to update the server', async () => {
+    const transport = new FakeTransport();
+    transport.handle('update.check', () => out(release('0.10.0')));
+    transport.handle('settings.get', () => ({ value: null }));
+    const store = new UpdatesStore(transport, null, { server: true });
+    await store.start();
+    store.stop();
+    expect(store.canInstall).toBe(false);
+    expect(store.serverCommand).toBe('docker pull ghcr.io/hightemp/reqly-server:0.10.0');
+  });
+
+  it('apps have no server command', async () => {
+    const transport = new FakeTransport();
+    transport.handle('update.check', () => out(release('0.10.0')));
+    transport.handle('settings.get', () => ({ value: null }));
+    const store = new UpdatesStore(transport, null);
+    await store.check(true);
+    expect(store.serverCommand).toBeNull();
+  });
+});

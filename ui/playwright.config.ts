@@ -5,6 +5,7 @@ export const TOKEN_PORT = 8487;
 export const E2E_TOKEN = 'e2e-token-1234567890';
 export const MULTI_PORT = 8488;
 export const E2E_ADMIN = { username: 'admin', password: 'admin-password' };
+export const UPDATES_PORT = 8489;
 
 // E2E runs against the real server binary with the built UI embedded and a
 // throwaway data directory, so it covers HTTP + WebSocket transport too.
@@ -53,6 +54,14 @@ export default defineConfig({
         REQLY_ADMIN_USERNAME: E2E_ADMIN.username,
         REQLY_ADMIN_PASSWORD: E2E_ADMIN.password,
       },
+    },
+    {
+      // With a fake release list that has a newer version.
+      command: 'node e2e/start-server.mjs --no-build --fake-releases',
+      url: `http://127.0.0.1:${UPDATES_PORT}/healthz`,
+      reuseExistingServer: false,
+      timeout: 300_000,
+      env: { REQLY_BIND: `127.0.0.1:${UPDATES_PORT}` },
     },
   ],
 });

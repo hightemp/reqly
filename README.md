@@ -88,6 +88,8 @@ environment variables:
 | `network.block_loopback` | `REQLY_BLOCK_LOOPBACK` | `false` | Deny 127.0.0.0/8 |
 | `network.allow_hosts` | `REQLY_ALLOW_HOSTS` | — | Hosts that skip checks |
 | `network.deny` | — | — | Extra CIDRs to deny |
+| — | `REQLY_UPDATE_CHECK` | `true` | `false`: no update checks ([updates](docs/updates.md)) |
+| — | `REQLY_UPDATE_URL` | GitHub releases | Release list to check (a mirror) |
 
 Cloud metadata and link-local addresses are always blocked for requests sent
 by the server. Scripts can call the API with `Authorization: Bearer <token>`.

@@ -426,6 +426,8 @@ export const en = {
     download: 'Download',
     openRelease: 'Release page',
     manual: 'This installation cannot update itself: download the new version.',
+    server:
+      'Update the server: pull the new image and recreate the container, or replace the reqly-server binary from the release page and restart it.',
     skip: 'Skip this version',
     later: 'Later',
     check: 'Check for updates',

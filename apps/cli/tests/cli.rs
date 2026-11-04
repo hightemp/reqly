@@ -223,3 +223,79 @@ async fn usage_errors_exit_with_2() {
     assert_eq!(out.code, 2);
     assert!(out.stderr.contains("--nope"));
 }
+
+/// Serves a GitHub-style release list.
+async fn releases(body: Value) -> String {
+    let app = axum::Router::new().route(
+        "/releases",
+        axum::routing::get(move || {
+            let body = body.clone();
+            async move { axum::Json(body) }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/releases", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum_serve(listener, app).await });
+    url
+}
+
+async fn version_check(url: Option<String>, current: &str) -> Out {
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let config = reqly_api::commands::update::UpdateConfig {
+        url,
+        current: current.into(),
+    };
+    let code = reqly_cli::check_version(config, &mut stdout, &mut stderr).await;
+    Out {
+        code,
+        stdout: String::from_utf8(stdout).unwrap(),
+        stderr: String::from_utf8(stderr).unwrap(),
+    }
+}
+
+#[tokio::test]
+async fn version_check_reports_a_newer_release() {
+    let url = releases(json!([{
+        "tag_name": "v0.10.0",
+        "draft": false,
+        "prerelease": false,
+        "html_url": "https://github.com/hightemp/reqly/releases/tag/v0.10.0",
+        "assets": [],
+    }]))
+    .await;
+    let out = version_check(Some(url.clone()), "0.9.0").await;
+    assert_eq!(out.code, 0, "{}", out.stderr);
+    assert!(out.stdout.contains("reqly-cli 0.9.0"), "{}", out.stdout);
+    assert!(
+        out.stdout.contains(
+            "Reqly 0.10.0 is available: https://github.com/hightemp/reqly/releases/tag/v0.10.0"
+        ),
+        "{}",
+        out.stdout
+    );
+
+    let out = version_check(Some(url), "0.10.0").await;
+    assert_eq!(out.code, 0);
+    assert!(out.stdout.contains("up to date"), "{}", out.stdout);
+
+    let out = version_check(Some("http://127.0.0.1:9/releases".into()), "0.9.0").await;
+    assert_eq!(out.code, 2);
+    assert!(!out.stderr.is_empty());
+
+    let out = version_check(None, "0.9.0").await;
+    assert_eq!(out.code, 2);
+    assert!(out.stderr.contains("REQLY_UPDATE_CHECK"), "{}", out.stderr);
+}
+
+#[test]
+fn version_command_parses() {
+    let out = |args: &[&str]| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(cli(args))
+    };
+    let v = out(&["version"]);
+    assert_eq!(v.code, 0);
+    assert!(v.stdout.contains(env!("CARGO_PKG_VERSION")));
+    assert_eq!(out(&["version", "--nope"]).code, 2);
+}

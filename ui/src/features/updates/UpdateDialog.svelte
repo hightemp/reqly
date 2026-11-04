@@ -51,7 +51,10 @@
     {:else if updates.status === 'error' && updates.error}
       <p class="error" role="alert">{updates.error}</p>
     {/if}
-    {#if !updates.canInstall}
+    {#if updates.serverCommand}
+      <p class="muted">{t('updates.server')}</p>
+      <pre class="command selectable">{updates.serverCommand}</pre>
+    {:else if !updates.canInstall}
       <p class="muted">{t('updates.manual')}</p>
     {/if}
   {/if}
@@ -121,6 +124,15 @@
     font-size: var(--font-size-sm);
     white-space: pre-wrap;
     word-break: break-word;
+  }
+  .command {
+    margin: 0 0 var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--c-bg-sunken);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    overflow-x: auto;
   }
   .error {
     color: var(--c-danger);

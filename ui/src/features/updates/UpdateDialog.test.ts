@@ -89,3 +89,22 @@ describe('UpdateDialog', () => {
     expect(fx.updates.release?.version).toBe('0.10.0');
   });
 });
+
+describe('UpdateDialog on a server', () => {
+  it('shows the Docker command', async () => {
+    const transport = new FakeTransport();
+    transport.handle('update.check', () => ({
+      enabled: true,
+      current: '0.9.0',
+      checkedAt: 1,
+      release,
+    }));
+    transport.handle('settings.get', () => ({ value: null }));
+    const updates = new UpdatesStore(transport, null, { server: true });
+    await updates.check(true);
+    updates.dialogOpen = true;
+    render(UpdateDialog, { updates, onopen: vi.fn() });
+    expect(screen.getByText('docker pull ghcr.io/hightemp/reqly-server:0.10.0')).toBeTruthy();
+    expect(screen.queryByText(/cannot update itself/)).toBeNull();
+  });
+});

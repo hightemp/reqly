@@ -7,6 +7,7 @@ mod server;
 
 use std::io::Write;
 
+use reqly_api::commands::update::UpdateConfig;
 use reqly_api::commands::{AppContext, Platform, registry};
 use reqly_core::model::{AssertionOperator, NodeKind};
 use reqly_storage::Storage;
@@ -42,10 +43,11 @@ pub async fn run_cli(
             let _ = write!(out, "{USAGE}");
             0
         }
-        Command::Version => {
+        Command::Version { check: false } => {
             let _ = writeln!(out, "reqly-cli {}", env!("CARGO_PKG_VERSION"));
             0
         }
+        Command::Version { check: true } => check_version(UpdateConfig::from_env(), out, err).await,
         Command::Run(run) => {
             let color = color && !run.no_color && std::env::var_os("NO_COLOR").is_none();
             match execute(&run, out, color).await {
@@ -56,6 +58,44 @@ pub async fn run_cli(
                     2
                 }
             }
+        }
+    }
+}
+
+/// `reqly-cli version --check`: the version and whether a newer stable
+/// release exists (exit 0), or 2 when the check failed.
+pub async fn check_version(config: UpdateConfig, out: &mut dyn Write, err: &mut dyn Write) -> i32 {
+    let _ = writeln!(out, "reqly-cli {}", config.current);
+    if config.url.is_none() {
+        let _ = writeln!(
+            err,
+            "error: update checks are turned off (REQLY_UPDATE_CHECK)"
+        );
+        return 2;
+    }
+    let checked = async {
+        let blobs = tempfile::tempdir().map_err(|e| e.to_string())?;
+        let storage = Storage::in_memory().await.map_err(|e| e.message)?;
+        let mut ctx = AppContext::new(Platform::Desktop, storage, BlobStore::new(blobs.path()));
+        ctx.updates = config;
+        call(&ctx, "update.check", json!({ "manual": true })).await
+    };
+    match checked.await {
+        Ok(result) => {
+            let _ = match result["release"].as_object() {
+                Some(r) => writeln!(
+                    out,
+                    "Reqly {} is available: {}",
+                    r["version"].as_str().unwrap_or_default(),
+                    r["url"].as_str().unwrap_or_default()
+                ),
+                None => writeln!(out, "reqly-cli is up to date"),
+            };
+            0
+        }
+        Err(e) => {
+            let _ = writeln!(err, "error: update check failed: {e}");
+            2
         }
     }
 }

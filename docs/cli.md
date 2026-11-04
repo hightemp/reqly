@@ -34,6 +34,9 @@ REQLY_TOKEN=… reqly-cli run --server https://reqly.example.com --collection "B
 | `--report <FILE>` | Also write a report: `.html`, `.xml` (JUnit) or `.json` (repeatable) |
 | `--no-color` | Plain pretty output (also when `NO_COLOR` is set or the output is not a terminal) |
 
+`reqly-cli version --check` tells whether a newer release is out
+([updates](updates.md#cli)).
+
 Exit codes: **0** every check passed, **1** a request failed or a check did
 not pass, **2** the run could not start (bad options, unreadable file,
 unknown collection, environment or folder, server errors).

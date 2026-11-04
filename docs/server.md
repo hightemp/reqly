@@ -138,3 +138,7 @@ Administrators get **Settings → Administration**:
   workspaces, authentication, registration and outgoing request settings.
   These come from `reqly.toml` and environment variables and are shown
   read-only; secrets are never shown.
+
+Administrators (and everyone on a single-user server) are told when a newer
+Reqly release is out, with the command to update the Docker image; see
+[updates.md](updates.md#server). `REQLY_UPDATE_CHECK=false` turns this off.

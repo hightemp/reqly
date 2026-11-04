@@ -52,7 +52,7 @@ export interface Services {
   responses: ResponseStore;
   streams: StreamStore;
   runner: RunnerStore;
-  /** Update checks; the apps only (the server is updated by its admin). */
+  /** Update checks: the apps, and the admin of a server. */
   updates: UpdatesStore | null;
   environments: EnvironmentStore;
   account: AccountStore;
@@ -133,7 +133,9 @@ export async function createServices(
     updates:
       transport.kind === 'tauri'
         ? new UpdatesStore(transport, await platformInstaller(), { mobile: isMobile() })
-        : null,
+        : !account.user || account.user.isAdmin
+          ? new UpdatesStore(transport, null, { server: true })
+          : null,
     environments,
     account,
     collab,

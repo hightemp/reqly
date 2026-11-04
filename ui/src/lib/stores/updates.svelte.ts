@@ -34,6 +34,8 @@ export type UpdateStatus =
 export interface UpdatesOptions {
   /** Android: offer the APK of the release. */
   mobile?: boolean;
+  /** The web UI of a server: its admin updates the image or binary. */
+  server?: boolean;
   /** An automatic check found a version not announced before. */
   onFound?: (release: UpdateRelease) => void;
 }
@@ -79,6 +81,12 @@ export class UpdatesStore {
       if (apk) return apk.url;
     }
     return this.release.url;
+  }
+
+  /** How to update a server to the release (Docker). */
+  get serverCommand(): string | null {
+    if (!this.options.server || !this.release) return null;
+    return `docker pull ghcr.io/hightemp/reqly-server:${this.release.version}`;
   }
 
   /** Loads settings, checks now and then every hour. */

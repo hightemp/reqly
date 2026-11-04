@@ -4,6 +4,7 @@ pub const USAGE: &str = "\
 Usage:
   reqly-cli run <FILE> [OPTIONS]
   reqly-cli run --server <URL> --collection <ID|NAME> [OPTIONS]
+  reqly-cli version [--check]
 
 Runs the requests of a collection with their tests and assertions and exits
 with 0 when every check passed, 1 when one failed and 2 on other errors.
@@ -30,6 +31,9 @@ Output:
 
   -h, --help                 Show this help
   -V, --version              Show the version
+
+Version:
+      --check                Also look for a newer release on GitHub
 ";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -61,7 +65,10 @@ pub struct RunArgs {
 #[derive(Debug)]
 pub enum Command {
     Help,
-    Version,
+    /// `check`: also look for a newer release.
+    Version {
+        check: bool,
+    },
     Run(Box<RunArgs>),
 }
 
@@ -70,7 +77,12 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
     match it.next().map(String::as_str) {
         None => Err("no command".into()),
         Some("-h" | "--help" | "help") => Ok(Command::Help),
-        Some("-V" | "--version") => Ok(Command::Version),
+        Some("-V" | "--version") => Ok(Command::Version { check: false }),
+        Some("version") => match it.next().map(String::as_str) {
+            None => Ok(Command::Version { check: false }),
+            Some("--check") => Ok(Command::Version { check: true }),
+            Some(other) => Err(format!("unknown option `{other}`")),
+        },
         Some("run") => parse_run(it).map(|r| Command::Run(Box::new(r))),
         Some(other) => Err(format!("unknown command `{other}`")),
     }

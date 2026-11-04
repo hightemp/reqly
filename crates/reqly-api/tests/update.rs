@@ -278,3 +278,28 @@ async fn unreachable_source_is_a_network_error() {
         .unwrap_err();
     assert_eq!(err.code, "update.network");
 }
+
+#[tokio::test]
+async fn only_admins_check_on_a_shared_server() {
+    use reqly_api::access::Caller;
+    use reqly_api::commands::dispatch_as;
+
+    let fx = Fx::new("0.9.0").await;
+    fx.fake
+        .answer(200, json!([release("v0.10.0", false)]).to_string());
+    let r = registry();
+    let check = |caller| {
+        dispatch_as(
+            &r,
+            &fx.ctx,
+            caller,
+            "update.check",
+            json!({ "manual": true }),
+        )
+    };
+    let id = reqly_core::Id::new();
+    let err = check(Caller::User { id, admin: false }).await.unwrap_err();
+    assert_eq!(err.code, "access.denied");
+    let out = check(Caller::User { id, admin: true }).await.unwrap();
+    assert_eq!(out["release"]["version"], "0.10.0");
+}
