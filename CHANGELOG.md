@@ -5,6 +5,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-11-04
+
+Stage 11: desktop ↔ server sync.
+
 ### Added
 
 - Desktop ↔ server sync: connect the desktop or Android app to a server
@@ -363,7 +367,8 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/hightemp/reqly/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/hightemp/reqly/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/hightemp/reqly/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/hightemp/reqly/compare/v0.7.0...v0.8.0
