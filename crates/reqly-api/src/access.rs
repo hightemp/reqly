@@ -108,6 +108,7 @@ pub const RULES: &[(&str, Need)] = {
         ("stream.end", Global),
         ("runner.cancel", Global),
         ("runner.report", Global),
+        ("update.check", Global),
         ("account.me", Account),
         ("account.update", Account),
         ("account.changePassword", Account),

@@ -12,6 +12,7 @@ pub mod scripts;
 pub mod stream;
 pub mod template;
 pub mod tree;
+pub mod update;
 pub mod users;
 
 use std::sync::Arc;
@@ -91,6 +92,8 @@ pub struct AppContext {
     >,
     /// Collection runs in progress.
     pub runs: runner::Runs,
+    /// Where update checks look (`update.check`).
+    pub updates: update::UpdateConfig,
 }
 
 impl AppContext {
@@ -113,6 +116,7 @@ impl AppContext {
             streams: Default::default(),
             runtime_vars: Default::default(),
             runs: Default::default(),
+            updates: update::UpdateConfig::from_env(),
         }
     }
 
@@ -162,6 +166,7 @@ pub fn registry() -> Registry<AppContext> {
     collab::register(&mut r);
     presence::register(&mut r);
     runner::register(&mut r);
+    update::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

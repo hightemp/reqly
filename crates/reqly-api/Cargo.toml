@@ -24,6 +24,7 @@ prost-reflect = "0.16"
 tokio-stream = "0.1"
 tonic = { version = "0.14", default-features = false }
 percent-encoding = "2"
+semver = "1"
 sha2 = "0.10"
 tracing.workspace = true
 url = "2"
@@ -39,6 +40,7 @@ ts-rs.workspace = true
 contract = []
 
 [dev-dependencies]
+axum.workspace = true
 proptest.workspace = true
 tempfile.workspace = true
 reqly-testserver.workspace = true

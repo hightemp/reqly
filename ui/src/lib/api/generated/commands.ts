@@ -122,6 +122,8 @@ import type { TemplatePromptsInput } from "./TemplatePromptsInput";
 import type { TemplateVariablesInput } from "./TemplateVariablesInput";
 import type { TokenIdInput } from "./TokenIdInput";
 import type { TreeTargetInput } from "./TreeTargetInput";
+import type { UpdateCheckInput } from "./UpdateCheckInput";
+import type { UpdateCheckOutput } from "./UpdateCheckOutput";
 import type { User } from "./User";
 import type { UserIdInput } from "./UserIdInput";
 import type { VariableInfo } from "./VariableInfo";
@@ -245,6 +247,7 @@ export type Commands = {
   "runner.run": { input: RunnerInput; output: RunReport };
   "runner.cancel": { input: RunnerCancelInput; output: Empty };
   "runner.report": { input: RunnerReportInput; output: RenderedReport };
+  "update.check": { input: UpdateCheckInput; output: UpdateCheckOutput };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 
