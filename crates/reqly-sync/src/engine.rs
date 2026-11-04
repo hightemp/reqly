@@ -43,7 +43,7 @@ impl Entry {
 /// Deleted on one side and changed on the other; waits for the user.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncConflict")]
 pub struct Conflict {
     /// The local version (deleted or changed).
     pub local: Record,
@@ -53,7 +53,7 @@ pub struct Conflict {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncResolution")]
 pub enum Resolution {
     /// Send the local version over the server's.
     KeepLocal,
@@ -88,7 +88,7 @@ pub trait Remote: Send + Sync {
 /// What a round did.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncReport")]
 pub struct Report {
     /// Server records written locally.
     pub pulled: u32,
@@ -98,13 +98,18 @@ pub struct Report {
     pub conflicts: u32,
     /// Local changes the server refused, with the error code.
     pub rejected: Vec<Rejected>,
-    /// Synced workspaces the server no longer gives.
+    /// Synced workspaces the server no longer gives (deleted, or access
+    /// taken away).
     pub unavailable: Vec<Id>,
+    /// Records written locally (to refresh the UI).
+    #[serde(skip)]
+    #[ts(skip)]
+    pub written: Vec<Record>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncRejected")]
 pub struct Rejected {
     pub kind: Kind,
     pub id: Id,
@@ -168,13 +173,20 @@ async fn pull(
             .is_none_or(|l| !l.same_content(&record))
         {
             report.pulled += 1;
+            report.written.push(record.clone());
         }
         local.write(Some(&record), &record).await?;
     }
     for cursor in out.cursors {
         local.set_cursor(cursor).await?;
     }
-    report.unavailable = out.unavailable;
+    // A workspace that never synced is not on the server yet: it is being
+    // uploaded, not gone.
+    for ws in out.unavailable {
+        if local.entry(Kind::Workspace, ws).await?.base.is_some() {
+            report.unavailable.push(ws);
+        }
+    }
     Ok(())
 }
 
@@ -224,7 +236,11 @@ async fn apply_results(
         match result {
             PushResult::Applied { record } => {
                 report.pushed += 1;
-                settle(local, sent.get(&(record.kind, record.id)), &record).await?;
+                let sent = sent.get(&(record.kind, record.id));
+                if sent.is_none_or(|s| !s.same_content(&record)) {
+                    report.written.push(record.clone());
+                }
+                settle(local, sent, &record).await?;
             }
             PushResult::Conflict { record, current } => {
                 local
@@ -234,11 +250,21 @@ async fn apply_results(
                     })
                     .await?;
             }
-            PushResult::Rejected { record, code } => report.rejected.push(Rejected {
-                kind: record.kind,
-                id: record.id,
-                code,
-            }),
+            PushResult::Rejected { record, code } => {
+                // Without edit access the change can never be stored: take
+                // the server's version back instead of retrying forever.
+                if code == "access.denied"
+                    && let Some(base) = local.entry(record.kind, record.id).await?.base
+                {
+                    local.write(Some(&base), &base).await?;
+                    report.written.push(base);
+                }
+                report.rejected.push(Rejected {
+                    kind: record.kind,
+                    id: record.id,
+                    code,
+                });
+            }
         }
     }
     Ok(())
@@ -295,6 +321,7 @@ pub async fn resolve(
                 .write(Some(&conflict.remote), &conflict.remote)
                 .await?;
             report.pulled = 1;
+            report.written.push(conflict.remote);
         }
         Resolution::KeepLocal => {
             let sent = HashMap::from([((kind, id), conflict.local.clone())]);

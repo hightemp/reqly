@@ -93,7 +93,7 @@ pub struct TreeChanged {
     pub node_ids: Vec<Id>,
 }
 
-fn workspaces_changed(ctx: &AppContext) {
+pub(crate) fn workspaces_changed(ctx: &AppContext) {
     ctx.events
         .publish(Event::new("workspaces.changed", WorkspacesChanged {}));
 }

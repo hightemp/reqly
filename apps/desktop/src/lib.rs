@@ -16,14 +16,14 @@ pub const EVENT_NAME: &str = "reqly://event";
 pub mod updater;
 
 pub struct Core {
-    ctx: AppContext,
+    ctx: std::sync::Arc<AppContext>,
     registry: Registry<AppContext>,
 }
 
 impl Core {
     pub fn new(ctx: AppContext) -> Self {
         Self {
-            ctx,
+            ctx: std::sync::Arc::new(ctx),
             registry: reqly_api::commands::registry(),
         }
     }
@@ -152,6 +152,11 @@ pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tau
             app.manage(core);
         }
         forward_events(handle, &app.state::<Core>());
+        // Desktop ↔ server sync runs while a server is connected (ADR-013).
+        let ctx = app.state::<Core>().ctx.clone();
+        tauri::async_runtime::spawn(async move {
+            reqly_api::commands::sync::client::spawn_loop(ctx);
+        });
         #[cfg(desktop)]
         updater::init(app)?;
         Ok(())

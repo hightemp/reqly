@@ -7,7 +7,7 @@ use ts_rs::TS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncKind")]
 pub enum Kind {
     Workspace,
     Collection,
@@ -54,7 +54,7 @@ impl Kind {
 /// A synced entity without its local-only columns (ADR-013).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncRecord")]
 pub struct Record {
     pub kind: Kind,
     pub id: Id,

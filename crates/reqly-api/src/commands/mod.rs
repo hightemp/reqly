@@ -10,6 +10,7 @@ pub mod presence;
 pub mod runner;
 pub mod scripts;
 pub mod stream;
+pub mod sync;
 pub mod template;
 pub mod tree;
 pub mod update;
@@ -94,6 +95,8 @@ pub struct AppContext {
     pub runs: runner::Runs,
     /// Where update checks look (`update.check`).
     pub updates: update::UpdateConfig,
+    /// Desktop ↔ server sync rounds and their status (ADR-013).
+    pub sync: sync::client::SyncState,
 }
 
 impl AppContext {
@@ -117,6 +120,7 @@ impl AppContext {
             runtime_vars: Default::default(),
             runs: Default::default(),
             updates: update::UpdateConfig::from_env(),
+            sync: Default::default(),
         }
     }
 
@@ -167,6 +171,7 @@ pub fn registry() -> Registry<AppContext> {
     presence::register(&mut r);
     runner::register(&mut r);
     update::register(&mut r);
+    sync::register(&mut r);
     r.register::<SearchNodes>();
     r
 }

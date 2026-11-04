@@ -680,6 +680,15 @@ impl LocalStore for SyncClient<'_> {
     }
 }
 
+/// Ids of every workspace, deleted ones too.
+pub async fn workspace_ids(storage: &Storage) -> CoreResult<std::collections::HashSet<Id>> {
+    let ids: Vec<String> = sqlx::query_scalar("SELECT id FROM workspaces")
+        .fetch_all(storage.pool())
+        .await
+        .map_err(db_err)?;
+    ids.iter().map(|s| s.parse()).collect()
+}
+
 /// A server database answered in process (tests and tools).
 pub struct InProcess<'a> {
     pub storage: &'a Storage,

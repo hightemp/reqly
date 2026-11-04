@@ -10,7 +10,7 @@ use crate::record::Record;
 /// newest change it got (0: nothing yet).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncCursor")]
 pub struct Cursor {
     pub workspace_id: Id,
     #[ts(type = "number")]
@@ -19,7 +19,7 @@ pub struct Cursor {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncPullInput")]
 pub struct PullInput {
     pub cursors: Vec<Cursor>,
     /// Include the values of secret environment variables.
@@ -29,7 +29,7 @@ pub struct PullInput {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncPullOutput")]
 pub struct PullOutput {
     /// Changed records, oldest change first.
     pub records: Vec<Record>,
@@ -41,7 +41,7 @@ pub struct PullOutput {
 /// A local change: the record as the client has it and as it last got it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncChange")]
 pub struct Change {
     pub record: Record,
     pub base: Option<Record>,
@@ -52,7 +52,7 @@ pub struct Change {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncPushInput")]
 pub struct PushInput {
     pub changes: Vec<Change>,
     #[serde(default)]
@@ -61,7 +61,7 @@ pub struct PushInput {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", tag = "status")]
-#[ts(export)]
+#[ts(export, rename = "SyncPushResult")]
 pub enum PushResult {
     /// Stored; `record` is what the server has now (merged).
     Applied { record: Record },
@@ -74,7 +74,7 @@ pub enum PushResult {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
+#[ts(export, rename = "SyncPushOutput")]
 pub struct PushOutput {
     pub results: Vec<PushResult>,
 }

@@ -207,6 +207,21 @@ pub const RULES: &[(&str, Need)] = {
         ("admin.invites", Admin),
         ("admin.revokeInvite", Admin),
         ("update.check", Admin),
+        // Checked per workspace by the commands (ADR-013).
+        ("sync.pull", Global),
+        ("sync.push", Global),
+        // The desktop side: a server has no business syncing elsewhere.
+        ("sync.status", Admin),
+        ("sync.connect", Admin),
+        ("sync.disconnect", Admin),
+        ("sync.workspaces", Admin),
+        ("sync.follow", Admin),
+        ("sync.unfollow", Admin),
+        ("sync.settings", Admin),
+        ("sync.now", Admin),
+        ("sync.conflicts", Admin),
+        ("sync.resolve", Admin),
+        ("sync.log", Admin),
     ]
 };
 
