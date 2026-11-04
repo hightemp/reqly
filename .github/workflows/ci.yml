@@ -49,6 +49,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -C ui lint
       - run: pnpm -C ui coverage
+      - name: Release scripts
+        run: node --test scripts/*.test.mjs
 
   e2e:
     name: E2E (server + Playwright)

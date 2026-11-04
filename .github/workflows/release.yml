@@ -137,13 +137,51 @@ jobs:
               echo "APPLE_SIGNING_IDENTITY=$IDENTITY"
             } >> "$GITHUB_ENV"
           fi
+      # Signed updater bundles (`.sig`) only when the updater key exists;
+      # the `updater` job turns them into latest.json (docs/updates.md).
+      - name: Updater signing
+        shell: bash
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEY" ]; then
+            {
+              echo "TAURI_SIGNING_PRIVATE_KEY<<EOF"
+              echo "$KEY"
+              echo "EOF"
+              echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$KEY_PASSWORD"
+              echo "UPDATER_ARGS=--config $GITHUB_WORKSPACE/apps/desktop/tauri.updater.conf.json"
+            } >> "$GITHUB_ENV"
+          fi
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: apps/desktop
           releaseId: ${{ needs.release.outputs.id }}
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} ${{ env.UPDATER_ARGS }}
+          includeUpdaterJson: false
+
+  updater:
+    name: Updater manifest
+    needs: [release, desktop]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNED: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          if [ "$SIGNED" != true ]; then
+            echo "No TAURI_SIGNING_PRIVATE_KEY: no updater manifest."
+            exit 0
+          fi
+          node scripts/updater-manifest.mjs "$TAG"
 
   server:
     name: Server binary (${{ matrix.arch }})
