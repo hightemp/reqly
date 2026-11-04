@@ -26,15 +26,15 @@ Android and a self-hosted web version served by a single Rust binary.
 
 ## Screenshots
 
-![Reqly with a collection open and a JSON response, dark theme](docs/screenshots/dark.png)
+![Reqly with a collection open and a JSON response](docs/screenshots/main.png)
 
 <table>
   <tr>
-    <td width="70%"><img src="docs/screenshots/light.png" alt="Command palette, light theme"></td>
+    <td width="70%"><img src="docs/screenshots/palette.png" alt="Command palette"></td>
     <td width="30%"><img src="docs/screenshots/mobile.png" alt="Response view on a phone"></td>
   </tr>
   <tr>
-    <td align="center">Command palette, light theme</td>
+    <td align="center">Command palette</td>
     <td align="center">Mobile layout</td>
   </tr>
 </table>
