@@ -5,6 +5,19 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Desktop ↔ server sync: connect the desktop or Android app to a server
+  (user name and password, or a token), pick workspaces to upload or
+  download, work offline; changes sync every 30 seconds, after local edits
+  and on **Sync now** (`docs/sync.md`, ADR-013).
+- Changes made on both sides merge field by field, text fields edit by
+  edit; deleted on one side and changed on the other asks which version to
+  keep. A status bar indicator shows the sync state.
+- Secret environment values stay on the device unless secret sync is on.
+- Commands `sync.pull` and `sync.push` on servers (within workspace roles)
+  and `sync.*` on the desktop.
+
 ## [0.10.0] — 2026-11-04
 
 Stage 10: updates.

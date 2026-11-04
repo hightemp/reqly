@@ -18,10 +18,10 @@ Android and a self-hosted web version served by a single Rust binary.
 
 </div>
 
-> Status: v0.10 (stage 10 of the [roadmap](PRD.ru.md)): HTTP, GraphQL,
+> Status: v1.0 (stage 11 of the [roadmap](PRD.ru.md)): HTTP, GraphQL,
 > WebSocket, SSE and gRPC, scripts, a team server with collaboration, the
-> Android app, tests, the collection runner, a CLI and updates. Desktop ↔
-> server sync comes next.
+> Android app, tests, the collection runner, a CLI, updates and desktop ↔
+> server sync.
 > Planning docs are in Russian: [PRD.ru.md](PRD.ru.md), [TASKS.ru.md](TASKS.ru.md).
 
 ## Screenshots
@@ -56,6 +56,8 @@ Android and a self-hosted web version served by a single Rust binary.
   certificates (PEM/PKCS#12), cookies per workspace, cancel in flight
 - Update checks everywhere and signed in-place updates of the desktop app
   ([docs/updates.md](docs/updates.md))
+- Offline-first sync of desktop and Android workspaces with a server, with
+  merges and a conflict dialog ([docs/sync.md](docs/sync.md))
 - 10 built-in themes plus a theme editor (JSON import/export), density,
   fonts, zoom; custom window frame; remappable shortcuts; English and Russian
 - Variables and environments like Insomnia: global, base and switchable

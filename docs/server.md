@@ -142,3 +142,10 @@ Administrators get **Settings → Administration**:
 Administrators (and everyone on a single-user server) are told when a newer
 Reqly release is out, with the command to update the Docker image; see
 [updates.md](updates.md#server). `REQLY_UPDATE_CHECK=false` turns this off.
+
+## Desktop sync
+
+Desktop and Android apps can sync workspaces with the server, offline
+first ([sync.md](sync.md)). Apps sign in like the web UI (a user name and
+password once, then a personal API token) and see the workspaces of that
+user with the same roles.
