@@ -1,21 +1,28 @@
+<div align="center">
+
+<img src="apps/desktop/icons/128x128@2x.png" width="128" height="128" alt="Reqly icon">
+
 # Reqly
+
+Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS),
+Android and a self-hosted web version served by a single Rust binary.
 
 [![CI](https://github.com/hightemp/reqly/actions/workflows/ci.yml/badge.svg)](https://github.com/hightemp/reqly/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/hightemp/reqly?include_prereleases&sort=semver)](https://github.com/hightemp/reqly/releases)
+[![Downloads](https://img.shields.io/github/downloads/hightemp/reqly/total.svg)](https://github.com/hightemp/reqly/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg?logo=rust)](https://www.rust-lang.org)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB.svg?logo=tauri)](https://v2.tauri.app)
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00.svg?logo=svelte)](https://svelte.dev)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fhightemp%2Freqly--server-2496ED.svg?logo=docker)](https://github.com/hightemp/reqly/pkgs/container/reqly-server)
 
-Fast, themeable API client — desktop (Tauri 2: Linux, Windows, macOS),
-Android and a self-hosted web version served by a single Rust binary.
+</div>
 
-> Status: v0.10 (stage 10 of the [roadmap](PRD.md)): HTTP, GraphQL,
+> Status: v0.10 (stage 10 of the [roadmap](PRD.ru.md)): HTTP, GraphQL,
 > WebSocket, SSE and gRPC, scripts, a team server with collaboration, the
 > Android app, tests, the collection runner, a CLI and updates. Desktop ↔
 > server sync comes next.
-> Planning docs are in Russian: [PRD.md](PRD.md), [TASKS.md](TASKS.md).
+> Planning docs are in Russian: [PRD.ru.md](PRD.ru.md), [TASKS.ru.md](TASKS.ru.md).
 
 ## Features
 

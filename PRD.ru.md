@@ -131,8 +131,8 @@ reqly/
 ├── docs/
 │   ├── adr/                  # Architecture Decision Records
 │   └── references/           # скриншоты Insomnia и других клиентов
-├── PRD.md
-└── TASKS.md
+├── PRD.ru.md
+└── TASKS.ru.md
 ```
 
 ### 5.3. Контракт UI ↔ ядро

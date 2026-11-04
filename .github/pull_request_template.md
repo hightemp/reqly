@@ -1,6 +1,6 @@
 ## What changed
 
-<!-- In short: what and why. Link the task from TASKS.md (e.g. T1.4.2). -->
+<!-- In short: what and why. Link the task from TASKS.ru.md (e.g. T1.4.2). -->
 
 ## Checklist
 
