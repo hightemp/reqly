@@ -122,36 +122,7 @@ fn decode(b64: &str) -> CoreResult<Vec<u8>> {
         .map_err(|e| CoreError::new("command.invalid_input", e.to_string()))
 }
 
-/// Replaces `text` with `target` by the smallest single edit, so concurrent
-/// edits elsewhere in the text survive. Returns the Yjs update, if any.
-fn replace_text(doc: &Doc, text: &TextRef, target: &str) -> Option<Vec<u8>> {
-    let current = text.get_string(&doc.transact());
-    if current == target {
-        return None;
-    }
-    let a: Vec<u16> = current.encode_utf16().collect();
-    let b: Vec<u16> = target.encode_utf16().collect();
-    let prefix = a.iter().zip(&b).take_while(|(x, y)| x == y).count();
-    let suffix = a[prefix..]
-        .iter()
-        .rev()
-        .zip(b[prefix..].iter().rev())
-        .take_while(|(x, y)| x == y)
-        .count();
-    let inserted = String::from_utf16_lossy(&b[prefix..b.len() - suffix]);
-    let before = doc.transact().state_vector();
-    {
-        let mut txn = doc.transact_mut();
-        let removed = (a.len() - suffix - prefix) as u32;
-        if removed > 0 {
-            text.remove_range(&mut txn, prefix as u32, removed);
-        }
-        if !inserted.is_empty() {
-            text.insert(&mut txn, prefix as u32, &inserted);
-        }
-    }
-    Some(doc.transact().encode_state_as_update_v1(&before))
-}
+use reqly_sync::text::replace as replace_text;
 
 #[derive(Debug, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]

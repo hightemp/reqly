@@ -8,7 +8,9 @@ rust-version.workspace = true
 
 [dependencies]
 reqly-core.workspace = true
+reqly-sync.workspace = true
 argon2.workspace = true
+async-trait.workspace = true
 base64 = "0.22"
 chacha20poly1305 = "0.10"
 getrandom = "0.3"

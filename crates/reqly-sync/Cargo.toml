@@ -1,0 +1,22 @@
+[package]
+name = "reqly-sync"
+description = "Desktop ↔ server sync: records, merges and the sync round (ADR-013)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ts-rs.workspace = true
+yrs.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true

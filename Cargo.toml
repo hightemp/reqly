@@ -22,6 +22,7 @@ reqly-protocols = { path = "crates/reqly-protocols" }
 reqly-script = { path = "crates/reqly-script" }
 reqly-faker = { path = "crates/reqly-faker" }
 reqly-testing = { path = "crates/reqly-testing" }
+reqly-sync = { path = "crates/reqly-sync" }
 
 anyhow = "1"
 argon2 = "0.6"

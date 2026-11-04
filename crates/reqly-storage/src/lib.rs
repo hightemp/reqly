@@ -12,6 +12,7 @@ pub mod oauth2;
 pub mod search;
 pub mod sessions;
 pub mod settings;
+pub mod sync;
 #[cfg(feature = "testing")]
 pub mod testing;
 pub mod tree;
