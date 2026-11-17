@@ -5584,7 +5584,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-api"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "axum",
@@ -5622,7 +5622,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-cli"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -5641,7 +5641,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "proptest",
  "serde",
@@ -5653,7 +5653,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-desktop"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "reqly-api",
  "reqly-core",
@@ -5675,7 +5675,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-faker"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "reqly-core",
  "rquickjs",
@@ -5685,7 +5685,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-http"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "curl",
@@ -5721,7 +5721,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-interop"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "insta",
@@ -5741,7 +5741,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-protocols"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -5774,7 +5774,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-script"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "getrandom 0.3.4",
  "reqly-core",
@@ -5790,7 +5790,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-server"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -5819,7 +5819,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-storage"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -5842,7 +5842,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-sync"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "proptest",
@@ -5856,7 +5856,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-template"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5884,7 +5884,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-testing"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "csv",
  "jsonschema",
@@ -5901,7 +5901,7 @@ dependencies = [
 
 [[package]]
 name = "reqly-testserver"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "async-graphql",
