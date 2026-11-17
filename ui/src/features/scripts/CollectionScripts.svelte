@@ -1,5 +1,6 @@
 <!-- Collection-level scripts: run before the scripts of every folder and request. -->
 <script lang="ts">
+  import HelpButton from '$features/help/HelpButton.svelte';
   import type { Collection } from '$lib/api/generated/Collection';
   import type { Scripts } from '$lib/api/generated/Scripts';
   import { errorMessage } from '$lib/errors';
@@ -35,6 +36,7 @@
 </script>
 
 <Modal title={t('scripts.collectionTitle', { name: collection.name })} width="820px" {onclose}>
+  {#snippet header()}<HelpButton page="scripts" />{/snippet}
   <div class="body">
     <ScriptsPanel {scripts} hint={t('scripts.collectionHint')} onchange={(s) => (scripts = s)} />
   </div>

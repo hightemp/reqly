@@ -20,6 +20,8 @@
   import RunnerDialog from '../runner/RunnerDialog.svelte';
   import { saveExportFiles } from '$lib/platform/importFiles';
   import ImportWizard from '../interop/ImportWizard.svelte';
+  import HelpDialog from '../help/HelpDialog.svelte';
+  import { help } from '../help/help.svelte';
   import FolderSettings from '../folder/FolderSettings.svelte';
   import CollectionScripts from '../scripts/CollectionScripts.svelte';
   import CookieManager from '../modals/CookieManager.svelte';
@@ -174,6 +176,7 @@
       run: () => void createFolder(services, selectedOne()),
     },
     { id: 'settings', label: t('settings.title'), run: () => (settingsOpen = true) },
+    { id: 'help', label: t('help.open'), run: () => help.open() },
     {
       id: 'environments',
       label: t('environments.manage'),
@@ -328,6 +331,7 @@
       hotkeys.on('request.new', () => void createRequest(services, selectedOne())),
       hotkeys.on('folder.new', () => void createFolder(services, selectedOne())),
       hotkeys.on('settings.open', () => (settingsOpen = true)),
+      hotkeys.on('help.open', () => help.open()),
       hotkeys.on('palette.open', () => (modal = 'palette')),
       hotkeys.on('environments.open', () => (modal = 'environments')),
       transport.subscribe((e) => {
@@ -473,6 +477,14 @@
       onclose={() => (modal = null)}
     />
   {/if}
+  {#if help.page}
+    <HelpDialog
+      hotkeys={services.hotkeys}
+      platform={services.platform}
+      page={help.page}
+      onclose={() => help.close()}
+    />
+  {/if}
   {#if interopDialogs.import}
     <ImportWizard
       {services}
@@ -560,6 +572,7 @@
         {#if services.sync.state === 'conflicts'}{services.sync.status?.conflicts}{/if}
       </button>
     {/if}
+    <IconButton icon="help" size={14} label={t('help.open')} onclick={() => help.open()} />
     <IconButton
       icon="settings"
       size={14}

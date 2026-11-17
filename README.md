@@ -71,6 +71,8 @@ Android and a self-hosted web version served by a single Rust binary.
   Postman, HAR and cURL; code generation for 26 languages and libraries —
   see [docs/import-export.md](docs/import-export.md)
 - Command palette (`Ctrl+K`), request log, cookie manager, copy as cURL
+- Built-in help in English and Russian (`F1`): a guide to every feature with
+  search, links between pages and the current keyboard shortcuts
 - Server mode: token login or a team server with user accounts, workspace
   roles (owner, editor, viewer), invitation links, API tokens and an admin
   panel — see [docs/server.md](docs/server.md); SSRF protection for

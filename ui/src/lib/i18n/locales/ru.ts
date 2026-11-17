@@ -730,6 +730,18 @@ export const ru: Translation<Messages> = {
     'tree.copy': 'Копировать',
     'tree.paste': 'Вставить',
     'tree.selectAll': 'Выделить всё',
+    'help.open': 'Справка',
+  },
+  help: {
+    title: 'Справка',
+    open: 'Справка',
+    search: 'Поиск по справке',
+    results: 'Результаты поиска',
+    contents: 'Содержание',
+    nothing: 'Ничего не найдено',
+    shortcuts: 'Сочетания клавиш',
+    back: 'Назад',
+    about: 'Справка по этому разделу',
   },
   palette: {
     title: 'Перейти к запросу или команде',

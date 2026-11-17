@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- In-app help (`F1`, the **?** in the status bar, the command palette): pages
+  on getting started, requests, variables, auth, protocols, import, scripts,
+  tests, collaboration, sync and settings in English and Russian, with
+  search, links between pages and the current keyboard shortcuts. Import,
+  environments, the runner and collection scripts have a **?** that opens
+  their page.
+
 - Import `.http` / `.rest` files (JetBrains HTTP Client, VS Code REST Client)
   and raw HTTP request text: requests separated by `###`, file variables,
   JSON / form / multipart bodies and `< file` references.

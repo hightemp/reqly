@@ -30,4 +30,38 @@ describe('renderMarkdown', () => {
   it('joins paragraph lines and splits on blank lines', () => {
     expect(renderMarkdown('a\nb\n\nc')).toBe('<p>a b</p>\n<p>c</p>');
   });
+
+  it('renders tables', () => {
+    expect(renderMarkdown('| A | `b\\|c` |\n|---|:-:|\n| 1 | **2** |')).toBe(
+      '<table><thead><tr><th>A</th><th><code>b|c</code></th></tr></thead>' +
+        '<tbody><tr><td>1</td><td><strong>2</strong></td></tr></tbody></table>',
+    );
+  });
+
+  it('keeps a lone pipe line as text', () => {
+    expect(renderMarkdown('a | b')).toBe('<p>a | b</p>');
+  });
+
+  it('renders help links and heading ids only when asked', () => {
+    expect(renderMarkdown('[Variables](help:variables#secrets)')).toBe('<p>Variables</p>');
+    expect(renderMarkdown('## Response chaining\n[Vars](help:variables)', { help: true })).toBe(
+      '<h2 id="response-chaining">Response chaining</h2>\n' +
+        '<p><a href="#variables" data-help="variables">Vars</a></p>',
+    );
+    expect(renderMarkdown('## Переменные окружения', { help: true })).toBe(
+      '<h2 id="переменные-окружения">Переменные окружения</h2>',
+    );
+  });
+
+  it('continues list items on indented lines', () => {
+    expect(renderMarkdown('- one\n  more\n- two\ntext')).toBe(
+      '<ul><li>one more</li><li>two</li></ul>\n<p>text</p>',
+    );
+  });
+
+  it('renders underscore emphasis but not snake_case', () => {
+    expect(renderMarkdown('_merge_ or snake_case_name')).toBe(
+      '<p><em>merge</em> or snake_case_name</p>',
+    );
+  });
 });

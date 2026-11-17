@@ -17,6 +17,7 @@
 </script>
 
 <script lang="ts">
+  import HelpButton from '$features/help/HelpButton.svelte';
   import type { Environment } from '$lib/api/generated/Environment';
   import { errorMessage } from '$lib/errors';
   import { t } from '$lib/i18n';
@@ -128,6 +129,7 @@
 {/snippet}
 
 <Modal title={t('environments.title')} width="920px" onclose={() => void close()}>
+  {#snippet header()}<HelpButton page="variables" />{/snippet}
   <div class="layout">
     <nav class="list" aria-label={t('environments.title')}>
       <div class="group">

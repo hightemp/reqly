@@ -3,6 +3,7 @@
   preview what will be imported with the report, pick the target and import.
 -->
 <script lang="ts">
+  import HelpButton from '$features/help/HelpButton.svelte';
   import type { Format } from '$lib/api/generated/Format';
   import type { ImportApplyOutput } from '$lib/api/generated/ImportApplyOutput';
   import type { ImportBundle } from '$lib/api/generated/ImportBundle';
@@ -219,6 +220,7 @@
       ? document.querySelector<HTMLTextAreaElement>('#import-panel-text textarea')
       : undefined}
 >
+  {#snippet header()}<HelpButton page="import-export" />{/snippet}
   {#if step === 'source'}
     <Tabs
       label={t('import.source')}

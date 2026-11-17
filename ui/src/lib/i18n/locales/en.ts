@@ -671,6 +671,18 @@ export const en = {
     'tree.copy': 'Copy',
     'tree.paste': 'Paste',
     'tree.selectAll': 'Select all',
+    'help.open': 'Help',
+  },
+  help: {
+    title: 'Help',
+    open: 'Help',
+    search: 'Search help',
+    results: 'Search results',
+    contents: 'Contents',
+    nothing: 'Nothing found',
+    shortcuts: 'Keyboard shortcuts',
+    back: 'Back',
+    about: 'Help on this',
   },
   palette: {
     title: 'Go to request or command',

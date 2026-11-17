@@ -23,6 +23,7 @@ export const DEFAULT_ACTIONS: ActionDefinition[] = [
   { id: 'body.format', combos: ['Mod+Shift+B'], scope: 'global' },
   { id: 'environments.open', combos: ['Mod+E'], scope: 'global' },
   { id: 'settings.open', combos: ['Mod+,'], scope: 'global' },
+  { id: 'help.open', combos: ['F1'], scope: 'global' },
   { id: 'tree.rename', combos: ['F2'], scope: 'tree' },
   { id: 'tree.delete', combos: ['Del'], scope: 'tree' },
   { id: 'tree.duplicate', combos: ['Mod+D'], scope: 'tree' },

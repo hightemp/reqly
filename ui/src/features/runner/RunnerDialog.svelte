@@ -1,5 +1,6 @@
 <!-- Collection runner: options, then live results of the run. -->
 <script lang="ts">
+  import HelpButton from '$features/help/HelpButton.svelte';
   import type { Environment } from '$lib/api/generated/Environment';
   import type { ExportFile } from '$lib/api/generated/ExportFile';
   import type { ReportFormat } from '$lib/api/generated/ReportFormat';
@@ -160,6 +161,7 @@
   width="760px"
   onclose={() => runner.close()}
 >
+  {#snippet header()}<HelpButton page="testing" />{/snippet}
   {#if runner.status === 'idle'}
     <div class="options">
       <section class="requests">
