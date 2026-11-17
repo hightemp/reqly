@@ -256,7 +256,7 @@ describe('TreeStore', () => {
         }),
       },
     });
-    expect(await store.pasteRequests('w1', 'api')).toBeNull();
+    expect(await store.pasteRequests('w1', 'api')).toEqual({ unreadable: null });
     expect(error).not.toHaveBeenCalled();
   });
 

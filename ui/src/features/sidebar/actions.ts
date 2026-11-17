@@ -216,9 +216,15 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
       onSelect: async () => {
         const added = await s.tree.pasteRequests(workspaceId, folderId);
         // The clipboard cannot be read here: paste into the import wizard instead.
-        if (added === null) {
+        if (typeof added === 'object') {
           interopDialogs.openImport(collectionId, 'text', folderId);
-          toasts.show({ message: t('tree.pasteIntoWizard'), kind: 'info' });
+          toasts.show({
+            message: added.unreadable
+              ? t('tree.clipboardFailed', { reason: added.unreadable })
+              : t('tree.pasteIntoWizard'),
+            kind: added.unreadable ? 'warning' : 'info',
+            timeoutMs: added.unreadable ? 10000 : undefined,
+          });
         }
       },
     });

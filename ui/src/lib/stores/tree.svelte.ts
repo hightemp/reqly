@@ -383,13 +383,17 @@ export class TreeStore {
   /**
    * Adds the cURL commands or HTTP requests on the clipboard to `folderId`
    * (the collection root when null). Returns the number of requests added,
-   * or null when the clipboard cannot be read here.
+   * or the reason (possibly null) when the clipboard cannot be read here.
    */
-  async pasteRequests(workspaceId: string, folderId: string | null): Promise<number | null> {
+  async pasteRequests(
+    workspaceId: string,
+    folderId: string | null,
+  ): Promise<number | { unreadable: string | null }> {
     if (!this.collectionId) return 0;
     const collectionId = this.collectionId;
-    const text = await readClipboardText();
-    if (text === null) return null;
+    const read = await readClipboardText();
+    if (read.text === null) return { unreadable: read.error };
+    const text = read.text;
     if (!isRequestText(text)) {
       toasts.error(t('tree.pasteRequestsEmpty'));
       return 0;
