@@ -43,10 +43,9 @@
     opacity: 0.5;
   }
   .folder {
-    color: var(--c-fg-subtle);
-    min-width: 34px;
+    flex: none;
     display: flex;
-    justify-content: flex-end;
+    color: var(--c-fg-subtle);
   }
   .name {
     overflow: hidden;
