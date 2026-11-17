@@ -13,6 +13,17 @@ and this project follows [Semantic Versioning](https://semver.org/).
   search, links between pages and the current keyboard shortcuts. Import,
   environments, the runner and collection scripts have a **?** that opens
   their page.
+- Help pages **Script API** (every object and method with its signature,
+  description and an example) and **Libraries and recipes** (chai, lodash,
+  crypto-js, moment, uuid, faker-js; token caching, HMAC signing, list
+  checks, data-driven runs…). Every example is run by a test.
+- Scripts: `crypto.getRandomValues()` and `crypto.randomUUID()`.
+
+### Fixed
+
+- Scripts: `CryptoJS.AES.encrypt(text, passphrase)` failed with "Native
+  crypto module could not be used"; `require('uuid').v7()` returned a v4
+  UUID.
 
 - Import `.http` / `.rest` files (JetBrains HTTP Client, VS Code REST Client)
   and raw HTTP request text: requests separated by `###`, file variables,

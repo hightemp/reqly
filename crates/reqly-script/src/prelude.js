@@ -4,7 +4,8 @@
 //
 // Native helpers (set by the host): __rq_log(level, text),
 // __rq_send(json) -> Promise<json>, __rq_module(name) -> exports,
-// __rq_uuid(), __rq_sleep(ms) -> Promise, __rq_replace(text) -> Promise<string>.
+// __rq_uuid(), __rq_uuid_v7(), __rq_random_bytes(n) -> number[],
+// __rq_sleep(ms) -> Promise, __rq_replace(text) -> Promise<string>.
 
 (function () {
   'use strict';
@@ -573,7 +574,7 @@
     lodash: () => load('lodash'),
     chai: () => load('chai'),
     moment: () => load('moment'),
-    uuid: () => ({ v4: () => __rq_uuid(), v7: () => __rq_uuid() }),
+    uuid: () => ({ v4: () => __rq_uuid(), v7: () => __rq_uuid_v7() }),
     '@faker-js/faker': () => fakerPackage(),
     atob: () => globalThis.atob,
     btoa: () => globalThis.btoa,
@@ -621,6 +622,17 @@
     lazy('faker', () => fakerFor(fakerMeta.locale));
     return fakerPkg;
   }
+
+  // Web Crypto's random source; crypto-js reads it when it loads.
+  globalThis.crypto = {
+    getRandomValues(array) {
+      if (!ArrayBuffer.isView(array)) throw new TypeError('crypto.getRandomValues: expected a typed array');
+      if (array.byteLength > 65536) throw new Error('crypto.getRandomValues: at most 65536 bytes');
+      new Uint8Array(array.buffer, array.byteOffset, array.byteLength).set(__rq_random_bytes(array.byteLength));
+      return array;
+    },
+    randomUUID: () => __rq_uuid(),
+  };
 
   // Postman's sandbox globals.
   for (const [name, mod] of [

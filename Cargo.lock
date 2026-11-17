@@ -5776,6 +5776,7 @@ dependencies = [
 name = "reqly-script"
 version = "1.0.0"
 dependencies = [
+ "getrandom 0.3.4",
  "reqly-core",
  "reqly-faker",
  "reqly-template",

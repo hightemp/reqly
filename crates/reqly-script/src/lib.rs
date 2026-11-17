@@ -455,6 +455,19 @@ fn install<'js, H: ScriptHost + 'static>(
         )?,
     )?;
     g.set("__rq_uuid", Func::from(|| uuid::Uuid::new_v4().to_string()))?;
+    g.set(
+        "__rq_uuid_v7",
+        Func::from(|| uuid::Uuid::now_v7().to_string()),
+    )?;
+    // `crypto.getRandomValues` (crypto-js needs it for salts and IVs).
+    g.set(
+        "__rq_random_bytes",
+        Func::from(|n: usize| -> rquickjs::Result<Vec<u8>> {
+            let mut bytes = vec![0u8; n.min(65_536)];
+            getrandom::fill(&mut bytes).map_err(|_| rquickjs::Error::Unknown)?;
+            Ok(bytes)
+        }),
+    )?;
     let meta = serde_json::json!({
         "locale": locale,
         "locales": reqly_faker::locales().iter().map(|l| &l.code).collect::<Vec<_>>(),

@@ -10,6 +10,8 @@ export const TOPIC_IDS = [
   'protocols',
   'import-export',
   'scripts',
+  'script-api',
+  'script-libraries',
   'testing',
   'collaboration',
   'sync',

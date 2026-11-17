@@ -44,9 +44,12 @@ Legacy Postman globals are supported too: `postman.setEnvironmentVariable`,
 
 ## Modules
 
-`require()` gives `crypto-js`, `lodash`, `chai`, `moment`, `uuid` and
-`@faker-js/faker`. `CryptoJS`, `_` and `moment` are also globals, as in
-Postman, and `atob`, `btoa` and `TextEncoder` are available.
+`require()` gives `crypto-js`, `lodash`, `chai`, `moment`, `uuid` (`v4`,
+`v7`) and `@faker-js/faker`. `CryptoJS`, `_` and `moment` are also globals,
+as in Postman, and `atob`, `btoa`, `crypto.getRandomValues()` and
+`crypto.randomUUID()` are available. The in-app help (**Script API**,
+**Libraries and recipes**) describes every member with examples; the
+examples are run by `crates/reqly-script/tests/help_examples.rs`.
 
 ### faker-js
 

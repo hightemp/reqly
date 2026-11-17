@@ -448,3 +448,23 @@ async fn faker_loads_quickly_after_the_first_use() {
     eprintln!("first run {first:?}, then {each:?} per run");
     assert!(each < Duration::from_millis(250), "{each:?}");
 }
+
+#[tokio::test]
+async fn web_crypto_random_values_and_aes_with_a_passphrase() {
+    let out = exec(input(
+        Phase::Pre,
+        r#"
+        const a = crypto.getRandomValues(new Uint8Array(16));
+        const b = crypto.getRandomValues(new Uint32Array(4));
+        console.log(a.length, b.length, a.some((x) => x !== 0) || b.some((x) => x !== 0));
+        console.log(/^[0-9a-f-]{36}$/.test(crypto.randomUUID()));
+        const enc = CryptoJS.AES.encrypt('secret text', 'passphrase').toString();
+        console.log(CryptoJS.AES.decrypt(enc, 'passphrase').toString(CryptoJS.enc.Utf8));
+        const { v4, v7 } = require('uuid');
+        console.log(v4()[14], v7()[14]);
+        "#,
+    ))
+    .await;
+    let logs: Vec<&str> = out.logs.iter().map(|l| l.text.as_str()).collect();
+    assert_eq!(logs, ["16 4 true", "true", "secret text", "4 7"]);
+}

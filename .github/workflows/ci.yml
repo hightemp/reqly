@@ -1,12 +1,12 @@
 name: CI
 
-# Docs-only changes don't need a build.
+# Docs-only changes skip CI, except the in-app help (its examples are tested).
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', 'docs/**']
+    paths: ['**', '!**.md', '!docs/**', 'ui/src/features/help/content/**']
   pull_request:
-    paths-ignore: ['**.md', 'docs/**']
+    paths: ['**', '!**.md', '!docs/**', 'ui/src/features/help/content/**']
 
 concurrency:
   group: ci-${{ github.ref }}
