@@ -983,7 +983,6 @@ command!(
 command!(
     /// Reads part of a response body; bodies are paged into the UI so large
     /// responses never travel in one message.
-
     ResponseBodyChunk,
     "response.body",
     ResponseBodyInput,
@@ -1024,7 +1023,10 @@ command!(
     Empty,
     |ctx, input| {
         if ctx.platform != super::Platform::Desktop && ctx.platform != super::Platform::Test {
-            return Err(CoreError::new("command.unavailable", "only available in the desktop app"));
+            return Err(CoreError::new(
+                "command.unavailable",
+                "only available in the desktop app",
+            ));
         }
         let record = visible_record(ctx, input.id).await?;
         let write_err = |e: std::io::Error| {
@@ -1032,9 +1034,13 @@ command!(
         };
         match record.body_hash {
             Some(hash) => {
-                tokio::fs::copy(ctx.blobs.path_of(&hash)?, &input.path).await.map_err(write_err)?;
+                tokio::fs::copy(ctx.blobs.path_of(&hash)?, &input.path)
+                    .await
+                    .map_err(write_err)?;
             }
-            None => tokio::fs::write(&input.path, b"").await.map_err(write_err)?,
+            None => tokio::fs::write(&input.path, b"")
+                .await
+                .map_err(write_err)?,
         }
         Ok(Empty {})
     }
@@ -1066,18 +1072,25 @@ command!(
     |ctx, input| {
         let record = visible_record(ctx, input.id).await?;
         let Some(hash) = record.body_hash else {
-            return Ok(ResponseFilterOutput { result: String::new() });
+            return Ok(ResponseFilterOutput {
+                result: String::new(),
+            });
         };
         if record.body_size as usize > FILTER_LIMIT {
-            return Err(CoreError::new("filter.too_large", "response body is too large to filter"));
+            return Err(CoreError::new(
+                "filter.too_large",
+                "response body is too large to filter",
+            ));
         }
         let bytes = ctx.blobs.read(&hash).await?;
         let body = String::from_utf8_lossy(&bytes).into_owned();
         let expression = input.expression;
         let kind = input.kind;
-        let result = tokio::task::spawn_blocking(move || reqly_http::filter::apply_filter(kind, &body, &expression))
-            .await
-            .map_err(|e| CoreError::internal(e.to_string()))??;
+        let result = tokio::task::spawn_blocking(move || {
+            reqly_http::filter::apply_filter(kind, &body, &expression)
+        })
+        .await
+        .map_err(|e| CoreError::internal(e.to_string()))??;
         Ok(ResponseFilterOutput { result })
     }
 );
@@ -1106,9 +1119,15 @@ command!(
             .enforce_limits(&limits.into())
             .await?;
         let cutoff = reqly_core::Timestamp(ctx.clock.now().0 - TRASH_RETENTION_MS);
-        let removed_trash = TreeRepo::new(&ctx.storage, ctx.clock.as_ref()).purge_deleted_before(cutoff).await?;
+        let removed_trash = TreeRepo::new(&ctx.storage, ctx.clock.as_ref())
+            .purge_deleted_before(cutoff)
+            .await?;
         let removed_blobs = collect_garbage(ctx).await?;
-        Ok(CleanupOutput { removed_history, removed_trash, removed_blobs })
+        Ok(CleanupOutput {
+            removed_history,
+            removed_trash,
+            removed_blobs,
+        })
     }
 );
 
@@ -1134,7 +1153,6 @@ command!(
 
 command!(
     /// Clears history of requests, or of every request inside the given folders.
-
     HistoryClear,
     "history.clear",
     IdsInput,
@@ -1162,7 +1180,10 @@ command!(
         }
         if let Some(&first) = request_ids.first() {
             let ws = workspace_of_request(ctx, first).await?;
-            history(ctx, ws).await?.clear_for_requests(&request_ids).await?;
+            history(ctx, ws)
+                .await?
+                .clear_for_requests(&request_ids)
+                .await?;
         }
         collect_garbage(ctx).await?;
         Ok(Empty {})
@@ -1332,7 +1353,6 @@ pub struct BlobUploadOutput {
 command!(
     /// Stores a file for request bodies (server mode, where the browser cannot
     /// hand the server a local path).
-
     BlobUpload,
     "blob.upload",
     BlobUploadInput,
@@ -1379,12 +1399,18 @@ command!(
             let (requests, mut warnings) = reqly_interop::http_file::parse(text);
             return Ok(requests
                 .into_iter()
-                .map(|request| CurlParseOutput { request, warnings: std::mem::take(&mut warnings) })
+                .map(|request| CurlParseOutput {
+                    request,
+                    warnings: std::mem::take(&mut warnings),
+                })
                 .collect());
         }
         Ok(reqly_http::curl::parse_curl_many(&input.command)?
             .into_iter()
-            .map(|p| CurlParseOutput { request: p.request, warnings: p.warnings })
+            .map(|p| CurlParseOutput {
+                request: p.request,
+                warnings: p.warnings,
+            })
             .collect())
     }
 );
@@ -1404,7 +1430,9 @@ command!(
     |ctx, input| {
         let (prepared, _) =
             prepare_stored(ctx, input.request_id, &HashMap::new(), &[input.request_id]).await?;
-        Ok(CurlOutput { command: reqly_http::curl::to_curl(&prepared) })
+        Ok(CurlOutput {
+            command: reqly_http::curl::to_curl(&prepared),
+        })
     }
 );
 

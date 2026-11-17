@@ -258,7 +258,9 @@ command!(
             return Ok(existing);
         }
         let ws = create_workspace(ctx, "My Workspace").await?;
-        repo(ctx).create_collection(ws.meta.id, "My Collection").await?;
+        repo(ctx)
+            .create_collection(ws.meta.id, "My Collection")
+            .await?;
         workspaces_changed(ctx);
         visible_workspaces(ctx).await
     }

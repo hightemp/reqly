@@ -124,7 +124,10 @@ command!(
             return Ok(Vec::new());
         };
         if input.client_id.is_empty() || input.client_id.len() > 64 {
-            return Err(reqly_core::CoreError::new("command.invalid_input", "bad client id"));
+            return Err(reqly_core::CoreError::new(
+                "command.invalid_input",
+                "bad client id",
+            ));
         }
         let name = UserRepo::new(&ctx.storage, ctx.clock.as_ref())
             .get(user)
@@ -136,7 +139,10 @@ command!(
                 .clients
                 .lock()
                 .map_err(|_| reqly_core::CoreError::internal("presence lock"))?;
-            if clients.get(&input.client_id).is_some_and(|e| e.user != user) {
+            if clients
+                .get(&input.client_id)
+                .is_some_and(|e| e.user != user)
+            {
                 return Err(reqly_core::CoreError::new(
                     "command.invalid_input",
                     "client id in use",

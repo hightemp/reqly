@@ -291,8 +291,8 @@ command!(
     Empty,
     |ctx, input| {
         let bytes = decode(&input.update)?;
-        let update =
-            Update::decode_v1(&bytes).map_err(|e| CoreError::new("command.invalid_input", e.to_string()))?;
+        let update = Update::decode_v1(&bytes)
+            .map_err(|e| CoreError::new("command.invalid_input", e.to_string()))?;
         let text = {
             let mut docs = ctx
                 .collab
@@ -302,7 +302,9 @@ command!(
             let live = docs
                 .get_mut(&(input.node_id, input.field.clone()))
                 .filter(|l| l.doc_id == input.doc_id)
-                .ok_or_else(|| CoreError::new("collab.stale", "the document was closed; join again"))?;
+                .ok_or_else(|| {
+                    CoreError::new("collab.stale", "the document was closed; join again")
+                })?;
             live.doc
                 .transact_mut()
                 .apply_update(update)

@@ -142,7 +142,10 @@ command!(
     |ctx, input| {
         let id = me()?;
         if !users(ctx).check_password(id, &input.current).await? {
-            return Err(CoreError::new("auth.invalid", "the current password is wrong"));
+            return Err(CoreError::new(
+                "auth.invalid",
+                "the current password is wrong",
+            ));
         }
         users(ctx).set_password(id, &input.new).await?;
         Ok(Empty {})
