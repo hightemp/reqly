@@ -5,8 +5,26 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-11-17
+
+Import from `.http` files and the clipboard, and the in-app help.
+
 ### Added
 
+- Import `.http` / `.rest` files (JetBrains HTTP Client, VS Code REST Client)
+  and raw HTTP request text: requests separated by `###`, file variables,
+  JSON / form / multipart bodies and `< file` references.
+- **Import into this folder…** and **Import from clipboard** (curl commands
+  or HTTP requests) in the tree context menu; the import target can be a
+  folder (`folderId` of `import.apply`). The desktop and Android apps read
+  the clipboard through the Tauri clipboard plugin; where it cannot be read,
+  the wizard opens on the paste tab.
+- Palette command **Import requests from cURL or HTTP text…** opens the
+  import wizard on the paste tab with the active collection as the target.
+- Pasting HTTP request text into the URL bar replaces the request, like a
+  pasted curl command.
+- **Supported formats** window in the import wizard: every format with where
+  it comes from, what is imported and examples.
 - In-app help (`F1`, the **?** in the status bar, the command palette): pages
   on getting started, requests, variables, auth, protocols, import, scripts,
   tests, collaboration, sync and settings in English and Russian, with
@@ -19,6 +37,12 @@ and this project follows [Semantic Versioning](https://semver.org/).
   checks, data-driven runs…). Every example is run by a test.
 - Scripts: `crypto.getRandomValues()` and `crypto.randomUUID()`.
 
+### Changed
+
+- Pasted curl commands and HTTP requests are added to the collection
+  directly, not wrapped in a `clipboard` folder.
+- The folder icon in the tree sits next to the expand arrow.
+
 ### Fixed
 
 - Variable completion and value previews were cut off inside single-line
@@ -27,26 +51,6 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Scripts: `CryptoJS.AES.encrypt(text, passphrase)` failed with "Native
   crypto module could not be used"; `require('uuid').v7()` returned a v4
   UUID.
-
-- Import `.http` / `.rest` files (JetBrains HTTP Client, VS Code REST Client)
-  and raw HTTP request text: requests separated by `###`, file variables,
-  JSON / form / multipart bodies and `< file` references.
-- Palette command **Import requests from cURL or HTTP text…** opens the
-  import wizard on the paste tab with the active collection as the target.
-- Pasting HTTP request text into the URL bar replaces the request, like a
-  pasted curl command.
-- **Supported formats** window in the import wizard: every format with where
-  it comes from, what is imported and examples.
-- **Import into this folder…** and **Import from clipboard** (curl
-  commands or HTTP requests) in the tree context menu; the import target can be a folder
-  (`folderId` of `import.apply`). The desktop and Android apps read the
-  clipboard through the Tauri clipboard plugin; where it cannot be read, the
-  wizard opens on the paste tab.
-
-### Changed
-
-- Pasted curl commands and HTTP requests are added to the collection directly,
-  not wrapped in a `clipboard` folder.
 
 ## [1.0.0] — 2026-11-04
 
@@ -410,7 +414,8 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/hightemp/reqly/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/hightemp/reqly/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/hightemp/reqly/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/hightemp/reqly/compare/v0.8.0...v0.9.0
