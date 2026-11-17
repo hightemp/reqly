@@ -14,7 +14,9 @@ To add requests from a list of curl commands or from HTTP text:
 
 - **Import from clipboard** in the context menu of a folder or request
   (into the folder, or next to the request) adds the curl commands or HTTP
-  requests on the clipboard right away;
+  requests on the clipboard right away (where the browser does not let the
+  page read the clipboard, e.g. Firefox, the wizard opens on the paste tab
+  instead);
 - the palette command **Import requests from cURL or HTTP text…** opens the
   wizard on the paste tab with the active collection as the target.
 

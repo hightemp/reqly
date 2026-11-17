@@ -246,6 +246,18 @@ describe('TreeStore', () => {
     expect(await store.pasteRequests('w1', null)).toBe(0);
     expect(error).toHaveBeenCalled();
     expect(apply).toHaveBeenCalledTimes(1);
+
+    // The clipboard cannot be read (WebKitGTK, Firefox): null, no error toast.
+    error.mockClear();
+    Object.assign(navigator, {
+      clipboard: {
+        readText: vi.fn(async () => {
+          throw new DOMException('denied', 'NotAllowedError');
+        }),
+      },
+    });
+    expect(await store.pasteRequests('w1', 'api')).toBeNull();
+    expect(error).not.toHaveBeenCalled();
   });
 
   it('reloads on tree.changed for the collection', async () => {

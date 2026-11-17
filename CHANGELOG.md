@@ -18,7 +18,9 @@ and this project follows [Semantic Versioning](https://semver.org/).
   it comes from, what is imported and examples.
 - **Import into this folder…** and **Import from clipboard** (curl
   commands or HTTP requests) in the tree context menu; the import target can be a folder
-  (`folderId` of `import.apply`).
+  (`folderId` of `import.apply`). The desktop and Android apps read the
+  clipboard through the Tauri clipboard plugin; where it cannot be read, the
+  wizard opens on the paste tab.
 
 ### Changed
 

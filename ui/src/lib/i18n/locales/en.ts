@@ -40,6 +40,7 @@ export const en = {
     curlCopied: { one: 'Copied {count} cURL command', other: 'Copied {count} cURL commands' },
     requestsPasted: { one: 'Added {count} request', other: 'Added {count} requests' },
     pasteRequestsEmpty: 'No cURL commands or HTTP requests on the clipboard',
+    pasteIntoWizard: 'The clipboard cannot be read here: paste the text with Ctrl+V',
   },
   actions: {
     pasteRequests: 'Import from clipboard',

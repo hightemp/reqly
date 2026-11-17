@@ -192,6 +192,8 @@ pub fn run() {
     configure(
         tauri::Builder::default()
             .plugin(tauri_plugin_dialog::init())
+            // "Import from clipboard": the webview may not read the clipboard.
+            .plugin(tauri_plugin_clipboard_manager::init())
             // Android saves through content URIs (ui/src/lib/platform/files.ts).
             .plugin(tauri_plugin_fs::init())
             // Android: OAuth 2.0 sign-in in the system browser.

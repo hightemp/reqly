@@ -191,3 +191,32 @@ test('paste requests from the clipboard and import into a folder', async ({ page
     String(Number(await folder.getAttribute('aria-level')) + 1),
   );
 });
+
+test('import from clipboard falls back to the wizard when the clipboard is not readable', async ({
+  page,
+}) => {
+  // As in WebKitGTK (the Linux app without the plugin) or Firefox.
+  await page.addInitScript(() => {
+    navigator.clipboard.readText = () =>
+      Promise.reject(new DOMException('denied', 'NotAllowedError'));
+  });
+  await page.goto('/');
+  const name = `Denied ${Date.now().toString(36)}`;
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New folder' }).click();
+  const input = page.getByRole('tree', { name: 'Collections' }).getByRole('textbox');
+  await input.fill(name);
+  await input.press('Enter');
+  const folder = page.getByRole('treeitem', { name: new RegExp(name) });
+  await folder.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Import from clipboard' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Import' });
+  await expect(dialog.getByRole('tab', { name: 'Paste' })).toHaveAttribute('aria-selected', 'true');
+  await expect(dialog.getByRole('textbox', { name: 'Text to import' })).toBeFocused();
+  await dialog.getByRole('textbox', { name: 'Text to import' }).fill('curl https://x.test/denied');
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog.getByRole('combobox', { name: 'Import into' })).toContainText(name);
+  await dialog.getByRole('button', { name: 'Back' }).click();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toBeHidden();
+});

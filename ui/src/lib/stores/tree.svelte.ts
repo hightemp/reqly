@@ -6,6 +6,7 @@ import type { ApiPlacement } from '$lib/api/generated/ApiPlacement';
 import type { NodeSummary } from '$lib/api/generated/NodeSummary';
 import type { Transport } from '$lib/api/transport';
 import { errorMessage } from '$lib/errors';
+import { readClipboardText } from '$lib/platform/clipboard';
 import { isRequestText } from '$lib/requestText';
 import { t } from '$lib/i18n';
 import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
@@ -381,18 +382,14 @@ export class TreeStore {
 
   /**
    * Adds the cURL commands or HTTP requests on the clipboard to `folderId`
-   * (the collection root when null). Returns the number of requests added.
+   * (the collection root when null). Returns the number of requests added,
+   * or null when the clipboard cannot be read here.
    */
-  async pasteRequests(workspaceId: string, folderId: string | null): Promise<number> {
+  async pasteRequests(workspaceId: string, folderId: string | null): Promise<number | null> {
     if (!this.collectionId) return 0;
     const collectionId = this.collectionId;
-    let text: string;
-    try {
-      text = await navigator.clipboard.readText();
-    } catch (e) {
-      toasts.error(errorMessage(e));
-      return 0;
-    }
+    const text = await readClipboardText();
+    if (text === null) return null;
     if (!isRequestText(text)) {
       toasts.error(t('tree.pasteRequestsEmpty'));
       return 0;

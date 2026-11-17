@@ -57,6 +57,7 @@ export const ru: Translation<Messages> = {
       other: 'Добавлено {count} запроса',
     },
     pasteRequestsEmpty: 'В буфере обмена нет команд cURL или HTTP-запросов',
+    pasteIntoWizard: 'Здесь нельзя прочитать буфер обмена: вставьте текст через Ctrl+V',
   },
   actions: {
     pasteRequests: 'Импорт из буфера обмена',

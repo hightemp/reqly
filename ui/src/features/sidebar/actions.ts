@@ -213,7 +213,14 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
     entries.push({
       id: 'paste-requests',
       label: t('actions.pasteRequests'),
-      onSelect: () => void s.tree.pasteRequests(workspaceId, folderId),
+      onSelect: async () => {
+        const added = await s.tree.pasteRequests(workspaceId, folderId);
+        // The clipboard cannot be read here: paste into the import wizard instead.
+        if (added === null) {
+          interopDialogs.openImport(collectionId, 'text', folderId);
+          toasts.show({ message: t('tree.pasteIntoWizard'), kind: 'info' });
+        }
+      },
     });
     if (single.isFolder) {
       entries.push({

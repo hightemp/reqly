@@ -210,7 +210,15 @@
     t(`import.kind.${kind}` as 'import.kind.info');
 </script>
 
-<Modal title={t('import.title')} width="760px" {onclose}>
+<Modal
+  title={t('import.title')}
+  width="760px"
+  {onclose}
+  initialFocus={() =>
+    source === 'text'
+      ? document.querySelector<HTMLTextAreaElement>('#import-panel-text textarea')
+      : undefined}
+>
   {#if step === 'source'}
     <Tabs
       label={t('import.source')}
