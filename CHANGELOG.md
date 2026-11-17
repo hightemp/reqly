@@ -21,6 +21,9 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Variable completion and value previews were cut off inside single-line
+  fields in the desktop app (WebKit): editor tooltips now open above the
+  page.
 - Scripts: `CryptoJS.AES.encrypt(text, passphrase)` failed with "Native
   crypto module could not be used"; `require('uuid').v7()` returned a v4
   UUID.

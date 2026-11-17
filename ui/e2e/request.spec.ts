@@ -125,3 +125,25 @@ test('command palette opens requests and runs commands', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Cookies' })).toBeVisible();
 });
+
+test('template completion and hover tooltips are not clipped by the input', async ({ page }) => {
+  await page.goto('/');
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  const url = page.getByRole('textbox', { name: 'URL' });
+  await url.click();
+  await page.keyboard.type('https://x.test/{{$gu');
+  const completion = page.locator('.cm-tooltip-autocomplete');
+  await expect(completion).toBeVisible();
+  // Rendered outside the input (WebKit positions tooltips inside the
+  // editor otherwise, where the input's overflow cuts them off).
+  expect(await completion.evaluate((el) => !!el.closest('.template-input'))).toBe(false);
+  const input = (await page.locator('.template-input').first().boundingBox())!;
+  const box = (await completion.boundingBox())!;
+  // Below the text line, reaching well past the input.
+  expect(box.y).toBeGreaterThan(input.y + input.height / 2);
+  expect(box.y + box.height).toBeGreaterThan(input.y + input.height + 8);
+  await page.keyboard.press('Escape');
+  await closeAllTabs(page);
+});

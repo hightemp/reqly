@@ -2,10 +2,22 @@
 // restyles editors without reconfiguring them.
 
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { EditorView } from '@codemirror/view';
+import { EditorView, tooltips } from '@codemirror/view';
 import { tags as t } from '@lezer/highlight';
 
 const v = (token: string) => `var(--c-${token})`;
+
+/**
+ * Completion and hover tooltips go to `document.body`: WebKit (the Linux and
+ * macOS apps) positions them inside the editor otherwise, where single-line
+ * inputs (`overflow: hidden`) cut them off. Above modals, with popovers.
+ */
+export function bodyTooltips() {
+  return [
+    tooltips({ parent: document.body }),
+    EditorView.theme({ '.cm-tooltip': { zIndex: '1000' } }),
+  ];
+}
 
 export const reqlyTheme = EditorView.theme({
   '&': {

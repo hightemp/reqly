@@ -37,7 +37,7 @@
   import { templateCompletions, templateExtension } from '$lib/template/codemirror';
   import { templateHostFactory } from '$lib/template/host';
   import { formatJson, formatXml } from './format';
-  import { reqlyHighlight, reqlyTheme } from './theme';
+  import { bodyTooltips, reqlyHighlight, reqlyTheme } from './theme';
 
   interface Props {
     value?: string;
@@ -165,6 +165,7 @@
             indentWithTab,
           ]),
           reqlyTheme,
+          bodyTooltips(),
           reqlyHighlight,
           placeholder ? placeholderExt(placeholder) : [],
           lang.of(languageExtension(language)),

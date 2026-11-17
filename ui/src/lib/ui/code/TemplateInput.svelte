@@ -11,7 +11,7 @@
   import { onMount } from 'svelte';
   import { templateCompletions, templateExtension } from '$lib/template/codemirror';
   import { templateHostFactory } from '$lib/template/host';
-  import { reqlyTheme } from './theme';
+  import { bodyTooltips, reqlyTheme } from './theme';
 
   interface Props {
     value?: string;
@@ -107,6 +107,7 @@
           keymap.of([...completionKeymap, ...defaultKeymap, ...historyKeymap]),
           reqlyTheme,
           singleLineTheme,
+          bodyTooltips(),
           placeholder ? placeholderExt(placeholder) : [],
           EditorState.readOnly.of(readonly),
           EditorView.editable.of(!readonly),
