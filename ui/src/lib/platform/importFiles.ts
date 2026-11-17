@@ -9,7 +9,7 @@ import { mobileSaveBytes, toBase64, type SaveBytes } from './files';
 /** Larger single files are rejected before reading. */
 export const MAX_IMPORT_FILE_BYTES = 64 * 1024 * 1024;
 /** Directory imports only read the files importers understand. */
-const DIRECTORY_FILES = /\.(bru|json|ya?ml)$/i;
+const DIRECTORY_FILES = /\.(bru|json|ya?ml|http|rest)$/i;
 
 const isZip = (bytes: Uint8Array) =>
   bytes.length > 3 &&

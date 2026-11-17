@@ -180,6 +180,11 @@
       run: () => (modal = 'environments'),
     },
     { id: 'import', label: t('import.menu'), run: () => interopDialogs.openImport() },
+    {
+      id: 'import-text',
+      label: t('import.fromTextCommand'),
+      run: () => interopDialogs.openImport(workspace.activeCollection?.id ?? null, 'text'),
+    },
     ...(workspace.activeCollection
       ? [
           {
@@ -472,6 +477,7 @@
     <ImportWizard
       {services}
       collectionId={interopDialogs.import.collectionId}
+      source={interopDialogs.import.source}
       onclose={() => (interopDialogs.import = null)}
     />
   {/if}

@@ -21,6 +21,11 @@ pub fn looks_like_curl(text: &str) -> bool {
 /// A readable name: `METHOD /path` or the URL.
 pub fn request_name(r: &HttpRequest) -> String {
     let url = r.url.as_str();
+    // `{{host}}/users`: the path after a leading base URL variable.
+    let url = url
+        .strip_prefix("{{")
+        .and_then(|rest| rest.split_once("}}"))
+        .map_or(url, |(_, rest)| if rest.is_empty() { "/" } else { rest });
     let path = url
         .split_once("://")
         .map(|(_, rest)| rest.find('/').map_or("/", |i| &rest[i..]))
@@ -79,13 +84,14 @@ pub fn import(name: &str, text: &str) -> CoreResult<ImportBundle> {
     if items.is_empty() {
         return Err(crate::invalid(Format::Curl, "no curl commands found"));
     }
-    // One command: a single request; several: a folder named after the source.
-    let collection_name = if name.is_empty() {
+    // One command or pasted text: the requests; several commands from a file:
+    // a folder named after it.
+    let collection_name = if crate::is_pasted(name) {
         "cURL import".to_string()
     } else {
         name.to_string()
     };
-    let items = if items.len() > 1 {
+    let items = if items.len() > 1 && !crate::is_pasted(name) {
         vec![ImportedItem::folder(
             collection_name.clone(),
             FolderData::default(),

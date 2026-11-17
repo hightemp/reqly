@@ -309,6 +309,24 @@ async fn curl_import_and_export() {
 }
 
 #[tokio::test]
+async fn curl_parse_accepts_http_text() {
+    let fx = Fx::new().await;
+    let parsed = fx
+        .call(
+            "curl.parse",
+            json!({ "command": "POST /x?a=1 HTTP/1.1\nHost: h\nContent-Type: application/json\n\n{\"k\": 1}\n\n> {% client.log(1) %}" }),
+        )
+        .await;
+    let data = &parsed[0]["request"];
+    assert_eq!(data["method"], "POST");
+    assert_eq!(data["url"], "http://h/x");
+    assert_eq!(data["params"][0]["name"], "a");
+    assert_eq!(data["body"]["kind"], "json");
+    assert_eq!(data["body"]["text"], "{\"k\": 1}");
+    assert_eq!(parsed[0]["warnings"].as_array().unwrap().len(), 1);
+}
+
+#[tokio::test]
 async fn save_body_writes_file_and_is_refused_on_server() {
     let server = TestServer::start().await;
     let fx = Fx::new().await;

@@ -1,4 +1,4 @@
-<!-- Method + URL + Send/Cancel. Pasting a cURL command imports it. -->
+<!-- Method + URL + Send/Cancel. Pasting a cURL command or HTTP request text imports it. -->
 <script lang="ts">
   import type { KeyValue } from '$lib/api/generated/KeyValue';
   import { t } from '$lib/i18n';
@@ -8,7 +8,7 @@
   import Combobox from '$lib/ui/overlay/Combobox.svelte';
   import { methodColorVar } from '$lib/ui/badges';
   import { COMMON_METHODS } from './headers';
-  import { applyUrlInput, displayUrl } from './urlsync';
+  import { applyUrlInput, displayUrl, pastedRequest } from './urlsync';
 
   interface Props {
     method: string;
@@ -88,7 +88,7 @@
         commit(v);
       }}
       onpaste={(pasted) => {
-        if (/^\s*curl(\.exe)?\s/i.test(pasted)) {
+        if (pastedRequest(pasted)) {
           oncurl(pasted);
           return true;
         }

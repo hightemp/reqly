@@ -11,6 +11,7 @@ pub mod codegen;
 pub mod curl;
 pub mod detect;
 pub mod har;
+pub mod http_file;
 pub mod insomnia;
 pub mod insomnia_export;
 pub mod model;
@@ -179,6 +180,14 @@ pub fn export(
     })
 }
 
+/// The source name the import wizard gives pasted text.
+pub const PASTED: &str = "clipboard";
+
+/// Pasted text (not a file): its requests are not wrapped in a folder.
+pub(crate) fn is_pasted(name: &str) -> bool {
+    name.is_empty() || name == PASTED
+}
+
 pub(crate) fn invalid(format: Format, message: impl Into<String>) -> CoreError {
     CoreError::new("import.invalid", message.into()).with_param("format", format.id())
 }
@@ -202,6 +211,7 @@ pub fn import(sources: &[Source], format: Option<Format>) -> CoreResult<ImportBu
         Format::Har => har::import(&first.content)?,
         Format::OpenApi => openapi::import(&first.content)?,
         Format::Bruno => bruno::import(sources)?,
+        Format::Http => http_file::import(sources)?,
         Format::Postman => {
             // Several Postman files (collection + environments) can be imported together.
             let mut bundle = ImportBundle {

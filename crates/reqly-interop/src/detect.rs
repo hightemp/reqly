@@ -18,6 +18,8 @@ pub enum Format {
     Har,
     OpenApi,
     Bruno,
+    /// `.http` / `.rest` files and raw HTTP request text.
+    Http,
 }
 
 impl Format {
@@ -30,6 +32,7 @@ impl Format {
             Self::Har => "har",
             Self::OpenApi => "openapi",
             Self::Bruno => "bruno",
+            Self::Http => "http",
         }
     }
 
@@ -42,6 +45,7 @@ impl Format {
             Self::Har => "HAR",
             Self::OpenApi => "OpenAPI / Swagger",
             Self::Bruno => "Bruno",
+            Self::Http => "HTTP (.http)",
         }
     }
 }
@@ -64,6 +68,9 @@ pub fn detect(sources: &[Source]) -> Option<Format> {
     }
     if crate::curl::looks_like_curl(&first.content) {
         return Some(Format::Curl);
+    }
+    if crate::http_file::looks_like_http(&first.name, &first.content) {
+        return Some(Format::Http);
     }
     let value = parse_structured(&first.content)?;
     let obj = value.as_object()?;

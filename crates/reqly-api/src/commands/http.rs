@@ -1366,12 +1366,22 @@ pub struct CurlParseOutput {
 }
 
 command!(
-    /// Parses one or more cURL commands into request data.
+    /// Parses one or more cURL commands (or HTTP request text) into request data.
     CurlParse,
     "curl.parse",
     CurlParseInput,
     Vec<CurlParseOutput>,
     |_ctx, input| {
+        let text = &input.command;
+        if !reqly_interop::curl::looks_like_curl(text)
+            && reqly_interop::http_file::looks_like_http("", text)
+        {
+            let (requests, mut warnings) = reqly_interop::http_file::parse(text);
+            return Ok(requests
+                .into_iter()
+                .map(|request| CurlParseOutput { request, warnings: std::mem::take(&mut warnings) })
+                .collect());
+        }
         Ok(reqly_http::curl::parse_curl_many(&input.command)?
             .into_iter()
             .map(|p| CurlParseOutput { request: p.request, warnings: p.warnings })

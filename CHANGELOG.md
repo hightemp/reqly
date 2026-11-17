@@ -5,6 +5,21 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Import `.http` / `.rest` files (JetBrains HTTP Client, VS Code REST Client)
+  and raw HTTP request text: requests separated by `###`, file variables,
+  JSON / form / multipart bodies and `< file` references.
+- Palette command **Import requests from cURL or HTTP text…** opens the
+  import wizard on the paste tab with the active collection as the target.
+- Pasting HTTP request text into the URL bar replaces the request, like a
+  pasted curl command.
+
+### Changed
+
+- Pasted curl commands and HTTP requests are added to the collection directly,
+  not wrapped in a `clipboard` folder.
+
 ## [1.0.0] — 2026-11-04
 
 Stage 11: desktop ↔ server sync.

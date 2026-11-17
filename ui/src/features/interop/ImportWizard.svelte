@@ -34,16 +34,19 @@
     services: Services;
     /** Preselected target collection. */
     collectionId?: string | null;
+    /** The source tab to open on. */
+    source?: 'file' | 'text' | 'url';
     onclose: () => void;
   }
 
-  let { services, collectionId = null, onclose }: Props = $props();
+  let { services, collectionId = null, source = 'file', onclose }: Props = $props();
   const ws = $derived(services.workspace);
 
   type Step = 'source' | 'preview' | 'done';
   type SourceKind = 'file' | 'text' | 'url';
   let step = $state<Step>('source');
-  let sourceKind = $state<SourceKind>('file');
+  // svelte-ignore state_referenced_locally
+  let sourceKind = $state<SourceKind>(source);
   let sources = $state<ImportSource[]>([]);
   let text = $state('');
   let url = $state('');
@@ -67,6 +70,7 @@
     { value: 'har', label: 'HAR' },
     { value: 'curl', label: 'cURL' },
     { value: 'bruno', label: 'Bruno' },
+    { value: 'http', label: 'HTTP (.http)' },
   ];
 
   const summary = $derived(bundle ? summarize(bundle) : null);
@@ -74,7 +78,7 @@
   const entries = $derived(bundle?.report.entries ?? []);
 
   function currentSources(): ImportSource[] {
-    if (sourceKind === 'text') return text.trim() ? [{ name: 'clipboard', content: text }] : [];
+    if (sourceKind === 'text') return text.trim() ? [{ name: 'clipboard', content: text }] : []; // PASTED in reqly-interop
     return sources;
   }
 

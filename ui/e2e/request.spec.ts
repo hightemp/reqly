@@ -63,6 +63,28 @@ test('pasting a cURL command imports it', async ({ page, baseURL }) => {
   await expect(page.locator('.cm-content').last()).toContainText('"platform": "server"');
 });
 
+test('pasting HTTP request text imports it', async ({ page, baseURL }) => {
+  await page.goto('/');
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  const url = page.getByRole('textbox', { name: 'URL' });
+  await url.focus();
+  const host = new URL(baseURL!).host;
+  await page.evaluate((text) => {
+    const data = new DataTransfer();
+    data.setData('text', text);
+    document.activeElement!.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }),
+    );
+  }, `POST /api/v1/cmd/app.info HTTP/1.1\nHost: ${host}\nContent-Type: application/json\n\n{}`);
+  await page.getByRole('button', { name: 'Import' }).click();
+  await expect(page.getByRole('combobox', { name: 'Method' })).toHaveValue('POST');
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByText('200 OK')).toBeVisible();
+  await expect(page.locator('.cm-content').last()).toContainText('"platform": "server"');
+});
+
 test('folders, rename and delete with undo', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create' }).click();

@@ -9,6 +9,11 @@ importing, the wizard shows the tree, the number of requests, folders and
 environments, and a **report** of everything that cannot be imported exactly.
 The report can be copied or saved. Nothing is dropped silently.
 
+To add requests from a list of curl commands or from HTTP text, use the
+palette command **Import requests from cURL or HTTP text…**: it opens the
+wizard on the paste tab with the active collection as the target. Pasting one
+curl command or HTTP request into the URL bar replaces the current request.
+
 | Format | What is imported |
 | --- | --- |
 | Reqly (JSON / YAML) | everything: collections, environments, secrets (if exported), cookies, history |
@@ -18,6 +23,7 @@ The report can be copied or saved. Nothing is dropped silently.
 | OpenAPI 3.0 / 3.1, Swagger 2.0 (JSON / YAML) | tags → folders, `servers` and server variables → environment variables (`base_url`), parameters with examples, bodies from examples or schemas, security schemes → auth with variables |
 | HAR 1.2 | requests (a log, a single entry or a single request) |
 | cURL | one or several commands; lines that are not curl commands are reported |
+| `.http` / `.rest` (JetBrains HTTP Client, VS Code REST Client), raw HTTP text | requests separated by `###` (the title or `# @name` names them), headers, bodies (JSON, XML, form, multipart, `< file`), query continuation lines, `@name = value` file variables (→ collection variables); raw text such as `GET /path HTTP/1.1` with a `Host` header becomes `http://host/path` (`https` for port 443) |
 | Bruno | a collection folder or a zip (`bruno.json`, `collection.bru`, `folder.bru`, `environments/`), single `.bru` files |
 
 ### Where to import
@@ -52,6 +58,8 @@ rewritten to the new requests.
 | Postman variables with dots or spaces (`{{api.host}}`) | become `{{ _['api.host'] }}` |
 | Saved Postman example responses, responses in HAR | not imported (reported) |
 | Bruno secrets | keys are created empty: Bruno keeps the values outside the collection |
+| `.http` response handlers (`> {% … %}`) and pre-request scripts (`< {% … %}`) | kept commented out: they use the HTTP Client API |
+| `.http` file references (`< ./file`) | paths are kept as they are, relative to the `.http` file; check them after the import |
 
 ## Export
 

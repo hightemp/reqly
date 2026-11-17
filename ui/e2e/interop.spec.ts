@@ -109,3 +109,30 @@ test('generate code for a request', async ({ page }) => {
   await expect(codegen.locator('.cm-content')).toContainText('https://api.example.com/items');
   await codegen.getByRole('button', { name: 'Close' }).click();
 });
+
+test('import requests from HTTP text', async ({ page }) => {
+  const dialog = await openImport(page);
+  await dialog.getByRole('tab', { name: 'Paste' }).click();
+  await dialog
+    .getByRole('textbox', { name: 'Text to import' })
+    .fill(
+      [
+        '@base = https://api.example.com',
+        '### List orders',
+        'GET {{base}}/orders',
+        'Accept: application/json',
+        '',
+        '###',
+        'POST {{base}}/orders',
+        'Content-Type: application/json',
+        '',
+        '{"item": 1}',
+      ].join('\n'),
+    );
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog.getByRole('combobox', { name: 'Format' })).toContainText('HTTP (.http)');
+  await dialog.getByRole('button', { name: 'Import', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('treeitem', { name: /List orders/ })).toHaveCount(1);
+  await expect(page.getByRole('treeitem', { name: /POST \/orders/ })).toHaveCount(1);
+});
