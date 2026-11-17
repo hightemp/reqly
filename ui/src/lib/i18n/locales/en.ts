@@ -38,8 +38,12 @@ export const en = {
     deleted: { one: 'Deleted {count} item', other: 'Deleted {count} items' },
     undo: 'Undo',
     curlCopied: { one: 'Copied {count} cURL command', other: 'Copied {count} cURL commands' },
+    requestsPasted: { one: 'Added {count} request', other: 'Added {count} requests' },
+    pasteRequestsEmpty: 'No cURL commands or HTTP requests on the clipboard',
   },
   actions: {
+    pasteRequests: 'Add requests from clipboard (cURL / HTTP)',
+    importHere: 'Import into this folder…',
     copyAs: 'Copy as',
     generateCode: 'Generate code…',
     export: 'Export…',
@@ -1054,6 +1058,27 @@ export const en = {
     fromFile: 'File or folder',
     fromText: 'Paste',
     fromTextCommand: 'Import requests from cURL or HTTP text…',
+    folderTarget: 'Folder “{name}”',
+    help: {
+      open: 'Supported formats',
+      title: 'Supported formats',
+      intro:
+        'The format is detected automatically. Choose files or a folder, drop them, paste text or load a URL. Anything that cannot be imported exactly is listed in the report.',
+      example: 'Example: {name}',
+      reqly: 'Reqly export: collections, environments, secrets (if exported), cookies, history.',
+      insomnia:
+        'Insomnia export (Application → Export): workspaces, folders, requests, environments, cookies, template tags.',
+      postman:
+        'Postman collection export, plus environment files: folders, requests, auth, variables, scripts.',
+      openapi:
+        'API description: tags become folders, servers become the base_url variable, bodies come from examples or schemas.',
+      har: 'Browser DevTools → Network → Save all as HAR: every recorded request.',
+      curl: 'One or several curl commands, for example “Copy as cURL” from DevTools. Lines that are not curl commands are reported.',
+      http: 'JetBrains HTTP Client and VS Code REST Client files: requests separated by ###, @name = value variables, JSON, form and multipart bodies.',
+      rawName: 'Raw HTTP request',
+      raw: 'A request line with headers, as shown by DevTools or a proxy. The Host header gives the address.',
+      bruno: 'A Bruno collection folder or its zip, or single .bru files.',
+    },
     fromUrl: 'URL',
     dropZone: 'Drop files here',
     dropHint: 'Drop files or a folder here',
@@ -1209,6 +1234,7 @@ export const en = {
     'assertion.notNumber': '“{value}” is not a number',
     'assertion.schema': 'Invalid JSON Schema: {detail}',
     'import.unknown_format': 'The format of “{name}” was not recognized',
+    'import.not_folder': 'Requests can only be imported into a folder',
     'import.invalid': 'This is not a valid {format} file',
     'import.empty': 'Nothing to import',
     'import.too_large': 'The import is too large (limit {limitMb} MB)',

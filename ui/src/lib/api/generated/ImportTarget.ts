@@ -2,4 +2,8 @@
 import type { Id } from "./Id";
 import type { MergeStrategy } from "./MergeStrategy";
 
-export type ImportTarget = { "kind": "newCollections" } | { "kind": "collection", collectionId: Id, strategy: MergeStrategy, };
+export type ImportTarget = { "kind": "newCollections" } | { "kind": "collection", collectionId: Id, 
+/**
+ * A folder of the collection to import into (the root when absent).
+ */
+folderId?: Id, strategy: MergeStrategy, };

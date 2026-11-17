@@ -2,17 +2,24 @@
 
 ## Import
 
-**Workspace → Import…** (or **Collection → Import into this collection…**, or
-the command palette). Sources: files, a folder, drag and drop, pasted text or
+**Workspace → Import…** (or **Collection → Import into this collection…**,
+**Import into this folder…** in the context menu of a folder, or the command
+palette). **Supported formats** in the wizard lists the formats with examples. Sources: files, a folder, drag and drop, pasted text or
 a URL. The format is detected automatically and can be chosen by hand. Before
 importing, the wizard shows the tree, the number of requests, folders and
 environments, and a **report** of everything that cannot be imported exactly.
 The report can be copied or saved. Nothing is dropped silently.
 
-To add requests from a list of curl commands or from HTTP text, use the
-palette command **Import requests from cURL or HTTP text…**: it opens the
-wizard on the paste tab with the active collection as the target. Pasting one
-curl command or HTTP request into the URL bar replaces the current request.
+To add requests from a list of curl commands or from HTTP text:
+
+- **Add requests from clipboard (cURL / HTTP)** in the context menu of a
+  folder or request (into the folder, or next to the request) or in the
+  collection menu (into the root) adds them right away;
+- the palette command **Import requests from cURL or HTTP text…** opens the
+  wizard on the paste tab with the active collection as the target.
+
+Pasting one curl command or HTTP request into the URL bar replaces the
+current request.
 
 | Format | What is imported |
 | --- | --- |
@@ -29,7 +36,8 @@ curl command or HTTP request into the URL bar replaces the current request.
 ### Where to import
 
 - **New collection**: one collection per imported collection.
-- **Into an existing collection**:
+- **Into an existing collection** (or one of its folders, when the wizard is
+  opened from a folder):
   - *Merge*: folders and requests with the same name are updated, the rest
     is added;
   - *Add alongside*: everything is added, existing items stay as they are;

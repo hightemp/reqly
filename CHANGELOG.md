@@ -14,6 +14,11 @@ and this project follows [Semantic Versioning](https://semver.org/).
   import wizard on the paste tab with the active collection as the target.
 - Pasting HTTP request text into the URL bar replaces the request, like a
   pasted curl command.
+- **Supported formats** window in the import wizard: every format with where
+  it comes from, what is imported and examples.
+- **Import into this folder…** and **Add requests from clipboard (cURL /
+  HTTP)** in the tree context menu; the import target can be a folder
+  (`folderId` of `import.apply`).
 
 ### Changed
 

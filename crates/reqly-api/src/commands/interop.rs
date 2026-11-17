@@ -205,6 +205,10 @@ pub enum ImportTarget {
     /// Everything into an existing collection.
     Collection {
         collection_id: Id,
+        /// A folder of the collection to import into (the root when absent).
+        #[serde(default)]
+        #[ts(optional)]
+        folder_id: Option<Id>,
         strategy: MergeStrategy,
     },
 }
@@ -530,18 +534,32 @@ pub async fn apply_bundle(
         }
         ImportTarget::Collection {
             collection_id,
+            folder_id,
             strategy,
         } => {
             let collection_id = *collection_id;
+            let parent = *folder_id;
             let col = tree.get_collection(collection_id).await?;
             if col.workspace_id != workspace_id {
                 return Err(CoreError::not_found("collection", collection_id));
             }
             let mut existing = tree.list_nodes(collection_id).await?;
+            if let Some(folder_id) = parent {
+                let folder = existing
+                    .iter()
+                    .find(|n| n.meta.id == folder_id)
+                    .ok_or_else(|| CoreError::not_found("node", folder_id))?;
+                if folder.data.kind() != NodeKind::Folder {
+                    return Err(CoreError::new(
+                        "import.not_folder",
+                        "requests can only be imported into a folder",
+                    ));
+                }
+            }
             if *strategy == MergeStrategy::Replace {
                 let roots: Vec<Id> = existing
                     .iter()
-                    .filter(|n| n.parent_id.is_none())
+                    .filter(|n| n.parent_id == parent)
                     .map(|n| n.meta.id)
                     .collect();
                 if !roots.is_empty() {
@@ -551,12 +569,12 @@ pub async fn apply_bundle(
             }
             for c in &bundle.collections {
                 if *strategy == MergeStrategy::Merge {
-                    merge_items(&tree, &ids, collection_id, None, &c.items, &existing).await?;
+                    merge_items(&tree, &ids, collection_id, parent, &c.items, &existing).await?;
                     existing = tree.list_nodes(collection_id).await?;
                 } else {
                     let inserts: Vec<TreeInsert> =
                         c.items.iter().map(|i| ids.to_insert(i)).collect();
-                    tree.insert_tree(collection_id, None, &inserts).await?;
+                    tree.insert_tree(collection_id, parent, &inserts).await?;
                 }
                 if with_environments {
                     merge_base(ctx, collection_id, &c.variables, &c.variable_secrets).await?;

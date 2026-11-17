@@ -206,6 +206,23 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
       onSelect: () => hooks.reveal!(single.id),
     });
   }
+  if (single && s.tree.collectionId && s.workspace.activeWorkspaceId) {
+    // Into the folder, or next to the request.
+    const collectionId = s.tree.collectionId;
+    const workspaceId = s.workspace.activeWorkspaceId;
+    entries.push({
+      id: 'paste-requests',
+      label: t('actions.pasteRequests'),
+      onSelect: () => void s.tree.pasteRequests(workspaceId, folderId),
+    });
+    if (single.isFolder) {
+      entries.push({
+        id: 'import-here',
+        label: t('actions.importHere'),
+        onSelect: () => interopDialogs.openImport(collectionId, 'file', single.id),
+      });
+    }
+  }
   entries.push({
     id: 'export',
     label: t('actions.export'),
@@ -257,7 +274,7 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
 }
 
 /** Entries that change the tree; viewers do not get them. */
-const EDITS = /^(new-|rename$|duplicate$|cut$|paste$|delete$|sort$)/;
+const EDITS = /^(new-|rename$|duplicate$|cut$|paste$|paste-requests$|import-here$|delete$|sort$)/;
 
 /** Drops editing entries, then headings and separators left without items. */
 export function readOnly(entries: MenuEntry[]): MenuEntry[] {

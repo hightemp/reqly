@@ -218,6 +218,36 @@ describe('TreeStore', () => {
     expect(writeText).toHaveBeenCalledWith('curl a\n\ncurl root-req');
   });
 
+  it('pastes curl or HTTP requests from the clipboard into a folder', async () => {
+    const { store, t } = await setup();
+    const apply = vi.fn(() => ({
+      collectionIds: ['c1'],
+      requests: 2,
+      environments: 0,
+      report: { format: 'curl', entries: [] },
+    }));
+    t.handle('import.apply', apply as never);
+    Object.assign(navigator, {
+      clipboard: { readText: vi.fn(async () => 'curl https://x.test/a\ncurl https://x.test/b') },
+    });
+    const show = vi.spyOn(toasts, 'show');
+    expect(await store.pasteRequests('w1', 'api')).toBe(2);
+    expect(apply).toHaveBeenCalledWith({
+      sources: [{ name: 'clipboard', content: 'curl https://x.test/a\ncurl https://x.test/b' }],
+      workspaceId: 'w1',
+      target: { kind: 'collection', collectionId: 'c1', folderId: 'api', strategy: 'append' },
+    });
+    expect(store.expanded).toContain('api');
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
+
+    // Nothing usable on the clipboard.
+    Object.assign(navigator, { clipboard: { readText: vi.fn(async () => 'hello') } });
+    const error = vi.spyOn(toasts, 'error');
+    expect(await store.pasteRequests('w1', null)).toBe(0);
+    expect(error).toHaveBeenCalled();
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
+
   it('reloads on tree.changed for the collection', async () => {
     const nodes = sample();
     const { store, t } = await setup(nodes);

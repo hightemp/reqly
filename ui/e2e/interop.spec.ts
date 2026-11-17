@@ -136,3 +136,58 @@ test('import requests from HTTP text', async ({ page }) => {
   await expect(page.getByRole('treeitem', { name: /List orders/ })).toHaveCount(1);
   await expect(page.getByRole('treeitem', { name: /POST \/orders/ })).toHaveCount(1);
 });
+
+test('supported formats window', async ({ page }) => {
+  const dialog = await openImport(page);
+  await dialog.getByRole('button', { name: 'Supported formats' }).click();
+  const help = page.getByRole('dialog', { name: 'Supported formats' });
+  await expect(help.getByRole('heading', { name: 'HTTP (.http / .rest)' })).toBeVisible();
+  await expect(help.getByLabel('Example: cURL')).toContainText('curl -X POST');
+  await help.getByRole('button', { name: 'Close' }).click();
+  await expect(help).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+});
+
+test('paste requests from the clipboard and import into a folder', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  const name = `Inbox ${Date.now().toString(36)}`;
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New folder' }).click();
+  const input = page.getByRole('tree', { name: 'Collections' }).getByRole('textbox');
+  await input.fill(name);
+  await input.press('Enter');
+  const folder = page.getByRole('treeitem', { name: new RegExp(name) });
+  await expect(folder).toBeVisible();
+
+  await page.evaluate(() =>
+    navigator.clipboard.writeText(
+      'curl https://api.example.com/pasted-a\ncurl -X POST https://api.example.com/pasted-b',
+    ),
+  );
+  await folder.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Add requests from clipboard (cURL / HTTP)' }).click();
+  await expect(page.getByText('Added 2 requests')).toBeVisible();
+  await expect(page.getByRole('treeitem', { name: /GET \/pasted-a/ })).toBeVisible();
+  await expect(page.getByRole('treeitem', { name: /POST \/pasted-b/ })).toBeVisible();
+
+  await folder.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Import into this folder…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Import' });
+  await dialog.getByRole('tab', { name: 'Paste' }).click();
+  await dialog
+    .getByRole('textbox', { name: 'Text to import' })
+    .fill('GET https://api.example.com/imported HTTP/1.1');
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog.getByRole('combobox', { name: 'Import into' })).toContainText(name);
+  await dialog.getByRole('button', { name: 'Import', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  const imported = page.getByRole('treeitem', { name: /GET \/imported/ });
+  await expect(imported).toBeVisible();
+  // Inside the folder: one level deeper than the folder.
+  await expect(imported).toHaveAttribute(
+    'aria-level',
+    String(Number(await folder.getAttribute('aria-level')) + 1),
+  );
+});

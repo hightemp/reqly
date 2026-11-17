@@ -323,6 +323,87 @@ async fn merge_and_replace_into_an_existing_collection() {
 }
 
 #[tokio::test]
+async fn import_into_a_folder() {
+    let fx = Fx::new().await;
+    let folder = fx
+        .node(Value::Null, "Inbox", json!({ "kind": "folder" }))
+        .await;
+    fx.node(
+        folder.clone(),
+        "Old",
+        json!({ "kind": "request", "url": "/old" }),
+    )
+    .await;
+    let paste = |text: &str, strategy: &str| {
+        json!({
+            "sources": [{ "name": "clipboard", "content": text }],
+            "workspaceId": fx.workspace,
+            "target": { "kind": "collection", "collectionId": fx.collection,
+                        "folderId": folder, "strategy": strategy },
+        })
+    };
+    let out = fx
+        .call(
+            "import.apply",
+            paste(
+                "curl https://x.test/a\ncurl -X POST https://x.test/b",
+                "append",
+            ),
+        )
+        .await;
+    assert_eq!(out["requests"], 2);
+    let tree = fx.tree(&fx.collection).await;
+    let inbox: Vec<_> = tree
+        .iter()
+        .filter(|t| t.1.as_deref() == Some("Inbox"))
+        .map(|t| t.0.as_str())
+        .collect();
+    assert_eq!(inbox, ["Old", "GET /a", "POST /b"]);
+
+    // Merge updates same-named requests inside the folder.
+    fx.call(
+        "import.apply",
+        paste("curl https://x.test/a -H 'X: 1'", "merge"),
+    )
+    .await;
+    assert_eq!(fx.tree(&fx.collection).await.len(), tree.len());
+
+    // Replace only empties the folder.
+    fx.call(
+        "import.apply",
+        paste("GET https://x.test/c HTTP/1.1", "replace"),
+    )
+    .await;
+    let names: Vec<_> = fx
+        .tree(&fx.collection)
+        .await
+        .into_iter()
+        .map(|t| (t.0, t.1))
+        .collect();
+    assert!(names.contains(&("GET /c".to_string(), Some("Inbox".to_string()))));
+    assert!(!names.iter().any(|n| n.0 == "Old"));
+
+    // A request is not a folder.
+    let request = fx
+        .node(Value::Null, "R", json!({ "kind": "request", "url": "/r" }))
+        .await;
+    let err = registry()
+        .dispatch(
+            &fx.ctx,
+            "import.apply",
+            json!({
+                "sources": [{ "name": "clipboard", "content": "curl https://x.test" }],
+                "workspaceId": fx.workspace,
+                "target": { "kind": "collection", "collectionId": fx.collection,
+                            "folderId": request, "strategy": "append" },
+            }),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(err.code, "import.not_folder");
+}
+
+#[tokio::test]
 async fn export_selected_nodes() {
     let fx = Fx::new().await;
     let (login, me) = fx.sample().await;

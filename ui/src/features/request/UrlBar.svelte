@@ -8,7 +8,8 @@
   import Combobox from '$lib/ui/overlay/Combobox.svelte';
   import { methodColorVar } from '$lib/ui/badges';
   import { COMMON_METHODS } from './headers';
-  import { applyUrlInput, displayUrl, pastedRequest } from './urlsync';
+  import { pastedRequest } from '$lib/requestText';
+  import { applyUrlInput, displayUrl } from './urlsync';
 
   interface Props {
     method: string;

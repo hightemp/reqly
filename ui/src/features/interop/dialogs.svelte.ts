@@ -3,12 +3,20 @@
 import type { ExportRequest } from './ExportDialog.svelte';
 
 class InteropDialogs {
-  import = $state<{ collectionId: string | null; source?: 'file' | 'text' | 'url' } | null>(null);
+  import = $state<{
+    collectionId: string | null;
+    folderId?: string | null;
+    source?: 'file' | 'text' | 'url';
+  } | null>(null);
   export = $state<ExportRequest | null>(null);
   codegen = $state<string | null>(null);
 
-  openImport(collectionId: string | null = null, source?: 'file' | 'text' | 'url') {
-    this.import = { collectionId, source };
+  openImport(
+    collectionId: string | null = null,
+    source?: 'file' | 'text' | 'url',
+    folderId: string | null = null,
+  ) {
+    this.import = { collectionId, source, folderId };
   }
 
   openExport(request: ExportRequest) {

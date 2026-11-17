@@ -50,8 +50,17 @@ export const ru: Translation<Messages> = {
       many: 'Скопировано {count} команд cURL',
       other: 'Скопировано {count} команды cURL',
     },
+    requestsPasted: {
+      one: 'Добавлен {count} запрос',
+      few: 'Добавлено {count} запроса',
+      many: 'Добавлено {count} запросов',
+      other: 'Добавлено {count} запроса',
+    },
+    pasteRequestsEmpty: 'В буфере обмена нет команд cURL или HTTP-запросов',
   },
   actions: {
+    pasteRequests: 'Добавить запросы из буфера (cURL / HTTP)',
+    importHere: 'Импорт в эту папку…',
     copyAs: 'Копировать как',
     generateCode: 'Сгенерировать код…',
     export: 'Экспортировать…',
@@ -1118,6 +1127,28 @@ export const ru: Translation<Messages> = {
     fromFile: 'Файл или папка',
     fromText: 'Вставка',
     fromTextCommand: 'Импорт запросов из cURL или HTTP-текста…',
+    folderTarget: 'Папка «{name}»',
+    help: {
+      open: 'Поддерживаемые форматы',
+      title: 'Поддерживаемые форматы',
+      intro:
+        'Формат определяется автоматически. Выберите файлы или папку, перетащите их, вставьте текст или загрузите по URL. Всё, что нельзя импортировать точно, попадает в отчёт.',
+      example: 'Пример: {name}',
+      reqly:
+        'Экспорт Reqly: коллекции, окружения, секреты (если экспортированы), cookies, история.',
+      insomnia:
+        'Экспорт Insomnia (Application → Export): пространства, папки, запросы, окружения, cookies, теги шаблонов.',
+      postman:
+        'Экспорт коллекции Postman и файлы окружений: папки, запросы, авторизация, переменные, скрипты.',
+      openapi:
+        'Описание API: теги становятся папками, servers — переменной base_url, тела берутся из примеров или схем.',
+      har: 'DevTools браузера → Network → Save all as HAR: все записанные запросы.',
+      curl: 'Одна или несколько команд curl, например «Copy as cURL» из DevTools. Строки, которые не являются командами curl, попадают в отчёт.',
+      http: 'Файлы JetBrains HTTP Client и VS Code REST Client: запросы через ###, переменные @name = value, тела JSON, form и multipart.',
+      rawName: 'Сырой HTTP-запрос',
+      raw: 'Строка запроса с заголовками, как в DevTools или прокси. Адрес берётся из заголовка Host.',
+      bruno: 'Папка коллекции Bruno или её zip-архив, отдельные файлы .bru.',
+    },
     fromUrl: 'URL',
     dropZone: 'Перетащите файлы сюда',
     dropHint: 'Перетащите сюда файлы или папку',
@@ -1279,6 +1310,7 @@ export const ru: Translation<Messages> = {
     'assertion.notNumber': '«{value}» — не число',
     'assertion.schema': 'Ошибка в JSON Schema: {detail}',
     'import.unknown_format': 'Не удалось определить формат «{name}»',
+    'import.not_folder': 'Запросы можно импортировать только в папку',
     'import.invalid': 'Это не корректный файл {format}',
     'import.empty': 'Нечего импортировать',
     'import.too_large': 'Слишком большой импорт (не больше {limitMb} МБ)',

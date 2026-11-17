@@ -478,6 +478,7 @@
       {services}
       collectionId={interopDialogs.import.collectionId}
       source={interopDialogs.import.source}
+      folderId={interopDialogs.import.folderId}
       onclose={() => (interopDialogs.import = null)}
     />
   {/if}

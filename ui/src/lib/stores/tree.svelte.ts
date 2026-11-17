@@ -6,6 +6,7 @@ import type { ApiPlacement } from '$lib/api/generated/ApiPlacement';
 import type { NodeSummary } from '$lib/api/generated/NodeSummary';
 import type { Transport } from '$lib/api/transport';
 import { errorMessage } from '$lib/errors';
+import { isRequestText } from '$lib/requestText';
 import { t } from '$lib/i18n';
 import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
 import { toasts } from '$lib/ui/overlay/toasts.svelte';
@@ -376,6 +377,47 @@ export class TreeStore {
       kind: 'success',
       timeoutMs: 2500,
     });
+  }
+
+  /**
+   * Adds the cURL commands or HTTP requests on the clipboard to `folderId`
+   * (the collection root when null). Returns the number of requests added.
+   */
+  async pasteRequests(workspaceId: string, folderId: string | null): Promise<number> {
+    if (!this.collectionId) return 0;
+    const collectionId = this.collectionId;
+    let text: string;
+    try {
+      text = await navigator.clipboard.readText();
+    } catch (e) {
+      toasts.error(errorMessage(e));
+      return 0;
+    }
+    if (!isRequestText(text)) {
+      toasts.error(t('tree.pasteRequestsEmpty'));
+      return 0;
+    }
+    const out = await this.run(() =>
+      this.transport.call('import.apply', {
+        sources: [{ name: 'clipboard', content: text }],
+        workspaceId,
+        target: {
+          kind: 'collection',
+          collectionId,
+          folderId: folderId ?? undefined,
+          strategy: 'append',
+        },
+      }),
+    );
+    if (!out) return 0;
+    if (folderId) this.expand(folderId);
+    await this.reload();
+    toasts.show({
+      message: t('tree.requestsPasted', { count: out.requests }),
+      kind: 'success',
+      timeoutMs: 2500,
+    });
+    return out.requests;
   }
 
   destroy() {

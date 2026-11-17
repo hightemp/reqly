@@ -28,18 +28,27 @@
   import Spinner from '$lib/ui/Spinner.svelte';
   import Tabs from '$lib/ui/Tabs.svelte';
   import Textarea from '$lib/ui/Textarea.svelte';
+  import ImportFormats from './ImportFormats.svelte';
   import { previewRows, reportText, summarize } from './model';
 
   interface Props {
     services: Services;
     /** Preselected target collection. */
     collectionId?: string | null;
+    /** Preselected target folder of `collectionId`. */
+    folderId?: string | null;
     /** The source tab to open on. */
     source?: 'file' | 'text' | 'url';
     onclose: () => void;
   }
 
-  let { services, collectionId = null, source = 'file', onclose }: Props = $props();
+  let {
+    services,
+    collectionId = null,
+    folderId = null,
+    source = 'file',
+    onclose,
+  }: Props = $props();
   const ws = $derived(services.workspace);
 
   type Step = 'source' | 'preview' | 'done';
@@ -56,11 +65,18 @@
   let bundle = $state<ImportBundle | null>(null);
   let format = $state<Format | null>(null);
   // svelte-ignore state_referenced_locally
-  let target = $state<string>(collectionId ?? 'new');
+  let target = $state<string>(
+    folderId && collectionId ? `folder:${folderId}` : (collectionId ?? 'new'),
+  );
   let strategy = $state<MergeStrategy>('merge');
   let withEnvironments = $state(true);
   let withCookies = $state(true);
   let result = $state<ImportApplyOutput | null>(null);
+  let formatsOpen = $state(false);
+  // svelte-ignore state_referenced_locally
+  const folder = folderId ? services.tree.byId.get(folderId) : undefined;
+  /** Target `folder:<id>`: a folder of `collectionId`. */
+  const targetFolder = $derived(target.startsWith('folder:') ? target.slice(7) : null);
 
   const FORMATS: { value: Format; label: string }[] = [
     { value: 'reqly', label: 'Reqly' },
@@ -152,7 +168,14 @@
         target:
           target === 'new'
             ? { kind: 'newCollections' }
-            : { kind: 'collection', collectionId: target, strategy },
+            : targetFolder
+              ? {
+                  kind: 'collection',
+                  collectionId: collectionId!,
+                  folderId: targetFolder,
+                  strategy,
+                }
+              : { kind: 'collection', collectionId: target, strategy },
         environments: withEnvironments,
         cookies: withCookies,
       });
@@ -224,6 +247,9 @@
             </Button>
           </div>
           <p class="formats">{t('import.formats')}</p>
+          <Button size="sm" variant="ghost" onclick={() => (formatsOpen = true)}>
+            {t('import.help.open')}
+          </Button>
         </div>
       {:else if sourceKind === 'text'}
         <Textarea
@@ -233,6 +259,11 @@
           aria-label={t('import.pasteLabel')}
           placeholder={t('import.pastePlaceholder')}
         />
+        <div class="help-row">
+          <Button size="sm" variant="ghost" onclick={() => (formatsOpen = true)}>
+            {t('import.help.open')}
+          </Button>
+        </div>
       {:else}
         <div class="url-row">
           <Input
@@ -313,6 +344,14 @@
           options={[
             { value: 'new', label: t('import.newCollection') },
             ...ws.collections.map((c) => ({ value: c.id, label: c.name })),
+            ...(folder && collectionId
+              ? [
+                  {
+                    value: `folder:${folder.id}`,
+                    label: t('import.folderTarget', { name: folder.label }),
+                  },
+                ]
+              : []),
           ]}
         />
         {#if target !== 'new'}
@@ -368,6 +407,10 @@
     <p class="error" role="alert">{error}</p>
   {/if}
 
+  {#if formatsOpen}
+    <ImportFormats onclose={() => (formatsOpen = false)} />
+  {/if}
+
   {#snippet footer()}
     {#if busy}<Spinner />{/if}
     {#if step === 'source'}
@@ -398,6 +441,11 @@
 </Modal>
 
 <style>
+  .help-row {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--space-2);
+  }
   .source {
     padding-top: var(--space-3);
     min-height: 240px;

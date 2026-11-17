@@ -141,6 +141,13 @@
         onSelect: () => interopDialogs.openImport(current?.id ?? null),
       },
       {
+        id: 'paste-requests',
+        label: t('actions.pasteRequests'),
+        disabled: !canEdit || !current || !ws.activeWorkspaceId,
+        onSelect: () =>
+          ws.activeWorkspaceId && void services.tree.pasteRequests(ws.activeWorkspaceId, null),
+      },
+      {
         id: 'export',
         label: t('export.collection'),
         disabled: !current,

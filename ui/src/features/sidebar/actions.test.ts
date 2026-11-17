@@ -16,6 +16,8 @@ describe('readOnly', () => {
       item('copy'),
       item('paste'),
       item('copy-as'),
+      item('paste-requests'),
+      item('import-here'),
       item('export'),
       { separator: true },
       item('sort'),
