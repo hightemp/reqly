@@ -59,7 +59,7 @@ export const ru: Translation<Messages> = {
     pasteRequestsEmpty: 'В буфере обмена нет команд cURL или HTTP-запросов',
   },
   actions: {
-    pasteRequests: 'Добавить запросы из буфера (cURL / HTTP)',
+    pasteRequests: 'Импорт из буфера обмена',
     importHere: 'Импорт в эту папку…',
     copyAs: 'Копировать как',
     generateCode: 'Сгенерировать код…',

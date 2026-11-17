@@ -42,7 +42,7 @@ export const en = {
     pasteRequestsEmpty: 'No cURL commands or HTTP requests on the clipboard',
   },
   actions: {
-    pasteRequests: 'Add requests from clipboard (cURL / HTTP)',
+    pasteRequests: 'Import from clipboard',
     importHere: 'Import into this folder…',
     copyAs: 'Copy as',
     generateCode: 'Generate code…',

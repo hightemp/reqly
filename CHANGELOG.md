@@ -16,8 +16,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
   pasted curl command.
 - **Supported formats** window in the import wizard: every format with where
   it comes from, what is imported and examples.
-- **Import into this folder…** and **Add requests from clipboard (cURL /
-  HTTP)** in the tree context menu; the import target can be a folder
+- **Import into this folder…** and **Import from clipboard** (curl
+  commands or HTTP requests) in the tree context menu; the import target can be a folder
   (`folderId` of `import.apply`).
 
 ### Changed

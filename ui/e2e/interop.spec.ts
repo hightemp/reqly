@@ -167,7 +167,7 @@ test('paste requests from the clipboard and import into a folder', async ({ page
     ),
   );
   await folder.click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Add requests from clipboard (cURL / HTTP)' }).click();
+  await page.getByRole('menuitem', { name: 'Import from clipboard' }).click();
   await expect(page.getByText('Added 2 requests')).toBeVisible();
   await expect(page.getByRole('treeitem', { name: /GET \/pasted-a/ })).toBeVisible();
   await expect(page.getByRole('treeitem', { name: /POST \/pasted-b/ })).toBeVisible();

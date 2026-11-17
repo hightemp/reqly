@@ -12,9 +12,9 @@ The report can be copied or saved. Nothing is dropped silently.
 
 To add requests from a list of curl commands or from HTTP text:
 
-- **Add requests from clipboard (cURL / HTTP)** in the context menu of a
-  folder or request (into the folder, or next to the request) or in the
-  collection menu (into the root) adds them right away;
+- **Import from clipboard** in the context menu of a folder or request
+  (into the folder, or next to the request) adds the curl commands or HTTP
+  requests on the clipboard right away;
 - the palette command **Import requests from cURL or HTTP text…** opens the
   wizard on the paste tab with the active collection as the target.
 
