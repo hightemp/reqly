@@ -7,11 +7,13 @@
 //! for the user. The apps mount [`router`] and decide who may call it
 //! through a [`Gate`].
 
+mod catalog;
 mod gate;
 mod http;
 mod protocol;
 mod tools;
 
+pub use catalog::{HIDDEN, catalog_tools};
 pub use gate::{SettingsGate, TokenKind};
 pub use http::{McpState, OriginPolicy, router};
 pub use protocol::{PROTOCOL_VERSION, SUPPORTED_VERSIONS};

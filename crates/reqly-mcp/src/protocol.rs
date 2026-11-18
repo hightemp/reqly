@@ -3,6 +3,8 @@
 use std::time::Instant;
 
 use reqly_api::commands::mcp::McpCall;
+
+use crate::catalog::secret_name;
 use serde_json::{Map, Value, json};
 
 use crate::Session;
@@ -183,8 +185,9 @@ fn redact(value: &Value) -> Value {
         Value::Object(map)
             if map
                 .get("key")
+                .or_else(|| map.get("name"))
                 .and_then(Value::as_str)
-                .is_some_and(secret_key)
+                .is_some_and(secret_name)
                 && map.contains_key("value") =>
         {
             let mut map = map.clone();
@@ -196,7 +199,7 @@ fn redact(value: &Value) -> Value {
                 .map(|(k, v)| {
                     let v = if k == "values" {
                         hide_all(v)
-                    } else if secret_key(k) {
+                    } else if secret_name(k) {
                         Value::String(HIDDEN.into())
                     } else {
                         redact(v)
@@ -220,24 +223,6 @@ fn hide_all(value: &Value) -> Value {
         ),
         _ => Value::String(HIDDEN.into()),
     }
-}
-
-fn secret_key(key: &str) -> bool {
-    let key = key.to_ascii_lowercase();
-    [
-        "password",
-        "secret",
-        "token",
-        "apikey",
-        "api_key",
-        "api-key",
-        "privatekey",
-        "passphrase",
-        "authorization",
-        "cookie",
-    ]
-    .iter()
-    .any(|s| key.contains(s))
 }
 
 #[cfg(test)]
