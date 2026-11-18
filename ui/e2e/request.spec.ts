@@ -187,6 +187,7 @@ test('many open tabs scroll with the wheel and the arrows', async ({ page }) => 
   await closeAllTabs(page);
   await page.getByRole('button', { name: 'Create' }).click();
   await page.getByRole('menuitem', { name: 'New request' }).click();
+  await expect(strip.getByRole('tab')).toHaveCount(1);
   await expect(left).toBeHidden();
   await closeAllTabs(page);
 });
