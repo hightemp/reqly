@@ -9,6 +9,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 - Many open tabs can be scrolled: the mouse wheel scrolls the tab bar sideways,
   and arrow buttons appear when the tabs do not fit.
+- Deleting a request in the tree closes its open tab, and deleting a folder
+  closes the tabs of the requests inside it.
 
 ## [1.1.0] — 2026-11-17
 

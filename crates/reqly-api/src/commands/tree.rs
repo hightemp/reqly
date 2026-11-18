@@ -612,8 +612,8 @@ command!(
 
 command!(TreeDelete, "tree.delete", IdsInput, Empty, |ctx, input| {
     let cols = collections_of(ctx, &input.ids).await?;
-    repo(ctx).delete_nodes(&input.ids).await?;
-    tree_changed(ctx, cols, input.ids);
+    let deleted = repo(ctx).delete_nodes(&input.ids).await?;
+    tree_changed(ctx, cols, deleted);
     Ok(Empty {})
 });
 
@@ -624,8 +624,8 @@ command!(
     Empty,
     |ctx, input| {
         let cols = collections_of(ctx, &input.ids).await?;
-        repo(ctx).restore_nodes(&input.ids).await?;
-        tree_changed(ctx, cols, input.ids);
+        let restored = repo(ctx).restore_nodes(&input.ids).await?;
+        tree_changed(ctx, cols, restored);
         Ok(Empty {})
     }
 );
@@ -706,7 +706,18 @@ mod tests {
         .await;
         assert_eq!(updated["version"], 2);
 
+        let mut topics = Vec::new();
+        while let Ok(e) = events.try_recv() {
+            topics.push(e.topic);
+        }
         call(&ctx, "tree.delete", json!({ "ids": [folder["id"]] })).await;
+        let deleted = events.try_recv().unwrap();
+        assert_eq!(deleted.topic, "tree.changed");
+        let ids = deleted.payload["nodeIds"].as_array().unwrap();
+        assert!(
+            ids.contains(&folder["id"]) && ids.contains(&req["id"]),
+            "nested nodes are reported so their editors close: {ids:?}"
+        );
         assert_eq!(
             call(&ctx, "tree.list", json!({ "collectionId": col })).await,
             json!([])
@@ -716,10 +727,7 @@ mod tests {
             "API"
         );
 
-        let mut topics = Vec::new();
-        while let Ok(e) = events.try_recv() {
-            topics.push(e.topic);
-        }
+        topics.push(deleted.topic);
         assert!(
             topics.iter().filter(|t| *t == "tree.changed").count() >= 4,
             "{topics:?}"

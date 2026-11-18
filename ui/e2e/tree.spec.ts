@@ -105,3 +105,38 @@ test('organize requests: cut/paste, drag & drop, search and the list view', asyn
   ).toBeVisible();
   await page.getByRole('button', { name: 'Show as tree' }).click();
 });
+
+test('deleting a request or its folder closes its open tab', async ({ page }) => {
+  await page.goto('/');
+  const suffix = Date.now().toString(36);
+  const folder = `Doomed ${suffix}`;
+  const inner = `Inner ${suffix}`;
+  const lone = `Lone ${suffix}`;
+  await create(page, 'New folder', folder);
+  await create(page, 'New request', inner);
+  await page.getByRole('treeitem', { name: new RegExp(inner) }).click();
+  await page.keyboard.press('Escape');
+  await create(page, 'New request', lone);
+
+  const tabs = page.getByRole('tablist', { name: 'Open requests' });
+  const tree = page.getByRole('tree', { name: 'Collections' });
+  const remove = async (name: string) => {
+    await tree.getByRole('treeitem', { name: new RegExp(name) }).click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click();
+  };
+
+  // Both requests are open in permanent tabs.
+  for (const name of [inner, lone]) {
+    await tree.getByRole('treeitem', { name: new RegExp(name) }).dblclick();
+    await expect(tabs.getByRole('tab', { name: new RegExp(name) })).toBeVisible();
+  }
+
+  await remove(lone);
+  await expect(tabs.getByRole('tab', { name: new RegExp(lone) })).toHaveCount(0);
+  await expect(tabs.getByRole('tab', { name: new RegExp(inner) })).toBeVisible();
+
+  // A deleted folder closes the tabs of the requests inside it.
+  await remove(folder);
+  await expect(tabs.getByRole('tab', { name: new RegExp(inner) })).toHaveCount(0);
+});

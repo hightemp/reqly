@@ -335,7 +335,14 @@ async fn delete_is_soft_recursive_and_restorable() {
     let r = fx.add(col, Some(f), "r", request("GET", "x")).await;
     let lone = fx.add(col, None, "lone", request("GET", "y")).await;
 
-    fx.repo().delete_nodes(&[f, lone]).await.unwrap();
+    let mut deleted = fx.repo().delete_nodes(&[f, lone]).await.unwrap();
+    deleted.sort();
+    let mut expected = vec![f, r, lone];
+    expected.sort();
+    assert_eq!(
+        deleted, expected,
+        "every deleted node is reported, nested ones too"
+    );
     assert!(fx.repo().list_tree(col).await.unwrap().is_empty());
     let trash = fx.repo().list_trash(col).await.unwrap();
     let mut names: Vec<_> = trash.iter().map(|n| n.name.as_str()).collect();
@@ -346,7 +353,11 @@ async fn delete_is_soft_recursive_and_restorable() {
         "only top-level deleted nodes are listed"
     );
 
-    fx.repo().restore_nodes(&[f]).await.unwrap();
+    let mut restored = fx.repo().restore_nodes(&[f]).await.unwrap();
+    restored.sort();
+    let mut expected = vec![f, r];
+    expected.sort();
+    assert_eq!(restored, expected);
     assert_eq!(fx.children(col, None).await, ["f"]);
     assert_eq!(fx.children(col, Some(f)).await, ["r"]);
     assert_eq!(fx.repo().get_node(r).await.unwrap().meta.deleted_at, None);

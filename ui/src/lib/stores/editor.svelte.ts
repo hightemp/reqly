@@ -262,6 +262,12 @@ export class EditorStore {
     this.drafts.delete(id);
   }
 
+  /** Drops a draft without saving it (its node is gone). */
+  forget(id: string) {
+    clearTimeout(this.drafts.get(id)?.timer);
+    this.drafts.delete(id);
+  }
+
   destroy() {
     this.unsubscribe();
     for (const d of this.drafts.values()) clearTimeout(d.timer);

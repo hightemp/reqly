@@ -30,10 +30,23 @@ export function trackTabs(services: Services) {
     for (const tab of services.tabs.tabs) {
       void services.editor.open(tab.id).then(
         (d) => {
-          if (d.node?.deletedAt) services.tabs.close(tab.id);
+          if (d.node?.deletedAt) {
+            services.tabs.close(tab.id);
+            services.editor.forget(tab.id);
+          }
         },
         () => services.tabs.close(tab.id),
       );
+    }
+  });
+  // A request deleted while its tab is open (in the tree, in another window or
+  // by another user): the change event reloads its draft, which is now deleted.
+  $effect(() => {
+    for (const tab of services.tabs.tabs) {
+      if (services.editor.get(tab.id)?.node?.deletedAt) {
+        services.tabs.close(tab.id);
+        services.editor.forget(tab.id);
+      }
     }
   });
 }

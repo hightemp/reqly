@@ -1014,12 +1014,14 @@ impl<'a> TreeRepo<'a> {
     }
 
     /// Moves nodes and their live descendants to the trash.
-    pub async fn delete_nodes(&self, ids: &[Id]) -> CoreResult<()> {
+    /// Returns every node that was deleted, nested ones included.
+    pub async fn delete_nodes(&self, ids: &[Id]) -> CoreResult<Vec<Id>> {
         let mut tx = self.begin().await?;
         let now = self.clock.now().0;
+        let mut deleted = Vec::new();
         for node in Self::normalize_selection(&mut tx, ids).await? {
             for id in subtree(&mut tx, node.meta.id).await? {
-                sqlx::query(
+                let done = sqlx::query(
                     "UPDATE nodes SET deleted_at = ?, updated_at = ?, version = version + 1 \
                      WHERE id = ? AND deleted_at IS NULL",
                 )
@@ -1029,17 +1031,22 @@ impl<'a> TreeRepo<'a> {
                 .execute(&mut *tx)
                 .await
                 .map_err(db_err)?;
+                if done.rows_affected() > 0 {
+                    deleted.push(id);
+                }
             }
         }
         tx.commit().await.map_err(db_err)?;
-        Ok(())
+        Ok(deleted)
     }
 
     /// Restores nodes deleted in the same batch. If the parent is gone, the
-    /// node lands at the end of the collection root.
-    pub async fn restore_nodes(&self, ids: &[Id]) -> CoreResult<()> {
+    /// node lands at the end of the collection root. Returns every restored
+    /// node, nested ones included.
+    pub async fn restore_nodes(&self, ids: &[Id]) -> CoreResult<Vec<Id>> {
         let mut tx = self.begin().await?;
         let now = self.clock.now().0;
+        let mut restored = Vec::new();
         for &id in ids {
             let node = fetch_node(&mut tx, id).await?;
             let Some(batch) = node.meta.deleted_at else {
@@ -1062,7 +1069,7 @@ impl<'a> TreeRepo<'a> {
                 .map_err(db_err)?;
 
             for sub in subtree(&mut tx, id).await? {
-                sqlx::query(
+                let done = sqlx::query(
                     "UPDATE nodes SET deleted_at = NULL, updated_at = ?, version = version + 1 \
                      WHERE id = ? AND deleted_at = ?",
                 )
@@ -1072,10 +1079,13 @@ impl<'a> TreeRepo<'a> {
                 .execute(&mut *tx)
                 .await
                 .map_err(db_err)?;
+                if done.rows_affected() > 0 {
+                    restored.push(sub);
+                }
             }
         }
         tx.commit().await.map_err(db_err)?;
-        Ok(())
+        Ok(restored)
     }
 
     /// Top-level trash entries: deleted nodes whose parent was not deleted in the same batch.
