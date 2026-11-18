@@ -5,6 +5,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-18
+
+MCP server for AI agents, and tab bar fixes.
+
 ### Added
 
 - MCP server for AI agents on the desktop (`127.0.0.1`) and the server
@@ -431,7 +435,8 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/hightemp/reqly/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hightemp/reqly/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/hightemp/reqly/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/hightemp/reqly/compare/v0.9.0...v0.10.0
