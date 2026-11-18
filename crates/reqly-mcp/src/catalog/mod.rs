@@ -2,8 +2,10 @@
 
 mod edit;
 mod env;
+mod interop;
 mod mask;
 mod read;
+mod run;
 
 use reqly_api::commands::mcp::CATALOG;
 use reqly_core::{CoreError, CoreResult};
@@ -21,7 +23,9 @@ pub fn catalog_tools() -> Tools {
     for tool in read::tools()
         .into_iter()
         .chain(edit::tools())
+        .chain(run::tools())
         .chain(env::tools())
+        .chain(interop::tools())
     {
         tools.add(tool);
     }

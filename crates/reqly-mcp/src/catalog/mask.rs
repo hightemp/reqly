@@ -2,7 +2,10 @@
 //! header and parameter values, secret environment variables. Values that
 //! are only template references (`{{token}}`) reveal nothing and stay.
 
-use serde_json::{Map, Value};
+use reqly_core::CoreResult;
+use serde_json::{Map, Value, json};
+
+use crate::ToolContext;
 
 pub const HIDDEN: &str = "••••";
 
@@ -127,6 +130,90 @@ pub fn variables(data: &Value, secrets: &[String]) -> Value {
             })
             .collect(),
     )
+}
+
+/// Removes secret values from what a request produced (a rendered request,
+/// a response that echoes a header): the secret variables of the
+/// collection's environments and literal credentials of the request.
+#[derive(Default)]
+pub struct Scrub {
+    values: Vec<String>,
+}
+
+/// Shorter values are too likely to match ordinary text.
+const MIN_SECRET_LEN: usize = 4;
+
+impl Scrub {
+    pub async fn for_request(cx: &ToolContext, node: &Value) -> CoreResult<Self> {
+        let mut values = Vec::new();
+        let envs = cx
+            .call(
+                "environment.list",
+                json!({ "collectionId": node["collectionId"] }),
+            )
+            .await?;
+        for env in envs["collection"]
+            .as_array()
+            .into_iter()
+            .chain(envs["global"].as_array())
+            .flatten()
+        {
+            for name in env["secrets"].as_array().into_iter().flatten() {
+                let value = &env["data"][name.as_str().unwrap_or("")];
+                match value {
+                    Value::String(s) => values.push(s.clone()),
+                    Value::Null => {}
+                    other => values.push(other.to_string()),
+                }
+            }
+        }
+        literal_secrets(&node["data"], &mut values);
+        values.retain(|v| v.chars().count() >= MIN_SECRET_LEN && !only_template(v));
+        values.sort_by_key(|v| std::cmp::Reverse(v.len()));
+        values.dedup();
+        Ok(Self { values })
+    }
+
+    pub fn apply(&self, value: &mut Value) {
+        if self.values.is_empty() {
+            return;
+        }
+        match value {
+            Value::String(s) => {
+                for secret in &self.values {
+                    if s.contains(secret.as_str()) {
+                        *s = s.replace(secret.as_str(), HIDDEN);
+                    }
+                }
+            }
+            Value::Array(items) => items.iter_mut().for_each(|v| self.apply(v)),
+            Value::Object(map) => map.values_mut().for_each(|v| self.apply(v)),
+            _ => {}
+        }
+    }
+}
+
+/// Credentials typed into the request itself (not variables).
+fn literal_secrets(data: &Value, out: &mut Vec<String>) {
+    if let Value::Object(auth) = &data["auth"] {
+        let kind = auth.get("type").and_then(Value::as_str).unwrap_or("");
+        for (k, v) in auth {
+            let secret = AUTH_SECRETS.contains(&k.as_str()) && !(kind == "apiKey" && k == "key");
+            if let (true, Some(s)) = (secret, v.as_str()) {
+                out.push(s.to_string());
+            }
+        }
+    }
+    for list in ["headers", "params"] {
+        for row in data[list].as_array().into_iter().flatten() {
+            if row["name"].as_str().is_some_and(secret_name)
+                && let Some(v) = row["value"].as_str()
+            {
+                // "Bearer abc": the credential part matters.
+                out.push(v.rsplit(' ').next().unwrap_or(v).to_string());
+            }
+        }
+    }
 }
 
 #[cfg(test)]

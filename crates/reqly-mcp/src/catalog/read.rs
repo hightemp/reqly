@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use super::{args, invalid, mask, tool};
 use crate::{Annotations, Tool, ToolContext};
 
-const DEFAULT_BODY_BYTES: u64 = 16 * 1024;
+pub(super) const DEFAULT_BODY_BYTES: u64 = 16 * 1024;
 pub const MAX_BODY_BYTES: u64 = 1024 * 1024;
 
 pub fn tools() -> Vec<Tool> {
@@ -362,15 +362,25 @@ struct ResponseArgs {
 
 async fn get_response(cx: ToolContext, a: ResponseArgs) -> CoreResult<Value> {
     let record = cx.call("response.get", json!({ "id": a.id })).await?;
-    let max = a
-        .max_body_bytes
-        .unwrap_or(DEFAULT_BODY_BYTES)
-        .min(MAX_BODY_BYTES);
-    response_view(&cx, &record, max).await
+    let node = cx
+        .call("node.get", json!({ "id": record["requestId"] }))
+        .await?;
+    let scrub = mask::Scrub::for_request(&cx, &node).await?;
+    response_view(&cx, &record, body_limit(a.max_body_bytes), &scrub).await
+}
+
+/// `maxBodyBytes` with its default and ceiling.
+pub(super) fn body_limit(asked: Option<u64>) -> u64 {
+    asked.unwrap_or(DEFAULT_BODY_BYTES).min(MAX_BODY_BYTES)
 }
 
 /// A response record for an agent, with the body cut to `max` bytes.
-pub(super) async fn response_view(cx: &ToolContext, record: &Value, max: u64) -> CoreResult<Value> {
+pub(super) async fn response_view(
+    cx: &ToolContext,
+    record: &Value,
+    max: u64,
+    scrub: &mask::Scrub,
+) -> CoreResult<Value> {
     let size = record["bodySize"].as_u64().unwrap_or(0);
     let (body, encoding, truncated) = if record["bodyHash"].is_null() || size == 0 {
         (Value::Null, "none", false)
@@ -394,7 +404,7 @@ pub(super) async fn response_view(cx: &ToolContext, record: &Value, max: u64) ->
             ),
         }
     };
-    Ok(json!({
+    let mut view = json!({
         "id": record["id"],
         "requestId": record["requestId"],
         "createdAt": record["createdAt"],
@@ -416,7 +426,9 @@ pub(super) async fn response_view(cx: &ToolContext, record: &Value, max: u64) ->
             "url": record["requestSnapshot"]["url"],
         },
         "finalUrl": record["finalUrl"],
-    }))
+    });
+    scrub.apply(&mut view);
+    Ok(view)
 }
 
 /// UTF-8 text, allowing a character cut in half at the end of a truncated body.
