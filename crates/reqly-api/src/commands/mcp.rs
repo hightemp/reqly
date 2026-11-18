@@ -181,6 +181,8 @@ pub struct McpStatus {
     pub config: McpConfig,
     pub tools: Vec<McpToolInfo>,
     pub has_token: bool,
+    /// Where the endpoint is served (set by the app).
+    pub listen: McpListen,
     /// The plain token, only right after it was created.
     #[ts(optional)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -205,6 +207,7 @@ async fn status(ctx: &AppContext, token: Option<String>) -> CoreResult<McpStatus
             .collect(),
         config,
         has_token,
+        listen: ctx.mcp_listen.get(),
         token,
     })
 }
@@ -217,6 +220,33 @@ fn available(ctx: &AppContext) -> CoreResult<()> {
         ));
     }
     Ok(())
+}
+
+/// The endpoint the app serves: the desktop listener's address, or the
+/// error that kept it from starting (a busy port).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct McpListen {
+    pub endpoint: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Default)]
+pub struct McpListenState(Mutex<McpListen>);
+
+impl McpListenState {
+    pub fn get(&self) -> McpListen {
+        self.0.lock().map(|l| l.clone()).unwrap_or_default()
+    }
+
+    /// Stores the state and announces it as `mcp.listenChanged`.
+    pub fn set(&self, events: &EventBus, listen: McpListen) {
+        if let Ok(mut l) = self.0.lock() {
+            *l = listen.clone();
+        }
+        events.publish(crate::Event::new("mcp.listenChanged", &listen).by(None));
+    }
 }
 
 /// One `tools/call`, as shown in the settings log.

@@ -100,6 +100,8 @@ pub struct AppContext {
     pub sync: sync::client::SyncState,
     /// The last calls of MCP agents (ADR-014).
     pub mcp_log: mcp::McpLog,
+    /// Where the MCP endpoint is served (ADR-014).
+    pub mcp_listen: mcp::McpListenState,
 }
 
 impl AppContext {
@@ -125,6 +127,7 @@ impl AppContext {
             updates: update::UpdateConfig::from_env(),
             sync: Default::default(),
             mcp_log: Default::default(),
+            mcp_listen: Default::default(),
         }
     }
 

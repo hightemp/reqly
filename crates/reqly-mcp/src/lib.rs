@@ -10,12 +10,14 @@
 mod catalog;
 mod gate;
 mod http;
+mod local;
 mod protocol;
 mod tools;
 
 pub use catalog::{HIDDEN, catalog_tools};
 pub use gate::{SettingsGate, TokenKind};
 pub use http::{McpState, OriginPolicy, router};
+pub use local::serve_local;
 pub use protocol::{PROTOCOL_VERSION, SUPPORTED_VERSIONS};
 pub use reqly_api::commands::mcp::McpGroup as Group;
 pub use tools::{Annotations, Tool, ToolContext, Tools};

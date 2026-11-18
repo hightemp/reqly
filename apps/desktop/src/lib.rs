@@ -157,6 +157,14 @@ pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tau
         tauri::async_runtime::spawn(async move {
             reqly_api::commands::sync::client::spawn_loop(ctx);
         });
+        // The MCP endpoint for agents follows its settings (ADR-014).
+        #[cfg(desktop)]
+        {
+            let ctx = app.state::<Core>().ctx.clone();
+            tauri::async_runtime::spawn(async move {
+                reqly_mcp::serve_local(ctx);
+            });
+        }
         #[cfg(desktop)]
         updater::init(app)?;
         Ok(())

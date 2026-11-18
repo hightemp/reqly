@@ -5657,6 +5657,7 @@ version = "1.1.0"
 dependencies = [
  "reqly-api",
  "reqly-core",
+ "reqly-mcp",
  "reqly-storage",
  "serde",
  "serde_json",
@@ -5749,10 +5750,12 @@ dependencies = [
  "reqly-core",
  "reqly-storage",
  "reqly-testserver",
+ "reqwest",
  "serde",
  "serde_json",
  "tokio",
  "tower",
+ "tracing",
 ]
 
 [[package]]
