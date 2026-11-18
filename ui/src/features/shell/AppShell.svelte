@@ -78,7 +78,7 @@
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
-  let settingsInitial = $state<'general' | 'sync'>('general');
+  let settingsInitial = $state<'general' | 'sync' | 'mcp'>('general');
   let modal = $state<
     | 'palette'
     | 'cookies'
@@ -572,6 +572,18 @@
         {#if services.sync.state === 'conflicts'}{services.sync.status?.conflicts}{/if}
       </button>
     {/if}
+    {#if services.mcp?.active}
+      <button
+        type="button"
+        class="status-button mcp"
+        title={t('mcp.status')}
+        aria-label={t('mcp.status')}
+        onclick={() => {
+          settingsInitial = 'mcp';
+          settingsOpen = true;
+        }}>{t('settings.mcp')}</button
+      >
+    {/if}
     <IconButton icon="help" size={14} label={t('help.open')} onclick={() => help.open()} />
     <IconButton
       icon="settings"
@@ -676,6 +688,9 @@
   }
   .status-button.update {
     color: var(--c-accent);
+  }
+  .status-button.mcp {
+    color: var(--c-success);
   }
   .status-button.sync {
     display: inline-flex;

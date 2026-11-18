@@ -8,6 +8,7 @@ import { PreferencesStore } from './preferences.svelte';
 import { CollabService, userColor } from './collab/collab';
 import { AccountStore } from './stores/account.svelte';
 import { EditorStore } from './stores/editor.svelte';
+import { McpStore } from './stores/mcp.svelte';
 import { PresenceStore } from './stores/presence.svelte';
 import { EnvironmentStore } from './stores/environments.svelte';
 import { ResponseStore } from './stores/responses.svelte';
@@ -57,6 +58,8 @@ export interface Services {
   updates: UpdatesStore | null;
   /** Desktop ↔ server sync (desktop and Android only). */
   sync: SyncStore | null;
+  /** The MCP server for agents: locally and for server administrators. */
+  mcp: McpStore | null;
   environments: EnvironmentStore;
   account: AccountStore;
   collab: CollabService;
@@ -109,6 +112,8 @@ export async function createServices(
   const environments = new EnvironmentStore(transport);
   const sync = transport.kind === 'tauri' ? new SyncStore(transport) : null;
   await sync?.load().catch((e: unknown) => console.warn('[sync] status failed', e));
+  const mcp = !account.user || account.user.isAdmin ? new McpStore(transport) : null;
+  await mcp?.load().catch((e: unknown) => console.warn('[mcp] status failed', e));
   try {
     await workspace.load();
     if (workspace.activeCollectionId) {
@@ -142,6 +147,7 @@ export async function createServices(
           ? new UpdatesStore(transport, null, { server: true })
           : null,
     sync,
+    mcp,
     environments,
     account,
     collab,

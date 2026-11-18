@@ -14,6 +14,7 @@
   import History from './sections/History.svelte';
   import Http from './sections/Http.svelte';
   import Keybindings from './sections/Keybindings.svelte';
+  import Mcp from './sections/Mcp.svelte';
   import Templates from './sections/Templates.svelte';
 
   type Section =
@@ -26,6 +27,7 @@
     | 'history'
     | 'keybindings'
     | 'sync'
+    | 'mcp'
     | 'account'
     | 'admin'
     | 'about';
@@ -92,6 +94,15 @@
             keywords: [t('sync.heading'), t('sync.url'), t('sync.now'), t('sync.secrets')].join(
               ' ',
             ),
+          },
+        ]
+      : []),
+    ...(services.mcp?.available
+      ? [
+          {
+            id: 'mcp' as const,
+            label: t('settings.mcp'),
+            keywords: [t('mcp.enable'), t('mcp.token'), t('mcp.tools'), t('mcp.clients')].join(' '),
           },
         ]
       : []),
@@ -176,6 +187,8 @@
         <Account {services} />
       {:else if section === 'admin'}
         <Admin {services} />
+      {:else if section === 'mcp' && services.mcp}
+        <Mcp mcp={services.mcp} multiUser={!!services.account.user} />
       {:else if section === 'sync' && services.sync}
         <SyncSettings sync={services.sync} />
       {:else if section === 'keybindings'}
