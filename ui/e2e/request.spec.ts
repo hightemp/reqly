@@ -147,3 +147,46 @@ test('template completion and hover tooltips are not clipped by the input', asyn
   await page.keyboard.press('Escape');
   await closeAllTabs(page);
 });
+
+test('many open tabs scroll with the wheel and the arrows', async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 700 });
+  await page.goto('/');
+  await closeAllTabs(page);
+  for (let i = 0; i < 12; i++) {
+    await page.getByRole('button', { name: 'Create' }).click();
+    await page.getByRole('menuitem', { name: 'New request' }).click();
+  }
+  const strip = page.getByRole('tablist', { name: 'Open requests' });
+  await expect(strip.getByRole('tab')).toHaveCount(12);
+  const left = page.getByRole('button', { name: 'Scroll tabs left' });
+  const right = page.getByRole('button', { name: 'Scroll tabs right' });
+  const scrollLeft = () => strip.evaluate((el) => el.scrollLeft);
+
+  // The newest tab is active and scrolled into view: hidden tabs are on the left.
+  await expect(left).toBeEnabled();
+  await expect(right).toBeDisabled();
+
+  // A vertical mouse wheel scrolls the strip sideways.
+  const before = await scrollLeft();
+  await strip.hover();
+  await page.mouse.wheel(0, -300);
+  await expect.poll(scrollLeft).toBeLessThan(before);
+  await expect(right).toBeEnabled();
+
+  // The arrows page through the tabs.
+  while (await left.isEnabled()) {
+    await left.click();
+    await page.waitForTimeout(400); // smooth scrolling
+  }
+  await expect.poll(scrollLeft).toBe(0);
+  await expect(left).toBeDisabled();
+  await right.click();
+  await expect.poll(scrollLeft).toBeGreaterThan(0);
+
+  // No arrows once the tabs fit again.
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await expect(left).toBeHidden();
+  await closeAllTabs(page);
+});

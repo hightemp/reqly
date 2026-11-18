@@ -124,6 +124,8 @@ export const en = {
     unpin: 'Unpin',
     none: 'No open requests',
     unsaved: 'Unsaved changes',
+    scrollLeft: 'Scroll tabs left',
+    scrollRight: 'Scroll tabs right',
   },
   auth: {
     type: 'Type',

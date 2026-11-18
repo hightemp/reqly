@@ -20,6 +20,8 @@
     plus: 'M12 5v14M5 12h14',
     search: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M20 20l-4-4',
     more: 'M5 12h.01M12 12h.01M19 12h.01',
+    'chevron-left': 'M15 6l-6 6 6 6',
+    'chevron-right': 'M9 6l6 6-6 6',
     tree: 'M4 5h6 M8 5v14 M8 12h6 M8 19h6 M14 9h6v6h-6z',
     list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
     send: 'M5 12h14 M13 6l6 6-6 6',

@@ -5,6 +5,11 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Many open tabs can be scrolled: the mouse wheel scrolls the tab bar sideways,
+  and arrow buttons appear when the tabs do not fit.
+
 ## [1.1.0] — 2026-11-17
 
 Import from `.http` files and the clipboard, and the in-app help.

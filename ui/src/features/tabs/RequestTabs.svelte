@@ -11,12 +11,50 @@
   import { contextMenu, menus, type MenuEntry } from '$lib/ui/overlay/menus.svelte';
   import Spinner from '$lib/ui/Spinner.svelte';
   import { closeTab, tabInfo, trackTabs } from './info.svelte';
+  import { overflow, wheelDelta } from './scroll';
 
   let { services }: { services: Services } = $props();
   const tabs = $derived(services.tabs);
   let strip: HTMLDivElement | null = $state(null);
   let dragFrom = $state<number | null>(null);
   let dragOver = $state<number | null>(null);
+  let hidden = $state({ start: false, end: false });
+
+  function measure() {
+    if (!strip) return;
+    const next = overflow(strip);
+    if (next.start !== hidden.start || next.end !== hidden.end) hidden = next;
+  }
+
+  function scrollPage(direction: -1 | 1) {
+    strip?.scrollBy({ left: direction * strip.clientWidth * 0.8, behavior: 'smooth' });
+  }
+
+  // A mouse wheel over the strip scrolls it sideways.
+  function onWheel(e: WheelEvent) {
+    if (!strip || e.ctrlKey) return;
+    const { start, end } = overflow(strip);
+    const delta = wheelDelta(e, strip.clientWidth);
+    if ((delta < 0 && !start) || (delta > 0 && !end) || delta === 0) return;
+    e.preventDefault();
+    strip.scrollLeft += delta;
+  }
+
+  // Re-measure when the strip or any tab changes size.
+  $effect(() => {
+    const el = strip;
+    void tabs.tabs.length;
+    if (!el) return;
+    el.addEventListener('wheel', onWheel, { passive: false });
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    for (const child of el.children) observer.observe(child);
+    measure();
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      observer.disconnect();
+    };
+  });
 
   // svelte-ignore state_referenced_locally
   trackTabs(services);
@@ -122,7 +160,23 @@
 
 {#if tabs.tabs.length > 0}
   <div class="bar">
-    <div bind:this={strip} class="strip" role="tablist" aria-label={t('tabs.label')}>
+    {#if hidden.start || hidden.end}
+      <IconButton
+        icon="chevron-left"
+        disabled={!hidden.start}
+        size={14}
+        class="scroll"
+        label={t('tabs.scrollLeft')}
+        onclick={() => scrollPage(-1)}
+      />
+    {/if}
+    <div
+      bind:this={strip}
+      class="strip"
+      role="tablist"
+      aria-label={t('tabs.label')}
+      onscroll={measure}
+    >
       {#each tabs.tabs as tab, i (tab.id)}
         {@const meta = info(tab)}
         <div
@@ -177,6 +231,16 @@
         </div>
       {/each}
     </div>
+    {#if hidden.start || hidden.end}
+      <IconButton
+        icon="chevron-right"
+        disabled={!hidden.end}
+        size={14}
+        class="scroll"
+        label={t('tabs.scrollRight')}
+        onclick={() => scrollPage(1)}
+      />
+    {/if}
     <IconButton
       icon="more"
       size={14}
@@ -205,6 +269,9 @@
     display: flex;
     overflow-x: auto;
     scrollbar-width: none;
+  }
+  .bar :global(.scroll) {
+    flex: none;
   }
   .strip::-webkit-scrollbar {
     display: none;

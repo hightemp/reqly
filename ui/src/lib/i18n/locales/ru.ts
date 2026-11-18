@@ -141,6 +141,8 @@ export const ru: Translation<Messages> = {
     unpin: 'Открепить',
     none: 'Нет открытых запросов',
     unsaved: 'Есть несохранённые изменения',
+    scrollLeft: 'Прокрутить вкладки влево',
+    scrollRight: 'Прокрутить вкладки вправо',
   },
   auth: {
     type: 'Тип',
