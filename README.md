@@ -58,6 +58,9 @@ Android and a self-hosted web version served by a single Rust binary.
   ([docs/updates.md](docs/updates.md))
 - Offline-first sync of desktop and Android workspaces with a server, with
   merges and a conflict dialog ([docs/sync.md](docs/sync.md))
+- MCP server for AI agents (Claude Code, Cursor, VS Code): browse, edit,
+  send and run requests, with per-tool permissions, masked secrets and a
+  call log; off by default ([docs/mcp.md](docs/mcp.md))
 - 10 built-in themes plus a theme editor (JSON import/export), density,
   fonts, zoom; custom window frame; remappable shortcuts; English and Russian
 - Variables and environments like Insomnia: global, base and switchable

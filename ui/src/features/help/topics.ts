@@ -15,6 +15,7 @@ export const TOPIC_IDS = [
   'testing',
   'collaboration',
   'sync',
+  'mcp',
   'settings',
   'shortcuts',
 ] as const;

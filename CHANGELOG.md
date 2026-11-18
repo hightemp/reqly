@@ -5,6 +5,16 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- MCP server for AI agents on the desktop (`127.0.0.1`) and the server
+  (`/mcp`): 24 tools to browse, edit, send and run requests, manage
+  environments, import and export; off by default, tools chosen per group
+  or one by one in **Settings → MCP**, MCP token or personal API tokens,
+  secrets masked, call log and a status bar indicator (ADR-014,
+  [docs/mcp.md](docs/mcp.md)).
+- `environment.get` command.
+
 ### Fixed
 
 - Many open tabs can be scrolled: the mouse wheel scrolls the tab bar sideways,

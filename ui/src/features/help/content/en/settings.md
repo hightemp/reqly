@@ -13,6 +13,7 @@ Open **Settings** with `Ctrl+,` or the gear in the status bar.
 | History            | how long and how many responses to keep                |
 | Keyboard shortcuts | change any [shortcut](help:shortcuts)                  |
 | Sync               | [desktop sync](help:sync) with a server                |
+| MCP                | the [MCP server](help:mcp) for AI agents               |
 | About & data       | version, data folder, cleanup, updates                 |
 
 The status bar switches the theme, the language and the response position

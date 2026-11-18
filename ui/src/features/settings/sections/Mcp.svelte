@@ -14,6 +14,7 @@
   import Switch from '$lib/ui/Switch.svelte';
   import { dialogs } from '$lib/ui/overlay/dialogs.svelte';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
+  import HelpButton from '../../help/HelpButton.svelte';
   import Field from '../Field.svelte';
 
   let {
@@ -86,7 +87,10 @@
   onMount(() => void run(() => mcp.load()));
 </script>
 
-<p class="intro">{t('mcp.intro')}</p>
+<div class="intro">
+  <p>{t('mcp.intro')}</p>
+  <HelpButton page="mcp" />
+</div>
 
 <Field label={t('mcp.enable')} hint={t('mcp.enableHint')}>
   <Switch
@@ -256,8 +260,15 @@
 
 <style>
   .intro {
-    margin: 0 0 var(--space-2);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
     color: var(--c-fg-muted);
+  }
+  .intro p {
+    margin: 0;
+    flex: 1;
   }
   .row {
     display: flex;
