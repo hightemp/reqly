@@ -7,13 +7,16 @@
 //! for the user. The apps mount [`router`] and decide who may call it
 //! through a [`Gate`].
 
+mod gate;
 mod http;
 mod protocol;
 mod tools;
 
+pub use gate::{SettingsGate, TokenKind};
 pub use http::{McpState, OriginPolicy, router};
 pub use protocol::{PROTOCOL_VERSION, SUPPORTED_VERSIONS};
-pub use tools::{Annotations, Group, Tool, ToolContext, Tools};
+pub use reqly_api::commands::mcp::McpGroup as Group;
+pub use tools::{Annotations, Tool, ToolContext, Tools};
 
 use std::collections::BTreeSet;
 use std::future::Future;

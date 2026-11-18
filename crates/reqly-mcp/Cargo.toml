@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 reqly-api.workspace = true
 reqly-core.workspace = true
+reqly-storage.workspace = true
 axum.workspace = true
 serde.workspace = true
 serde_json.workspace = true

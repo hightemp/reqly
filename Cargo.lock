@@ -5746,6 +5746,7 @@ dependencies = [
  "axum",
  "reqly-api",
  "reqly-core",
+ "reqly-storage",
  "serde",
  "serde_json",
  "tokio",

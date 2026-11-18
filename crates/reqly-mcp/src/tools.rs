@@ -9,18 +9,7 @@ use reqly_core::CoreResult;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::BoxFuture;
-
-/// Settings groups of tools (PRD §7.22).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Group {
-    Read,
-    Edit,
-    Run,
-    Environments,
-    Interop,
-}
+use crate::{BoxFuture, Group};
 
 /// MCP tool annotations: hints for clients, not guarantees.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

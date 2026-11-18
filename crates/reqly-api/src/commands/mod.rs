@@ -5,6 +5,7 @@ pub mod graphql;
 pub mod grpc;
 pub mod http;
 pub mod interop;
+pub mod mcp;
 pub mod oauth2;
 pub mod presence;
 pub mod runner;
@@ -97,6 +98,8 @@ pub struct AppContext {
     pub updates: update::UpdateConfig,
     /// Desktop ↔ server sync rounds and their status (ADR-013).
     pub sync: sync::client::SyncState,
+    /// The last calls of MCP agents (ADR-014).
+    pub mcp_log: mcp::McpLog,
 }
 
 impl AppContext {
@@ -121,6 +124,7 @@ impl AppContext {
             runs: Default::default(),
             updates: update::UpdateConfig::from_env(),
             sync: Default::default(),
+            mcp_log: Default::default(),
         }
     }
 
@@ -172,6 +176,7 @@ pub fn registry() -> Registry<AppContext> {
     runner::register(&mut r);
     update::register(&mut r);
     sync::register(&mut r);
+    mcp::register(&mut r);
     r.register::<SearchNodes>();
     r
 }
@@ -275,6 +280,16 @@ pub struct SettingsGetOutput {
     pub value: Option<Value>,
 }
 
+/// MCP settings and its token have their own commands (`mcp.*`).
+fn reserved(key: &str) -> CoreResult<()> {
+    if mcp::reserved_key(key) {
+        return Err(
+            CoreError::new("settings.reserved", "use the mcp.* commands").with_param("key", key),
+        );
+    }
+    Ok(())
+}
+
 /// Reads a JSON setting; `value` is `null` when the key is absent.
 pub struct SettingsGet;
 
@@ -284,6 +299,7 @@ impl Command<AppContext> for SettingsGet {
     type Output = SettingsGetOutput;
 
     async fn run(ctx: &AppContext, input: SettingsGetInput) -> CoreResult<SettingsGetOutput> {
+        reserved(&input.key)?;
         let value = crate::access::setting(&ctx.storage, &input.key).await?;
         Ok(SettingsGetOutput { value })
     }
@@ -314,6 +330,7 @@ impl Command<AppContext> for SettingsSet {
     type Output = Empty;
 
     async fn run(ctx: &AppContext, input: SettingsSetInput) -> CoreResult<Empty> {
+        reserved(&input.key)?;
         SettingsRepo::new(&ctx.storage)
             .set(
                 &crate::access::settings_key(&input.key),

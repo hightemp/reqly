@@ -65,6 +65,10 @@ import type { Invite } from "./Invite";
 import type { InviteCreated } from "./InviteCreated";
 import type { InviteIdInput } from "./InviteIdInput";
 import type { InviteTokenInput } from "./InviteTokenInput";
+import type { McpCall } from "./McpCall";
+import type { McpConfig } from "./McpConfig";
+import type { McpStatus } from "./McpStatus";
+import type { McpToken } from "./McpToken";
 import type { Member } from "./Member";
 import type { MembersInviteInput } from "./MembersInviteInput";
 import type { MembersListInput } from "./MembersListInput";
@@ -273,6 +277,10 @@ export type Commands = {
   "sync.conflicts": { input: Empty; output: Array<SyncConflict> };
   "sync.resolve": { input: SyncResolveInput; output: SyncStatus };
   "sync.log": { input: Empty; output: Array<SyncLogEntry> };
+  "mcp.config": { input: Empty; output: McpStatus };
+  "mcp.setConfig": { input: McpConfig; output: McpStatus };
+  "mcp.regenerateToken": { input: Empty; output: McpToken };
+  "mcp.log": { input: Empty; output: Array<McpCall> };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

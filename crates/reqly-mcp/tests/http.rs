@@ -68,14 +68,19 @@ fn tools() -> Tools {
 }
 
 async fn app_with(gate: TestGate, origin: OriginPolicy) -> axum::Router {
+    app_and_ctx(gate, origin).await.0
+}
+
+async fn app_and_ctx(gate: TestGate, origin: OriginPolicy) -> (axum::Router, Arc<AppContext>) {
+    let ctx = Arc::new(AppContext::for_tests().await);
     let state = McpState {
-        ctx: Arc::new(AppContext::for_tests().await),
+        ctx: ctx.clone(),
         registry: Arc::new(registry()),
         tools: Arc::new(tools()),
         gate: Arc::new(gate),
         origin,
     };
-    router(state)
+    (router(state), ctx)
 }
 
 async fn app() -> axum::Router {
@@ -424,4 +429,70 @@ async fn same_host_policy_accepts_only_the_servers_own_origin() {
         status_with_origin(&app, "https://evil.example", "reqly.example.com").await,
         StatusCode::FORBIDDEN
     );
+}
+
+#[tokio::test]
+async fn tool_calls_are_logged_without_secrets() {
+    let (app, ctx) = app_and_ctx(
+        TestGate {
+            disabled: false,
+            allowed: Allowed::All,
+        },
+        OriginPolicy::Loopback,
+    )
+    .await;
+    let mut events = ctx.events.subscribe();
+    rpc(
+        &app,
+        request(
+            1,
+            "tools/call",
+            json!({
+                "name": "echo",
+                "arguments": {
+                    "text": "hello",
+                    "values": { "api_key": "s3cr3t" },
+                    "auth": { "password": "hunter2", "username": "ada" },
+                    "long": "x".repeat(1000)
+                }
+            }),
+        ),
+    )
+    .await;
+    rpc(
+        &app,
+        request(2, "tools/call", json!({ "name": "fail", "arguments": {} })),
+    )
+    .await;
+    // Listing tools is not a call.
+    rpc(&app, request(3, "tools/list", json!({}))).await;
+
+    let log = ctx.mcp_log.recent();
+    assert_eq!(log.len(), 2);
+    let (fail, echo) = (&log[0], &log[1]);
+    assert_eq!(echo.tool, "echo");
+    assert!(echo.ok);
+    assert_eq!(echo.user, None);
+    assert!(echo.arguments.contains("hello"), "{}", echo.arguments);
+    assert!(echo.arguments.contains("ada"), "{}", echo.arguments);
+    for secret in ["s3cr3t", "hunter2"] {
+        assert!(!echo.arguments.contains(secret), "{}", echo.arguments);
+    }
+    assert!(
+        echo.arguments.chars().count() <= 301,
+        "{}",
+        echo.arguments.len()
+    );
+    assert_eq!(fail.tool, "fail");
+    assert!(!fail.ok);
+    assert!(
+        fail.error
+            .as_deref()
+            .unwrap()
+            .contains("command.invalid_input")
+    );
+
+    let event = events.recv().await.unwrap();
+    assert_eq!(event.topic, "mcp.call");
+    assert_eq!(event.payload["tool"], "echo");
 }

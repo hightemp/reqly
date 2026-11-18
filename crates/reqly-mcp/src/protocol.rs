@@ -1,6 +1,9 @@
 //! JSON-RPC messages of MCP: lifecycle, ping and tools.
 
-use serde_json::{Value, json};
+use std::time::Instant;
+
+use reqly_api::commands::mcp::McpCall;
+use serde_json::{Map, Value, json};
 
 use crate::Session;
 use crate::tools::{ToolContext, Tools};
@@ -112,7 +115,27 @@ async fn call_tool(
         None | Some(Value::Null) => json!({}),
         Some(a) => a.clone(),
     };
+    let started = Instant::now();
+    let at = cx.ctx.clock.now().0;
+    let ctx = cx.ctx.clone();
+    let user = cx.caller.user_id();
+    let arguments = summary(&args);
     let outcome = tool.run(cx, args).await;
+    ctx.mcp_log.record(
+        &ctx.events,
+        McpCall {
+            at,
+            tool: name.to_string(),
+            arguments,
+            ok: outcome.is_ok(),
+            error: outcome
+                .as_ref()
+                .err()
+                .map(|e| format!("{}: {}", e.code, e.message)),
+            duration_ms: started.elapsed().as_millis() as u64,
+            user,
+        },
+    );
     result(
         id,
         match outcome {
@@ -137,4 +160,120 @@ async fn call_tool(
             }
         },
     )
+}
+
+const SUMMARY_CHARS: usize = 300;
+const HIDDEN: &str = "••••";
+
+/// Arguments for the call log: secrets hidden, cut to a few hundred chars.
+fn summary(args: &Value) -> String {
+    let text = redact(args).to_string();
+    if text.chars().count() <= SUMMARY_CHARS {
+        return text;
+    }
+    let mut cut: String = text.chars().take(SUMMARY_CHARS).collect();
+    cut.push('…');
+    cut
+}
+
+/// Variable values (`values`) and anything named like a credential.
+fn redact(value: &Value) -> Value {
+    match value {
+        // A header or parameter row: `{ "key": "Authorization", "value": … }`.
+        Value::Object(map)
+            if map
+                .get("key")
+                .and_then(Value::as_str)
+                .is_some_and(secret_key)
+                && map.contains_key("value") =>
+        {
+            let mut map = map.clone();
+            map.insert("value".into(), Value::String(HIDDEN.into()));
+            Value::Object(map)
+        }
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .map(|(k, v)| {
+                    let v = if k == "values" {
+                        hide_all(v)
+                    } else if secret_key(k) {
+                        Value::String(HIDDEN.into())
+                    } else {
+                        redact(v)
+                    };
+                    (k.clone(), v)
+                })
+                .collect::<Map<_, _>>(),
+        ),
+        Value::Array(items) => Value::Array(items.iter().map(redact).collect()),
+        other => other.clone(),
+    }
+}
+
+/// Keeps the keys of an object, hides every value.
+fn hide_all(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => Value::Object(
+            map.keys()
+                .map(|k| (k.clone(), Value::String(HIDDEN.into())))
+                .collect(),
+        ),
+        _ => Value::String(HIDDEN.into()),
+    }
+}
+
+fn secret_key(key: &str) -> bool {
+    let key = key.to_ascii_lowercase();
+    [
+        "password",
+        "secret",
+        "token",
+        "apikey",
+        "api_key",
+        "api-key",
+        "privatekey",
+        "passphrase",
+        "authorization",
+        "cookie",
+    ]
+    .iter()
+    .any(|s| key.contains(s))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn redacts_credentials_and_variable_values() {
+        let out = redact(&json!({
+            "environmentId": "e1",
+            "values": { "base_url": "https://x", "token": "t" },
+            "request": { "auth": { "type": "bearer", "token": "abc", "username": "u" } },
+            "headers": [{ "key": "X-Api-Key", "value": "v" }],
+            "clientSecret": "s",
+        }));
+        assert_eq!(out["environmentId"], "e1");
+        assert_eq!(
+            out["values"],
+            json!({ "base_url": HIDDEN, "token": HIDDEN })
+        );
+        assert_eq!(out["request"]["auth"]["token"], HIDDEN);
+        assert_eq!(out["request"]["auth"]["username"], "u");
+        assert_eq!(out["request"]["auth"]["type"], "bearer");
+        assert_eq!(out["clientSecret"], HIDDEN);
+        assert_eq!(
+            out["headers"][0],
+            json!({ "key": "X-Api-Key", "value": HIDDEN })
+        );
+        let row = redact(&json!({ "key": "Accept", "value": "*/*" }));
+        assert_eq!(row["value"], "*/*");
+    }
+
+    #[test]
+    fn cuts_long_summaries() {
+        let s = summary(&json!({ "text": "é".repeat(500) }));
+        assert_eq!(s.chars().count(), SUMMARY_CHARS + 1);
+        assert!(s.ends_with('…'));
+    }
 }

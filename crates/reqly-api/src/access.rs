@@ -88,6 +88,10 @@ pub const RULES: &[(&str, Need)] = {
         ("app.ping", Global),
         ("settings.get", Global),
         ("settings.set", Global),
+        ("mcp.config", Admin),
+        ("mcp.setConfig", Admin),
+        ("mcp.regenerateToken", Admin),
+        ("mcp.log", Admin),
         ("template.functions", Global),
         ("curl.parse", Global),
         ("codegen.targets", Global),
@@ -372,6 +376,9 @@ pub async fn event_visible(
     };
     if event.topic == "workspaces.changed" {
         return true;
+    }
+    if event.topic.starts_with("mcp.") {
+        return admin;
     }
     if !SHARED_EVENTS.contains(&event.topic.as_str()) {
         return event.actor == Some(id);
