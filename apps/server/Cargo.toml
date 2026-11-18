@@ -14,6 +14,7 @@ path = "src/main.rs"
 reqly-api.workspace = true
 reqly-core.workspace = true
 reqly-http.workspace = true
+reqly-mcp.workspace = true
 reqly-storage.workspace = true
 anyhow.workspace = true
 axum.workspace = true

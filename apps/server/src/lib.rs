@@ -69,7 +69,32 @@ impl AppState {
     }
 }
 
+/// The MCP endpoint (ADR-014): personal API tokens in `multi` mode, the MCP
+/// token otherwise. It answers 404 while MCP is disabled.
+fn mcp_router(state: &AppState) -> axum::Router {
+    let kind = if state.auth.mode == AuthMode::Multi {
+        reqly_mcp::TokenKind::UserApi
+    } else {
+        reqly_mcp::TokenKind::Mcp
+    };
+    state.ctx.mcp_listen.set(
+        &state.ctx.events,
+        reqly_api::commands::mcp::McpListen {
+            endpoint: Some("/mcp".into()),
+            error: None,
+        },
+    );
+    reqly_mcp::router(reqly_mcp::McpState {
+        ctx: state.ctx.clone(),
+        registry: state.registry.clone(),
+        tools: Arc::new(reqly_mcp::catalog_tools()),
+        gate: Arc::new(reqly_mcp::SettingsGate::new(state.ctx.clone(), kind)),
+        origin: reqly_mcp::OriginPolicy::SameHost,
+    })
+}
+
 pub fn router(state: AppState) -> axum::Router {
+    let mcp = mcp_router(&state);
     axum::Router::new()
         .route(
             "/healthz",
@@ -82,6 +107,7 @@ pub fn router(state: AppState) -> axum::Router {
             ),
         )
         .fallback(static_files::serve)
-        .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state)
+        .merge(mcp)
+        .layer(tower_http::trace::TraceLayer::new_for_http())
 }
