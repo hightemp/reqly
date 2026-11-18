@@ -195,6 +195,7 @@ export type Commands = {
   "curl.parse": { input: CurlParseInput; output: Array<CurlParseOutput> };
   "request.toCurl": { input: RequestIdInput; output: CurlOutput };
   "environment.list": { input: CollectionIdInput; output: EnvironmentListOutput };
+  "environment.get": { input: IdInput; output: Environment };
   "environment.create": { input: EnvironmentCreateInput; output: Environment };
   "environment.update": { input: EnvironmentUpdateInput; output: Environment };
   "environment.duplicate": { input: IdInput; output: Environment };

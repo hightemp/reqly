@@ -29,6 +29,7 @@ use crate::registry::{Command, Registry};
 
 pub fn register(r: &mut Registry<AppContext>) {
     r.register::<EnvironmentList>()
+        .register::<EnvironmentGet>()
         .register::<EnvironmentCreate>()
         .register::<EnvironmentUpdate>()
         .register::<EnvironmentDuplicate>()
@@ -867,6 +868,18 @@ command!(
             .await?;
         changed(ctx, &env);
         Ok(env)
+    }
+);
+
+command!(
+    EnvironmentGet,
+    "environment.get",
+    IdInput,
+    Environment,
+    |ctx, input| {
+        EnvironmentRepo::new(&ctx.storage, ctx.clock.as_ref())
+            .get(input.id)
+            .await
     }
 );
 

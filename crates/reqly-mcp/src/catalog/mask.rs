@@ -111,7 +111,6 @@ fn mask_auth(auth: &mut Value) {
 }
 
 /// Environment variables with the secret ones hidden.
-#[allow(dead_code)] // get_variables (T13.4)
 pub fn variables(data: &Value, secrets: &[String]) -> Value {
     let Value::Object(map) = data else {
         return data.clone();

@@ -1,5 +1,7 @@
 //! The tools of the catalog (`reqly_api::commands::mcp::CATALOG`).
 
+mod edit;
+mod env;
 mod mask;
 mod read;
 
@@ -16,7 +18,11 @@ pub(crate) use mask::secret_name;
 /// Every tool an MCP server of Reqly offers.
 pub fn catalog_tools() -> Tools {
     let mut tools = Tools::new();
-    for tool in read::tools() {
+    for tool in read::tools()
+        .into_iter()
+        .chain(edit::tools())
+        .chain(env::tools())
+    {
         tools.add(tool);
     }
     tools

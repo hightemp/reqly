@@ -139,6 +139,7 @@ pub const RULES: &[(&str, Need)] = {
         ("history.sharing", Read),
         ("cookies.list", Read),
         ("environment.list", Read),
+        ("environment.get", Read),
         // The active environment is a setting of the caller.
         ("environment.setActive", Read),
         ("environment.setActiveGlobal", Read),
