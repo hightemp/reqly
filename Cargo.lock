@@ -5740,6 +5740,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "reqly-mcp"
+version = "1.1.0"
+dependencies = [
+ "axum",
+ "reqly-api",
+ "reqly-core",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+]
+
+[[package]]
 name = "reqly-protocols"
 version = "1.1.0"
 dependencies = [
