@@ -85,3 +85,36 @@ test('touch: finger-sized rows and long press for the context menu', async ({ pa
   await expect(drawer).toBeVisible();
   await closeAllRequests(page);
 });
+
+test('compact layout: the AI chat is a pane while it is on', async ({ page }) => {
+  const setConfig = (enabled: boolean) =>
+    page.request.post('/api/v1/cmd/ai.setConfig', {
+      data: {
+        enabled,
+        providers: [
+          {
+            id: 'local',
+            name: 'Local',
+            preset: 'ollama',
+            baseUrl: 'http://127.0.0.1:9/v1',
+            headers: [],
+          },
+        ],
+        defaultModel: { providerId: 'local', model: 'llama3.2' },
+      },
+    });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'AI', exact: true })).toHaveCount(0);
+  expect((await setConfig(true)).ok()).toBe(true);
+  await page.reload();
+  const tab = page.getByRole('button', { name: 'AI', exact: true });
+  await tab.click();
+  await expect(tab).toHaveAttribute('aria-pressed', 'true');
+  const panel = page.getByRole('region', { name: 'AI chat' });
+  await expect(panel.getByRole('textbox', { name: /Ask about your requests/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Request', exact: true }).click();
+  await expect(panel).toBeHidden();
+  expect((await setConfig(false)).ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'AI', exact: true })).toHaveCount(0);
+});

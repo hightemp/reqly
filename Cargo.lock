@@ -5833,6 +5833,7 @@ dependencies = [
  "reqly-http",
  "reqly-mcp",
  "reqly-storage",
+ "reqly-testserver",
  "reqwest",
  "rust-embed",
  "serde",

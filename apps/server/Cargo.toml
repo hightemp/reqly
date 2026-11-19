@@ -37,6 +37,7 @@ reqly-api = { workspace = true, features = ["contract"] }
 reqwest = { version = "0.13", features = ["json"] }
 tempfile.workspace = true
 tokio-tungstenite = "0.29"
+reqly-testserver.workspace = true
 tower = { version = "0.5", features = ["util"] }
 
 [lints]
