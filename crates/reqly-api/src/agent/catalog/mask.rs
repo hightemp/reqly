@@ -5,7 +5,7 @@
 use reqly_core::CoreResult;
 use serde_json::{Map, Value, json};
 
-use crate::ToolContext;
+use crate::agent::ToolContext;
 
 pub const HIDDEN: &str = "••••";
 
@@ -144,7 +144,7 @@ pub struct Scrub {
 const MIN_SECRET_LEN: usize = 4;
 
 impl Scrub {
-    pub async fn for_request(cx: &ToolContext, node: &Value) -> CoreResult<Self> {
+    pub async fn for_request(cx: &ToolContext<'_>, node: &Value) -> CoreResult<Self> {
         let mut values = Vec::new();
         let envs = cx
             .call(

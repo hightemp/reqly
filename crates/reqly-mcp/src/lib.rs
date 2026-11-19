@@ -2,33 +2,24 @@
 //!
 //! Streamable HTTP without sessions or streams: every `POST /mcp` carries one
 //! JSON-RPC message and gets a JSON response (or `202` for notifications).
-//! Tools are a curated set implemented on top of the command registry, so
-//! access checks, the trash, history and live UI updates work as they do
-//! for the user. The apps mount [`router`] and decide who may call it
-//! through a [`Gate`].
+//! Tools are the agent catalog of `reqly-api`, shared with the AI chat.
+//! The apps mount [`router`] and decide who may call it through a [`Gate`].
 
-mod catalog;
 mod gate;
 mod http;
 mod local;
 mod protocol;
-mod tools;
 
-pub use catalog::{HIDDEN, catalog_tools};
 pub use gate::{SettingsGate, TokenKind};
 pub use http::{McpState, OriginPolicy, router};
 pub use local::serve_local;
 pub use protocol::{PROTOCOL_VERSION, SUPPORTED_VERSIONS};
-pub use reqly_api::commands::mcp::McpGroup as Group;
-pub use tools::{Annotations, Tool, ToolContext, Tools};
-
-use std::collections::BTreeSet;
-use std::future::Future;
-use std::pin::Pin;
+pub use reqly_api::agent::{
+    Annotations, BoxFuture, Group, HIDDEN, Tool, ToolContext, Tools, catalog_tools,
+};
 
 use reqly_api::access::Caller;
-
-pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+use std::collections::BTreeSet;
 
 /// Which tools a session may see and call.
 #[derive(Debug, Clone, PartialEq, Eq)]

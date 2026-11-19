@@ -1,4 +1,4 @@
-//! The tools of the catalog (`reqly_api::commands::mcp::CATALOG`).
+//! The tools of the catalog (`crate::commands::mcp::CATALOG`).
 
 mod edit;
 mod env;
@@ -7,15 +7,15 @@ mod mask;
 mod read;
 mod run;
 
-use reqly_api::commands::mcp::CATALOG;
+use crate::commands::mcp::CATALOG;
 use reqly_core::{CoreError, CoreResult};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use crate::{Annotations, BoxFuture, Tool, ToolContext, Tools};
+use crate::agent::{Annotations, BoxFuture, Tool, ToolContext, Tools};
 
 pub use mask::HIDDEN;
-pub(crate) use mask::secret_name;
+pub use mask::secret_name;
 
 /// Every tool an MCP server of Reqly offers.
 pub fn catalog_tools() -> Tools {
@@ -41,7 +41,10 @@ fn tool<F>(
     handler: F,
 ) -> Tool
 where
-    F: Fn(ToolContext, Value) -> BoxFuture<'static, CoreResult<Value>> + Send + Sync + 'static,
+    F: for<'a> Fn(ToolContext<'a>, Value) -> BoxFuture<'a, CoreResult<Value>>
+        + Send
+        + Sync
+        + 'static,
 {
     let group = CATALOG
         .iter()

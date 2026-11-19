@@ -1,6 +1,6 @@
-//! MCP settings, token and call log (ADR-014). The protocol and the tools
-//! live in `reqly-mcp`; the core keeps what the settings UI needs and what
-//! the endpoint checks on every request.
+//! MCP settings, token and call log (ADR-014). The protocol lives in
+//! `reqly-mcp`, the tools in [`crate::agent`]; this module keeps what the
+//! settings UI needs and what the endpoint checks on every request.
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::Mutex;
@@ -34,8 +34,8 @@ impl McpGroup {
     }
 }
 
-/// Every tool `reqly-mcp` offers, in display order. A test there keeps
-/// this list and the implemented tools in step.
+/// Every agent tool ([`crate::agent`]), in display order. A test keeps this
+/// list and the implemented tools in step.
 pub const CATALOG: &[(&str, McpGroup)] = {
     use McpGroup::*;
     &[

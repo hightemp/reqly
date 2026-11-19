@@ -6,6 +6,7 @@
 //! contract test suite.
 
 pub mod access;
+pub mod agent;
 pub mod commands;
 #[cfg(feature = "contract")]
 pub mod contract;

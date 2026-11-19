@@ -82,8 +82,10 @@ The `Tool`, `ToolContext` and `catalog` modules move from `reqly-mcp` to
 the moved catalog. MCP behaviour does not change. The catalog test keeps
 `CATALOG` and the tools in step.
 
-The chat needs the registry to run tools. `AppContext` gets a slot for
-it, set once at startup.
+`ToolContext` borrows the context and the registry instead of holding
+`Arc`s, so a command that only has `&AppContext` can run tools. The
+registry is the same in every app; `agent::registry()` builds one shared
+instance on first use.
 
 ### Providers and settings
 

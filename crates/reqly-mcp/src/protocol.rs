@@ -4,11 +4,11 @@ use std::time::Instant;
 
 use reqly_api::commands::mcp::McpCall;
 
-use crate::catalog::secret_name;
+use reqly_api::agent::secret_name;
 use serde_json::{Map, Value, json};
 
 use crate::Session;
-use crate::tools::{ToolContext, Tools};
+use crate::{ToolContext, Tools};
 
 /// The newest MCP revision this server speaks.
 pub const PROTOCOL_VERSION: &str = "2025-06-18";
@@ -43,7 +43,12 @@ fn result(id: Value, result: Value) -> Value {
     json!({ "jsonrpc": "2.0", "id": id, "result": result })
 }
 
-pub async fn handle(tools: &Tools, cx: ToolContext, session: &Session, message: Value) -> Reply {
+pub async fn handle(
+    tools: &Tools,
+    cx: ToolContext<'_>,
+    session: &Session,
+    message: Value,
+) -> Reply {
     let Value::Object(msg) = message else {
         return Reply::Invalid(error(
             Value::Null,
@@ -104,7 +109,7 @@ fn initialize(params: &Value) -> Value {
 
 async fn call_tool(
     tools: &Tools,
-    cx: ToolContext,
+    cx: ToolContext<'_>,
     session: &Session,
     id: Value,
     params: &Value,
@@ -119,7 +124,7 @@ async fn call_tool(
     };
     let started = Instant::now();
     let at = cx.ctx.clock.now().0;
-    let ctx = cx.ctx.clone();
+    let ctx = cx.ctx;
     let user = cx.caller.user_id();
     let arguments = summary(&args);
     let outcome = tool.run(cx, args).await;

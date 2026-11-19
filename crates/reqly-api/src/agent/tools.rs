@@ -2,14 +2,14 @@
 
 use std::sync::Arc;
 
-use reqly_api::access::Caller;
-use reqly_api::commands::{AppContext, dispatch_as};
-use reqly_api::registry::Registry;
+use crate::access::Caller;
+use crate::commands::{AppContext, dispatch_as};
+use crate::registry::Registry;
 use reqly_core::CoreResult;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::{BoxFuture, Group};
+use super::{BoxFuture, Group};
 
 /// MCP tool annotations: hints for clients, not guarantees.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -65,23 +65,33 @@ impl Annotations {
     }
 }
 
-/// What a tool runs with: the core and the caller of the session.
-#[derive(Clone)]
-pub struct ToolContext {
-    pub ctx: Arc<AppContext>,
-    pub registry: Arc<Registry<AppContext>>,
+/// What a tool runs with: the core and the caller of the session (an MCP
+/// client or the user of an AI chat).
+#[derive(Clone, Copy)]
+pub struct ToolContext<'a> {
+    pub ctx: &'a AppContext,
+    pub registry: &'a Registry<AppContext>,
     pub caller: Caller,
 }
 
-impl ToolContext {
+impl<'a> ToolContext<'a> {
+    /// A context on the shared [`registry`](super::registry).
+    pub fn new(ctx: &'a AppContext, caller: Caller) -> Self {
+        Self {
+            ctx,
+            registry: super::registry(),
+            caller,
+        }
+    }
+
     /// Runs a registry command as the session's caller, with its access checks.
     pub async fn call(&self, name: &str, input: Value) -> CoreResult<Value> {
-        dispatch_as(&self.registry, &self.ctx, self.caller, name, input).await
+        dispatch_as(self.registry, self.ctx, self.caller, name, input).await
     }
 }
 
 type Handler =
-    Arc<dyn Fn(ToolContext, Value) -> BoxFuture<'static, CoreResult<Value>> + Send + Sync>;
+    Arc<dyn for<'a> Fn(ToolContext<'a>, Value) -> BoxFuture<'a, CoreResult<Value>> + Send + Sync>;
 
 pub struct Tool {
     pub name: &'static str,
@@ -102,7 +112,10 @@ impl Tool {
         handler: F,
     ) -> Self
     where
-        F: Fn(ToolContext, Value) -> BoxFuture<'static, CoreResult<Value>> + Send + Sync + 'static,
+        F: for<'a> Fn(ToolContext<'a>, Value) -> BoxFuture<'a, CoreResult<Value>>
+            + Send
+            + Sync
+            + 'static,
     {
         Self {
             name,
@@ -114,7 +127,7 @@ impl Tool {
         }
     }
 
-    pub fn run(&self, cx: ToolContext, args: Value) -> BoxFuture<'static, CoreResult<Value>> {
+    pub fn run<'a>(&self, cx: ToolContext<'a>, args: Value) -> BoxFuture<'a, CoreResult<Value>> {
         (self.handler)(cx, args)
     }
 

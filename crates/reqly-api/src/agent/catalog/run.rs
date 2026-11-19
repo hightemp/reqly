@@ -6,7 +6,7 @@ use serde_json::{Map, Value, json};
 
 use super::read::{MAX_BODY_BYTES, body_limit, response_view};
 use super::{args, invalid, mask, tool};
-use crate::{Annotations, Tool, ToolContext};
+use crate::agent::{Annotations, Tool, ToolContext};
 
 /// Collection runs list at most this many items.
 const MAX_RUN_ITEMS: usize = 200;
@@ -89,7 +89,7 @@ fn error_of(value: &Value) -> CoreError {
     CoreError::new(code, message)
 }
 
-async fn send_request(cx: ToolContext, a: SendArgs) -> CoreResult<Value> {
+async fn send_request(cx: ToolContext<'_>, a: SendArgs) -> CoreResult<Value> {
     let node = cx.call("node.get", json!({ "id": a.id })).await?;
     let scrub = mask::Scrub::for_request(&cx, &node).await?;
     let record = if a.environment_id.is_none() && a.variables.is_none() {
@@ -130,14 +130,13 @@ struct IdArg {
     id: String,
 }
 
-async fn render_request(cx: ToolContext, a: IdArg) -> CoreResult<Value> {
+async fn render_request(cx: ToolContext<'_>, a: IdArg) -> CoreResult<Value> {
     let node = cx.call("node.get", json!({ "id": a.id })).await?;
     let data = &node["data"];
     if node["data"]["kind"] == "folder" {
         return Err(invalid("a folder cannot be rendered"));
     }
     let render = |text: Value| {
-        let cx = cx.clone();
         let collection = node["collectionId"].clone();
         let id = node["id"].clone();
         async move {
@@ -230,7 +229,7 @@ fn item_passed(item: &Value) -> bool {
     item["error"].is_null() && tests_ok && asserts_ok
 }
 
-async fn run_collection(cx: ToolContext, a: RunArgs) -> CoreResult<Value> {
+async fn run_collection(cx: ToolContext<'_>, a: RunArgs) -> CoreResult<Value> {
     let mut input = json!({
         "runId": Id::new().to_string(),
         "collectionId": a.collection_id,

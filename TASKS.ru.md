@@ -549,7 +549,7 @@ ADR-014, PRD §7.22. Выключен по умолчанию; desktop и server
 
 ADR-015, PRD §7.23. Выключен по умолчанию; desktop, server и Android. Провайдеры — OpenAI-совместимые, вызовы из ядра.
 
-- [ ] **T14.1** Перенос каталога инструментов из `reqly-mcp` в `reqly-api::agent` (`Tool`, `ToolContext`, `catalog`, `mask`); `reqly-mcp` использует перенесённый каталог, поведение MCP не меняется. Слот реестра в `AppContext` для вызова инструментов из команд.
+- [x] **T14.1** Перенос каталога инструментов из `reqly-mcp` в `reqly-api::agent` (`Tool`, `ToolContext`, `catalog`, `mask`); `reqly-mcp` использует перенесённый каталог, поведение MCP не меняется. `ToolContext` на ссылках и общий реестр `agent::registry()` — инструменты можно вызывать из команды.
   - **Тесты:** существующие тесты `reqly-mcp` и инструментов проходят после переноса; тест соответствия `CATALOG` и инструментов.
 - [ ] **T14.2** Крейт `reqly-ai`: запрос `chat/completions` (сообщения всех ролей, tools, `stream`), разбор SSE-чанков (текст, сборка `tool_calls` по индексу, `finish_reason`, `usage`, `[DONE]`), `GET /models`, коды ошибок `ai.auth`, `ai.rate_limit`, `ai.model`, `ai.provider`, `ai.network`; транспорт — трейт, реализация на движке `reqly-http` (`body_sink`, сетевые настройки, `CancelToken`).
   - **Тесты:** разбор потоков OpenAI, OpenRouter и Ollama (записанные фрагменты), чанки разрезаны в произвольных местах, параллельные tool calls, ошибки по статусам; фейковый OpenAI-совместимый сервер в `reqly-testserver` (скриптуемые ответы, стрим, tool calls, проверка заголовков); отмена посреди стрима.

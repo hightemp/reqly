@@ -8,7 +8,7 @@ use serde_json::{Map, Value, json};
 
 use super::read::describe_node;
 use super::{args, invalid, mask, tool};
-use crate::{Annotations, Tool, ToolContext};
+use crate::agent::{Annotations, Tool, ToolContext};
 
 /// Top-level request fields an agent may set.
 const REQUEST_FIELDS: &[&str] = &[
@@ -244,7 +244,7 @@ fn placement(position: Option<&str>) -> Value {
     }
 }
 
-async fn create_request(cx: ToolContext, a: Value) -> CoreResult<Value> {
+async fn create_request(cx: ToolContext<'_>, a: Value) -> CoreResult<Value> {
     let a = object(a)?;
     let mut data = request_fields(&a);
     data.insert("kind".into(), json!("request"));
@@ -265,7 +265,7 @@ async fn create_request(cx: ToolContext, a: Value) -> CoreResult<Value> {
     describe_node(&cx, &node).await
 }
 
-async fn update_request(cx: ToolContext, a: Value) -> CoreResult<Value> {
+async fn update_request(cx: ToolContext<'_>, a: Value) -> CoreResult<Value> {
     let a = object(a)?;
     let id = string(&a, "id")?;
     let current = cx.call("node.get", json!({ "id": id })).await?;
@@ -326,7 +326,7 @@ struct FolderArgs {
     position: Option<String>,
 }
 
-async fn create_folder(cx: ToolContext, a: FolderArgs) -> CoreResult<Value> {
+async fn create_folder(cx: ToolContext<'_>, a: FolderArgs) -> CoreResult<Value> {
     let mut data = json!({ "kind": "folder" });
     if let Some(d) = a.description {
         data["description"] = json!(d);
@@ -352,7 +352,7 @@ struct RenameArgs {
     name: String,
 }
 
-async fn rename_item(cx: ToolContext, a: RenameArgs) -> CoreResult<Value> {
+async fn rename_item(cx: ToolContext<'_>, a: RenameArgs) -> CoreResult<Value> {
     let node = cx
         .call("node.update", json!({ "id": a.id, "name": a.name }))
         .await?;
@@ -374,7 +374,7 @@ struct MoveArgs {
     position: Option<String>,
 }
 
-async fn move_item(cx: ToolContext, a: MoveArgs) -> CoreResult<Value> {
+async fn move_item(cx: ToolContext<'_>, a: MoveArgs) -> CoreResult<Value> {
     let node = cx.call("node.get", json!({ "id": a.id })).await?;
     let parent = match a.parent_id {
         Some(p) => json!(p),
@@ -403,7 +403,7 @@ struct IdArg {
     id: String,
 }
 
-async fn duplicate_item(cx: ToolContext, a: IdArg) -> CoreResult<Value> {
+async fn duplicate_item(cx: ToolContext<'_>, a: IdArg) -> CoreResult<Value> {
     let copies = cx.call("tree.duplicate", json!({ "ids": [a.id] })).await?;
     let copy = copies
         .as_array()
@@ -420,7 +420,7 @@ struct DeleteArgs {
     ids: Vec<String>,
 }
 
-async fn delete_item(cx: ToolContext, a: DeleteArgs) -> CoreResult<Value> {
+async fn delete_item(cx: ToolContext<'_>, a: DeleteArgs) -> CoreResult<Value> {
     let mut ids = a.ids;
     ids.extend(a.id);
     if ids.is_empty() {

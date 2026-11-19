@@ -13,8 +13,8 @@ use reqly_api::registry::Registry;
 use serde_json::Value;
 
 use crate::protocol::{self, INVALID_REQUEST, PARSE_ERROR, Reply, SUPPORTED_VERSIONS};
-use crate::tools::{ToolContext, Tools};
 use crate::{Denied, Gate};
+use crate::{ToolContext, Tools};
 
 /// Which browser origins may call the endpoint (DNS rebinding protection).
 /// Requests without `Origin` (agents, not browsers) always pass.
@@ -91,8 +91,8 @@ async fn message(State(state): State<McpState>, headers: HeaderMap, body: Bytes)
         }
     };
     let cx = ToolContext {
-        ctx: state.ctx.clone(),
-        registry: state.registry.clone(),
+        ctx: &state.ctx,
+        registry: &state.registry,
         caller: session.caller,
     };
     match protocol::handle(&state.tools, cx, &session, message).await {

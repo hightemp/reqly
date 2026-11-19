@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use super::read::MAX_BODY_BYTES;
 use super::{args, invalid, tool};
-use crate::{Annotations, Tool, ToolContext};
+use crate::agent::{Annotations, Tool, ToolContext};
 
 /// The source name of pasted text: cURL commands are not wrapped in a folder.
 const PASTED: &str = "clipboard";
@@ -66,7 +66,7 @@ struct ImportArgs {
     format: Option<String>,
 }
 
-async fn import_text(cx: ToolContext, a: ImportArgs) -> CoreResult<Value> {
+async fn import_text(cx: ToolContext<'_>, a: ImportArgs) -> CoreResult<Value> {
     let (workspace, target) = match (a.collection_id, a.workspace_id) {
         (Some(col), _) => {
             let collection = cx.call("collection.get", json!({ "id": col })).await?;
@@ -108,7 +108,7 @@ struct ExportArgs {
     format: Option<String>,
 }
 
-async fn export_collection(cx: ToolContext, a: ExportArgs) -> CoreResult<Value> {
+async fn export_collection(cx: ToolContext<'_>, a: ExportArgs) -> CoreResult<Value> {
     let scope = match a.request_ids {
         Some(ids) => json!({ "kind": "nodes", "nodeIds": ids }),
         None => json!({ "kind": "collection", "collectionId": a.collection_id }),

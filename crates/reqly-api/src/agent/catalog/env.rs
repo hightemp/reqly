@@ -6,7 +6,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use super::{args, invalid, mask, tool};
-use crate::{Annotations, Tool, ToolContext};
+use crate::agent::{Annotations, Tool, ToolContext};
 
 pub fn tools() -> Vec<Tool> {
     vec![
@@ -103,7 +103,7 @@ struct EnvArg {
     environment_id: String,
 }
 
-async fn get_variables(cx: ToolContext, a: EnvArg) -> CoreResult<Value> {
+async fn get_variables(cx: ToolContext<'_>, a: EnvArg) -> CoreResult<Value> {
     let env = cx
         .call("environment.get", json!({ "id": a.environment_id }))
         .await?;
@@ -122,7 +122,7 @@ struct SetArgs {
     remove: Vec<String>,
 }
 
-async fn set_variables(cx: ToolContext, a: SetArgs) -> CoreResult<Value> {
+async fn set_variables(cx: ToolContext<'_>, a: SetArgs) -> CoreResult<Value> {
     let env = cx
         .call("environment.get", json!({ "id": a.environment_id }))
         .await?;
@@ -168,7 +168,7 @@ struct CreateArgs {
     variables: Map<String, Value>,
 }
 
-async fn create_environment(cx: ToolContext, a: CreateArgs) -> CoreResult<Value> {
+async fn create_environment(cx: ToolContext<'_>, a: CreateArgs) -> CoreResult<Value> {
     let (workspace, kind) = match (&a.collection_id, a.workspace_id) {
         (Some(col), _) => {
             let col = cx.call("collection.get", json!({ "id": col })).await?;
@@ -200,7 +200,7 @@ struct ActiveArgs {
     workspace_id: Option<String>,
 }
 
-async fn set_active(cx: ToolContext, a: ActiveArgs) -> CoreResult<Value> {
+async fn set_active(cx: ToolContext<'_>, a: ActiveArgs) -> CoreResult<Value> {
     match a.environment_id {
         Some(id) => {
             let env = cx.call("environment.get", json!({ "id": id })).await?;

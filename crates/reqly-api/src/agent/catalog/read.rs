@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::{args, invalid, mask, tool};
-use crate::{Annotations, Tool, ToolContext};
+use crate::agent::{Annotations, Tool, ToolContext};
 
 pub(super) const DEFAULT_BODY_BYTES: u64 = 16 * 1024;
 pub const MAX_BODY_BYTES: u64 = 1024 * 1024;
@@ -122,7 +122,7 @@ pub fn tools() -> Vec<Tool> {
     ]
 }
 
-async fn list_workspaces(cx: ToolContext) -> CoreResult<Value> {
+async fn list_workspaces(cx: ToolContext<'_>) -> CoreResult<Value> {
     let list = cx.call("workspace.list", json!({})).await?;
     let workspaces: Vec<_> = items(&list)
         .iter()
@@ -135,7 +135,7 @@ fn items(v: &Value) -> &[Value] {
     v.as_array().map(Vec::as_slice).unwrap_or_default()
 }
 
-async fn workspace_ids(cx: &ToolContext, only: Option<String>) -> CoreResult<Vec<Value>> {
+async fn workspace_ids(cx: &ToolContext<'_>, only: Option<String>) -> CoreResult<Vec<Value>> {
     if let Some(id) = only {
         return Ok(vec![Value::String(id)]);
     }
@@ -149,7 +149,7 @@ struct WorkspaceArg {
     workspace_id: Option<String>,
 }
 
-async fn list_collections(cx: ToolContext, a: WorkspaceArg) -> CoreResult<Value> {
+async fn list_collections(cx: ToolContext<'_>, a: WorkspaceArg) -> CoreResult<Value> {
     let mut out = Vec::new();
     for ws in workspace_ids(&cx, a.workspace_id).await? {
         let list = cx
@@ -205,7 +205,7 @@ fn name(n: &Value) -> &str {
     n["name"].as_str().unwrap_or("")
 }
 
-async fn get_tree(cx: ToolContext, a: CollectionArg) -> CoreResult<Value> {
+async fn get_tree(cx: ToolContext<'_>, a: CollectionArg) -> CoreResult<Value> {
     let collection = cx
         .call("collection.get", json!({ "id": a.collection_id }))
         .await?;
@@ -239,7 +239,7 @@ struct IdArg {
 }
 
 /// `Folder/Sub/Name` of a node.
-pub(super) async fn path_of(cx: &ToolContext, node: &Value) -> CoreResult<String> {
+pub(super) async fn path_of(cx: &ToolContext<'_>, node: &Value) -> CoreResult<String> {
     let nodes = cx
         .call("tree.list", json!({ "collectionId": node["collectionId"] }))
         .await?;
@@ -251,7 +251,7 @@ pub(super) async fn path_of(cx: &ToolContext, node: &Value) -> CoreResult<String
 }
 
 /// What the request tools return for a node.
-pub(super) async fn describe_node(cx: &ToolContext, node: &Value) -> CoreResult<Value> {
+pub(super) async fn describe_node(cx: &ToolContext<'_>, node: &Value) -> CoreResult<Value> {
     Ok(json!({
         "id": node["id"],
         "name": node["name"],
@@ -263,7 +263,7 @@ pub(super) async fn describe_node(cx: &ToolContext, node: &Value) -> CoreResult<
     }))
 }
 
-async fn get_request(cx: ToolContext, a: IdArg) -> CoreResult<Value> {
+async fn get_request(cx: ToolContext<'_>, a: IdArg) -> CoreResult<Value> {
     let node = cx.call("node.get", json!({ "id": a.id })).await?;
     describe_node(&cx, &node).await
 }
@@ -276,7 +276,7 @@ struct SearchArgs {
     limit: Option<u32>,
 }
 
-async fn search_requests(cx: ToolContext, a: SearchArgs) -> CoreResult<Value> {
+async fn search_requests(cx: ToolContext<'_>, a: SearchArgs) -> CoreResult<Value> {
     let limit = a.limit.unwrap_or(20).clamp(1, 100) as usize;
     let mut out = Vec::new();
     for ws in workspace_ids(&cx, a.workspace_id).await? {
@@ -298,7 +298,7 @@ async fn search_requests(cx: ToolContext, a: SearchArgs) -> CoreResult<Value> {
     Ok(json!({ "results": out }))
 }
 
-async fn list_environments(cx: ToolContext, a: CollectionArg) -> CoreResult<Value> {
+async fn list_environments(cx: ToolContext<'_>, a: CollectionArg) -> CoreResult<Value> {
     let list = cx
         .call(
             "environment.list",
@@ -334,7 +334,7 @@ struct HistoryArgs {
     limit: Option<u32>,
 }
 
-async fn get_history(cx: ToolContext, a: HistoryArgs) -> CoreResult<Value> {
+async fn get_history(cx: ToolContext<'_>, a: HistoryArgs) -> CoreResult<Value> {
     let limit = a.limit.unwrap_or(20).clamp(1, 100);
     let list = match (a.request_id, a.workspace_id) {
         (Some(id), _) => {
@@ -360,7 +360,7 @@ struct ResponseArgs {
     max_body_bytes: Option<u64>,
 }
 
-async fn get_response(cx: ToolContext, a: ResponseArgs) -> CoreResult<Value> {
+async fn get_response(cx: ToolContext<'_>, a: ResponseArgs) -> CoreResult<Value> {
     let record = cx.call("response.get", json!({ "id": a.id })).await?;
     let node = cx
         .call("node.get", json!({ "id": record["requestId"] }))
@@ -376,7 +376,7 @@ pub(super) fn body_limit(asked: Option<u64>) -> u64 {
 
 /// A response record for an agent, with the body cut to `max` bytes.
 pub(super) async fn response_view(
-    cx: &ToolContext,
+    cx: &ToolContext<'_>,
     record: &Value,
     max: u64,
     scrub: &mask::Scrub,
