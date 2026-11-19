@@ -648,6 +648,7 @@ pub async fn workspaces_of_ids(storage: &Storage, ids: &[Id]) -> CoreResult<Hash
             UNION ALL SELECT workspace_id FROM environments WHERE id = ?1 \
             UNION ALL SELECT workspace_id FROM response_records WHERE id = ?1 \
             UNION ALL SELECT workspace_id FROM cookies WHERE id = ?1 \
+            UNION ALL SELECT workspace_id FROM ai_chats WHERE id = ?1 AND deleted_at IS NULL \
         ) u JOIN workspaces w ON w.id = u.ws WHERE w.deleted_at IS NULL LIMIT 1";
     let mut out = HashMap::new();
     for id in ids {

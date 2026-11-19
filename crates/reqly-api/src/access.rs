@@ -96,6 +96,16 @@ pub const RULES: &[(&str, Need)] = {
         ("ai.setConfig", Admin),
         ("ai.setKey", Admin),
         ("ai.models", Global),
+        // A viewer may chat; tools check their own needs as the caller.
+        ("ai.chats", Read),
+        ("ai.chat", Read),
+        ("ai.createChat", Read),
+        ("ai.renameChat", Read),
+        ("ai.deleteChat", Read),
+        ("ai.setChatModel", Read),
+        ("ai.send", Read),
+        ("ai.cancel", Read),
+        ("ai.confirm", Read),
         ("template.functions", Global),
         ("curl.parse", Global),
         ("codegen.targets", Global),
@@ -251,6 +261,9 @@ const NOT_ENTITIES: &[&str] = &[
     "docId",
     "clientId",
     "runId",
+    // AI: provider names and the model's tool call ids.
+    "providerId",
+    "callId",
 ];
 
 fn is_id_field(key: &str) -> bool {

@@ -103,6 +103,8 @@ pub struct AppContext {
     pub mcp_log: mcp::McpLog,
     /// Where the MCP endpoint is served (ADR-014).
     pub mcp_listen: mcp::McpListenState,
+    /// AI chat turns in progress (ADR-015).
+    pub ai_turns: ai::Turns,
 }
 
 impl AppContext {
@@ -129,6 +131,7 @@ impl AppContext {
             sync: Default::default(),
             mcp_log: Default::default(),
             mcp_listen: Default::default(),
+            ai_turns: Default::default(),
         }
     }
 

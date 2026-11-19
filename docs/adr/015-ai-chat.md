@@ -155,8 +155,11 @@ Commands:
 
 ### A turn
 
-`ai.send { chatId, text, attachments }` stores the user message,
-returns at once and runs the turn in a task:
+`ai.send { chatId, text, attachments }` stores the user message and runs
+the turn. Like `runner.run`, the command returns when the turn ends
+(`done`, `cancelled` or `error`); the UI follows the events and other
+commands (`ai.cancel`, `ai.confirm`) run meanwhile. One turn per chat:
+a second `ai.send` gets `ai.busy`.
 
 1. **Prompt.** The system prompt describes Reqly and the tools, the
    current workspace and its collections (names and ids), and asks the

@@ -1,5 +1,6 @@
 //! SQLite storage, migrations and repositories for Reqly.
 
+pub mod ai;
 pub mod blobs;
 pub mod cookies;
 pub mod crypto;
