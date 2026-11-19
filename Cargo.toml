@@ -24,6 +24,7 @@ reqly-faker = { path = "crates/reqly-faker" }
 reqly-testing = { path = "crates/reqly-testing" }
 reqly-sync = { path = "crates/reqly-sync" }
 reqly-mcp = { path = "crates/reqly-mcp" }
+reqly-ai = { path = "crates/reqly-ai" }
 
 anyhow = "1"
 argon2 = "0.6"

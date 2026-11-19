@@ -178,7 +178,7 @@ fn host_matches(pattern: &str, url: &str) -> bool {
     host_ok && p_port.is_none_or(|p| Some(p) == port)
 }
 
-fn client_identity(tls: &TlsSettings, url: &str) -> CoreResult<Option<ClientIdentity>> {
+pub(crate) fn client_identity(tls: &TlsSettings, url: &str) -> CoreResult<Option<ClientIdentity>> {
     let Some(cert) = tls
         .client_certificates
         .iter()

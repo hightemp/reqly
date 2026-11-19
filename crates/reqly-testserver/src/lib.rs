@@ -9,6 +9,7 @@ mod auth;
 mod certs;
 mod graphql;
 pub mod grpc;
+mod llm;
 mod oauth;
 mod routes;
 mod streams;
@@ -20,6 +21,7 @@ use axum_server::tls_rustls::RustlsConfig;
 use tokio::task::JoinHandle;
 
 pub use certs::TestPki;
+pub use llm::{FakeLlm, LlmReply, LlmRequest};
 
 pub enum TlsMode {
     ServerOnly,

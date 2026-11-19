@@ -1,5 +1,6 @@
 //! Built-in commands and the shared application context.
 
+pub mod ai;
 pub mod collab;
 pub mod graphql;
 pub mod grpc;

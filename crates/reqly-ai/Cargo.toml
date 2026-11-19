@@ -1,0 +1,19 @@
+[package]
+name = "reqly-ai"
+description = "OpenAI-compatible chat completions client for the AI chat (ADR-015)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+reqly-core.workspace = true
+reqly-protocols.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+
+[lints]
+workspace = true
