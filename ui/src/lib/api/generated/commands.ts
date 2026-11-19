@@ -7,6 +7,10 @@ import type { AdminInviteInput } from "./AdminInviteInput";
 import type { AdminServerOutput } from "./AdminServerOutput";
 import type { AdminUpdateUserInput } from "./AdminUpdateUserInput";
 import type { AdminWorkspace } from "./AdminWorkspace";
+import type { AiConfig } from "./AiConfig";
+import type { AiModelsInput } from "./AiModelsInput";
+import type { AiSetKeyInput } from "./AiSetKeyInput";
+import type { AiStatus } from "./AiStatus";
 import type { ApiToken } from "./ApiToken";
 import type { AppInfoOutput } from "./AppInfoOutput";
 import type { AppPingInput } from "./AppPingInput";
@@ -282,6 +286,10 @@ export type Commands = {
   "mcp.setConfig": { input: McpConfig; output: McpStatus };
   "mcp.regenerateToken": { input: Empty; output: McpToken };
   "mcp.log": { input: Empty; output: Array<McpCall> };
+  "ai.config": { input: Empty; output: AiStatus };
+  "ai.setConfig": { input: AiConfig; output: AiStatus };
+  "ai.setKey": { input: AiSetKeyInput; output: Empty };
+  "ai.models": { input: AiModelsInput; output: Array<string> };
   "search.nodes": { input: SearchInput; output: Array<NodeSummary> };
 };
 

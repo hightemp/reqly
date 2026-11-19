@@ -92,6 +92,10 @@ pub const RULES: &[(&str, Need)] = {
         ("mcp.setConfig", Admin),
         ("mcp.regenerateToken", Admin),
         ("mcp.log", Admin),
+        ("ai.config", Global),
+        ("ai.setConfig", Admin),
+        ("ai.setKey", Admin),
+        ("ai.models", Global),
         ("template.functions", Global),
         ("curl.parse", Global),
         ("codegen.targets", Global),
@@ -380,6 +384,10 @@ pub async fn event_visible(
     }
     if event.topic.starts_with("mcp.") {
         return admin;
+    }
+    // Everyone's AI panel follows the settings; chat events go to their owner.
+    if event.topic == "ai.configChanged" {
+        return true;
     }
     if !SHARED_EVENTS.contains(&event.topic.as_str()) {
         return event.actor == Some(id);

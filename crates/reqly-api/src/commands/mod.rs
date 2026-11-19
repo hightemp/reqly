@@ -181,6 +181,7 @@ pub fn registry() -> Registry<AppContext> {
     update::register(&mut r);
     sync::register(&mut r);
     mcp::register(&mut r);
+    ai::register(&mut r);
     r.register::<SearchNodes>();
     r
 }
@@ -284,11 +285,13 @@ pub struct SettingsGetOutput {
     pub value: Option<Value>,
 }
 
-/// MCP settings and its token have their own commands (`mcp.*`).
+/// MCP and AI settings and their secrets have their own commands
+/// (`mcp.*`, `ai.*`).
 fn reserved(key: &str) -> CoreResult<()> {
-    if mcp::reserved_key(key) {
+    if mcp::reserved_key(key) || ai::config::reserved_key(key) {
         return Err(
-            CoreError::new("settings.reserved", "use the mcp.* commands").with_param("key", key),
+            CoreError::new("settings.reserved", "use the mcp.* or ai.* commands")
+                .with_param("key", key),
         );
     }
     Ok(())
