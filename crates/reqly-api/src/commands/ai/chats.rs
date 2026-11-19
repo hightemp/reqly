@@ -174,7 +174,7 @@ pub(crate) async fn set_model(ctx: &AppContext, input: AiSetChatModelInput) -> C
     provider_client(ctx, &config, &input.provider_id).await?;
     let model = input.model.trim();
     if model.is_empty() {
-        return Err(CoreError::new("ai.model", "no model chosen"));
+        return Err(CoreError::new("ai.no_model", "no model chosen"));
     }
     let chat = AiRepo::new(&ctx.storage, ctx.clock.as_ref())
         .set_chat_model(input.chat_id, &input.provider_id, model)

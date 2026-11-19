@@ -19,6 +19,7 @@ export const DEFAULT_ACTIONS: ActionDefinition[] = [
   { id: 'url.focus', combos: ['Mod+L'], scope: 'global' },
   { id: 'sidebar.toggle', combos: ['Mod+B'], scope: 'global' },
   { id: 'layout.toggle', combos: ['Mod+Alt+L'], scope: 'global' },
+  { id: 'ai.toggle', combos: ['Mod+Shift+L'], scope: 'global' },
   { id: 'tree.search', combos: ['Mod+Shift+F'], scope: 'global' },
   { id: 'body.format', combos: ['Mod+Shift+B'], scope: 'global' },
   { id: 'environments.open', combos: ['Mod+E'], scope: 'global' },

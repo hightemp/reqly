@@ -16,6 +16,11 @@
     max?: number;
     step?: number;
     collapsed?: boolean;
+    /**
+     * Which pane `size` applies to (and `collapsed` hides); the other one
+     * takes the rest. `second` makes a panel on the right or bottom.
+     */
+    sized?: 'first' | 'second';
     /** Accessible name of the separator. */
     label: string;
     onResize?: (size: number) => void;
@@ -31,6 +36,7 @@
     max = 2000,
     step = 10,
     collapsed = false,
+    sized = 'first',
     label,
     onResize,
   }: Props = $props();
@@ -38,6 +44,8 @@
   const initial = size;
   let dragStart: { pointer: number; size: number } | null = $state(null);
   const horizontal = $derived(direction === 'horizontal');
+  /** Moving the separator towards the end shrinks a sized second pane. */
+  const sign = $derived(sized === 'second' ? -1 : 1);
 
   function setSize(next: number) {
     const clamped = Math.round(Math.min(max, Math.max(min, next)));
@@ -49,8 +57,8 @@
   function onKeyDown(e: KeyboardEvent) {
     const amount = e.shiftKey ? step * 5 : step;
     const [dec, inc] = horizontal ? ['ArrowLeft', 'ArrowRight'] : ['ArrowUp', 'ArrowDown'];
-    if (e.key === dec) setSize(size - amount);
-    else if (e.key === inc) setSize(size + amount);
+    if (e.key === dec) setSize(size - sign * amount);
+    else if (e.key === inc) setSize(size + sign * amount);
     else if (e.key === 'Home') setSize(min);
     else if (e.key === 'End') setSize(max);
     else return;
@@ -67,7 +75,7 @@
   }
 
   function onPointerMove(e: PointerEvent) {
-    if (dragStart) setSize(dragStart.size + coord(e) - dragStart.pointer);
+    if (dragStart) setSize(dragStart.size + sign * (coord(e) - dragStart.pointer));
   }
 
   function onPointerUp(e: PointerEvent) {
@@ -78,10 +86,16 @@
 </script>
 
 <div class="split" class:vertical={!horizontal} class:dragging={dragStart !== null}>
-  {#if !collapsed}
-    <div class="pane first" style:flex-basis="{size}px">
+  {#if !(collapsed && sized === 'first')}
+    <div
+      class="pane first"
+      class:fill={sized === 'second'}
+      style:flex-basis={sized === 'first' ? `${size}px` : undefined}
+    >
       {@render first()}
     </div>
+  {/if}
+  {#if !collapsed}
     <!-- A focusable separator is an ARIA widget; Svelte treats the role as static. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
     <div
@@ -101,9 +115,15 @@
       ondblclick={() => setSize(defaultSize ?? initial)}
     ></div>
   {/if}
-  <div class="pane second">
-    {@render second()}
-  </div>
+  {#if !(collapsed && sized === 'second')}
+    <div
+      class="pane second"
+      class:fixed={sized === 'second'}
+      style:flex-basis={sized === 'second' ? `${size}px` : undefined}
+    >
+      {@render second()}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -129,10 +149,12 @@
     min-height: 0;
     overflow: hidden;
   }
-  .first {
+  .first,
+  .second.fixed {
     flex: 0 0 auto;
   }
-  .second {
+  .second,
+  .first.fill {
     flex: 1 1 0;
   }
   .separator {

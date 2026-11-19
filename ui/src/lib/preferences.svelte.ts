@@ -13,6 +13,9 @@ export interface Preferences {
   locale: Locale | null;
   sidebarWidth: number;
   sidebarCollapsed: boolean;
+  /** Width of the AI chat panel on the right. */
+  aiPanelWidth: number;
+  aiPanelOpen: boolean;
   /** Where the response panel sits relative to the request editor. */
   responseLayout: 'right' | 'bottom';
   requestPaneSize: number;
@@ -44,6 +47,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   locale: null,
   sidebarWidth: 280,
   sidebarCollapsed: false,
+  aiPanelWidth: 380,
+  aiPanelOpen: false,
   responseLayout: 'right',
   requestPaneSize: 520,
   sidebarMode: 'tree',
@@ -67,6 +72,8 @@ const validators: { [K in keyof Preferences]: (v: unknown) => boolean } = {
   locale: (v) => v === null || LOCALES.includes(v as Locale),
   sidebarWidth: (v) => typeof v === 'number' && v > 0,
   sidebarCollapsed: (v) => typeof v === 'boolean',
+  aiPanelWidth: (v) => typeof v === 'number' && v > 0,
+  aiPanelOpen: (v) => typeof v === 'boolean',
   responseLayout: (v) => v === 'right' || v === 'bottom',
   requestPaneSize: (v) => typeof v === 'number' && v > 0,
   sidebarMode: (v) => v === 'tree' || v === 'categories',

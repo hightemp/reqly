@@ -34,6 +34,7 @@
   import ResponsePanel from '../response/ResponsePanel.svelte';
   import { createFolder, createRequest, REQUEST_KINDS, requestKindLabel } from '../sidebar/actions';
   import Sidebar from '../sidebar/Sidebar.svelte';
+  import AiPanel from '../ai/AiPanel.svelte';
   import RequestTabs from '../tabs/RequestTabs.svelte';
   import { createTemplateHostFactory } from '../template/host';
   import PromptDialog from '../template/PromptDialog.svelte';
@@ -78,7 +79,7 @@
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
-  let settingsInitial = $state<'general' | 'sync' | 'mcp'>('general');
+  let settingsInitial = $state<'general' | 'sync' | 'mcp' | 'ai'>('general');
   let modal = $state<
     | 'palette'
     | 'cookies'
@@ -152,6 +153,20 @@
   });
 
   const toggleSidebar = () => prefs.update({ sidebarCollapsed: !prefs.value.sidebarCollapsed });
+  const aiOpen = $derived(services.ai.enabled && prefs.value.aiPanelOpen);
+  function toggleAi() {
+    if (!services.ai.enabled) return;
+    if (compact) pane = pane === 'ai' ? 'request' : 'ai';
+    else void prefs.update({ aiPanelOpen: !prefs.value.aiPanelOpen });
+  }
+  function openAiSettings() {
+    settingsInitial = 'ai';
+    settingsOpen = true;
+  }
+  // The AI pane disappears with the feature.
+  $effect(() => {
+    if (!services.ai.enabled && pane === 'ai') pane = 'request';
+  });
   const toggleLayout = () =>
     prefs.update({ responseLayout: prefs.value.responseLayout === 'right' ? 'bottom' : 'right' });
   const selectedOne = () => (tree.selected.length === 1 ? tree.selected[0]! : null);
@@ -331,6 +346,7 @@
       hotkeys.on('request.new', () => void createRequest(services, selectedOne())),
       hotkeys.on('folder.new', () => void createFolder(services, selectedOne())),
       hotkeys.on('settings.open', () => (settingsOpen = true)),
+      hotkeys.on('ai.toggle', toggleAi),
       hotkeys.on('help.open', () => help.open()),
       hotkeys.on('palette.open', () => (modal = 'palette')),
       hotkeys.on('environments.open', () => (modal = 'environments')),
@@ -391,13 +407,20 @@
 
   {#if compact}
     <main class="body compact">
-      <CompactBar {services} bind:pane onmenu={() => (drawerOpen = true)} />
+      <CompactBar
+        {services}
+        bind:pane
+        onmenu={() => (drawerOpen = true)}
+        ai={services.ai.enabled}
+      />
       {#if !services.account.canEdit(services.workspace.activeWorkspaceId)}
         <div class="read-only" role="status">{t('members.readOnly')}</div>
       {/if}
       <section class="pane">
         {#if pane === 'request'}
           <RequestPanel {services} />
+        {:else if pane === 'ai'}
+          <AiPanel {services} onsettings={openAiSettings} />
         {:else}
           <ResponsePanel {services} />
         {/if}
@@ -415,43 +438,64 @@
   {:else}
     <main class="body">
       <SplitPane
-        bind:size={() => prefs.value.sidebarWidth, (v) => void prefs.update({ sidebarWidth: v })}
-        collapsed={prefs.value.sidebarCollapsed}
-        min={200}
-        max={640}
-        defaultSize={280}
-        label={t('sidebar.title')}
+        sized="second"
+        bind:size={() => prefs.value.aiPanelWidth, (v) => void prefs.update({ aiPanelWidth: v })}
+        collapsed={!aiOpen}
+        min={280}
+        max={900}
+        defaultSize={380}
+        label={t('ai.panel')}
       >
         {#snippet first()}
-          {@render sidebar(toggleSidebar)}
+          <SplitPane
+            bind:size={
+              () => prefs.value.sidebarWidth, (v) => void prefs.update({ sidebarWidth: v })
+            }
+            collapsed={prefs.value.sidebarCollapsed}
+            min={200}
+            max={640}
+            defaultSize={280}
+            label={t('sidebar.title')}
+          >
+            {#snippet first()}
+              {@render sidebar(toggleSidebar)}
+            {/snippet}
+            {#snippet second()}
+              <div class="workspace">
+                {#if !services.account.canEdit(services.workspace.activeWorkspaceId)}
+                  <div class="read-only" role="status">{t('members.readOnly')}</div>
+                {/if}
+                <RequestTabs {services} />
+                <div class="editor">
+                  <SplitPane
+                    direction={prefs.value.responseLayout === 'right' ? 'horizontal' : 'vertical'}
+                    bind:size={
+                      () => prefs.value.requestPaneSize,
+                      (v) => void prefs.update({ requestPaneSize: v })
+                    }
+                    min={260}
+                    max={1600}
+                    defaultSize={520}
+                    label={t('request.sections')}
+                  >
+                    {#snippet first()}
+                      <section class="pane"><RequestPanel {services} /></section>
+                    {/snippet}
+                    {#snippet second()}
+                      <section class="pane"><ResponsePanel {services} /></section>
+                    {/snippet}
+                  </SplitPane>
+                </div>
+              </div>
+            {/snippet}
+          </SplitPane>
         {/snippet}
         {#snippet second()}
-          <div class="workspace">
-            {#if !services.account.canEdit(services.workspace.activeWorkspaceId)}
-              <div class="read-only" role="status">{t('members.readOnly')}</div>
-            {/if}
-            <RequestTabs {services} />
-            <div class="editor">
-              <SplitPane
-                direction={prefs.value.responseLayout === 'right' ? 'horizontal' : 'vertical'}
-                bind:size={
-                  () => prefs.value.requestPaneSize,
-                  (v) => void prefs.update({ requestPaneSize: v })
-                }
-                min={260}
-                max={1600}
-                defaultSize={520}
-                label={t('request.sections')}
-              >
-                {#snippet first()}
-                  <section class="pane"><RequestPanel {services} /></section>
-                {/snippet}
-                {#snippet second()}
-                  <section class="pane"><ResponsePanel {services} /></section>
-                {/snippet}
-              </SplitPane>
-            </div>
-          </div>
+          <AiPanel
+            {services}
+            onclose={() => void prefs.update({ aiPanelOpen: false })}
+            onsettings={openAiSettings}
+          />
         {/snippet}
       </SplitPane>
     </main>
@@ -572,6 +616,15 @@
         {#if services.sync.state === 'conflicts'}{services.sync.status?.conflicts}{/if}
       </button>
     {/if}
+    {#if services.ai.enabled && !compact}
+      <button
+        type="button"
+        class="status-button ai"
+        aria-pressed={aiOpen}
+        title={t('hotkeys.ai.toggle')}
+        onclick={toggleAi}>{t('ai.toggle')}</button
+      >
+    {/if}
     {#if services.mcp?.active}
       <button
         type="button"
@@ -691,6 +744,9 @@
   }
   .status-button.mcp {
     color: var(--c-success);
+  }
+  .status-button.ai[aria-pressed='true'] {
+    color: var(--c-accent);
   }
   .status-button.sync {
     display: inline-flex;

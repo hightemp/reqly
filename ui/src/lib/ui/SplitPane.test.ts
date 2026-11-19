@@ -54,4 +54,25 @@ describe('SplitPane', () => {
     expect(screen.queryByTestId('first')).not.toBeInTheDocument();
     expect(screen.queryByRole('separator')).not.toBeInTheDocument();
   });
+
+  it('can size the second pane instead (a panel on the right)', async () => {
+    render(SplitPaneHarness, { size: 300, sized: 'second' });
+    const sep = screen.getByRole('separator');
+    expect(screen.getByTestId('second').parentElement!.style.flexBasis).toBe('300px');
+    expect(screen.getByTestId('first').parentElement!.style.flexBasis).toBe('');
+    // Dragging left widens the right pane.
+    await fireEvent.pointerDown(sep, { clientX: 500, pointerId: 1, button: 0 });
+    await fireEvent.pointerMove(sep, { clientX: 460, pointerId: 1 });
+    await fireEvent.pointerUp(sep, { clientX: 460, pointerId: 1 });
+    expect(sep).toHaveAttribute('aria-valuenow', '340');
+    await fireEvent.keyDown(sep, { key: 'ArrowRight' });
+    expect(sep).toHaveAttribute('aria-valuenow', '330');
+  });
+
+  it('hides the second pane when it is the sized one and collapsed', () => {
+    render(SplitPaneHarness, { size: 300, sized: 'second', collapsed: true });
+    expect(screen.queryByTestId('second')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first')).toBeInTheDocument();
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+  });
 });

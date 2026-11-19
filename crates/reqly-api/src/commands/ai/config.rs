@@ -155,10 +155,13 @@ impl AiConfig {
                     .with_param("provider", p.id.as_str()));
             }
         }
-        if let Some(m) = &self.default_model
-            && self.provider(&m.provider_id).is_none()
-        {
-            return Err(invalid("default model of an unknown provider"));
+        if let Some(m) = &self.default_model {
+            if self.provider(&m.provider_id).is_none() {
+                return Err(invalid("default model of an unknown provider"));
+            }
+            if m.model.trim().is_empty() {
+                return Err(invalid("default model without a name"));
+            }
         }
         if let Some(name) = self
             .tools

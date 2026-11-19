@@ -14,6 +14,7 @@
   import History from './sections/History.svelte';
   import Http from './sections/Http.svelte';
   import Keybindings from './sections/Keybindings.svelte';
+  import Ai from './sections/Ai.svelte';
   import Mcp from './sections/Mcp.svelte';
   import Templates from './sections/Templates.svelte';
 
@@ -28,6 +29,7 @@
     | 'keybindings'
     | 'sync'
     | 'mcp'
+    | 'ai'
     | 'account'
     | 'admin'
     | 'about';
@@ -103,6 +105,17 @@
             id: 'mcp' as const,
             label: t('settings.mcp'),
             keywords: [t('mcp.enable'), t('mcp.token'), t('mcp.tools'), t('mcp.clients')].join(' '),
+          },
+        ]
+      : []),
+    ...(services.ai.status
+      ? [
+          {
+            id: 'ai' as const,
+            label: t('settings.ai'),
+            keywords: [t('ai.enable'), t('ai.providers'), t('ai.defaultModel'), t('ai.tools')].join(
+              ' ',
+            ),
           },
         ]
       : []),
@@ -187,6 +200,8 @@
         <Account {services} />
       {:else if section === 'admin'}
         <Admin {services} />
+      {:else if section === 'ai'}
+        <Ai ai={services.ai} />
       {:else if section === 'mcp' && services.mcp}
         <Mcp mcp={services.mcp} multiUser={!!services.account.user} />
       {:else if section === 'sync' && services.sync}

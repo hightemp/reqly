@@ -64,4 +64,30 @@ describe('renderMarkdown', () => {
       '<p><em>merge</em> or snake_case_name</p>',
     );
   });
+
+  it('marks the language of code blocks and highlights them when asked', () => {
+    expect(renderMarkdown('```json\n{"a": 1}\n```')).toBe(
+      '<pre><code data-lang="json">{&quot;a&quot;: 1}</code></pre>',
+    );
+    const html = renderMarkdown('```js\nlet x = "<b>";\n```', {
+      highlight: (code, lang) => (lang === 'js' ? `<span class="hl">${code.length}</span>` : null),
+    });
+    expect(html).toBe('<pre><code data-lang="js"><span class="hl">14</span></code></pre>');
+    // No highlighter for the language: escaped text.
+    expect(renderMarkdown('```http\nGET /\n```', { highlight: () => null })).toBe(
+      '<pre><code data-lang="http">GET /</code></pre>',
+    );
+  });
+
+  it('adds a copy button to code blocks when asked', () => {
+    expect(renderMarkdown('```\nx\n```', { copyLabel: 'Copy "code"' })).toBe(
+      '<div class="md-code"><button type="button" class="md-copy" aria-label="Copy &quot;code&quot;" title="Copy &quot;code&quot;"></button><pre><code>x</code></pre></div>',
+    );
+  });
+
+  it('keeps an unfinished code block (a streamed answer)', () => {
+    expect(renderMarkdown('Look:\n```json\n{"a"')).toBe(
+      '<p>Look:</p>\n<pre><code data-lang="json">{&quot;a&quot;</code></pre>',
+    );
+  });
 });

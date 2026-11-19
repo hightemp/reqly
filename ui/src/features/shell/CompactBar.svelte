@@ -3,7 +3,7 @@
   requests and the request / response switch.
 -->
 <script module lang="ts">
-  export type CompactPane = 'request' | 'response';
+  export type CompactPane = 'request' | 'response' | 'ai';
 </script>
 
 <script lang="ts">
@@ -19,9 +19,11 @@
     services: Services;
     pane: CompactPane;
     onmenu: () => void;
+    /** Offer the AI chat as a third pane. */
+    ai?: boolean;
   }
 
-  let { services, pane = $bindable(), onmenu }: Props = $props();
+  let { services, pane = $bindable(), onmenu, ai = false }: Props = $props();
   // i18n-dynamic: shell.request
   // i18n-dynamic: shell.response
   let listOpen = $state(false);
@@ -51,6 +53,11 @@
         {t(`shell.${p}`)}
       </button>
     {/each}
+    {#if ai}
+      <button type="button" aria-pressed={pane === 'ai'} onclick={() => (pane = 'ai')}>
+        {t('settings.ai')}
+      </button>
+    {/if}
   </div>
 </header>
 

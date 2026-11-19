@@ -195,6 +195,10 @@ async fn rejects_invalid_configs() {
         ] }),
         json!({ "providers": [{ "id": "p1", "name": " ", "preset": "openai", "baseUrl": "https://api.openai.com/v1", "headers": [] }] }),
         json!({ "defaultModel": { "providerId": "nope", "model": "m" } }),
+        json!({
+            "providers": [provider("p1", "openai", "https://api.openai.com/v1")],
+            "defaultModel": { "providerId": "p1", "model": " " }
+        }),
         json!({ "tools": { "rm_rf": true } }),
     ];
     for input in bad {

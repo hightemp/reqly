@@ -7,6 +7,8 @@ import { i18n } from './i18n';
 import { PreferencesStore } from './preferences.svelte';
 import { CollabService, userColor } from './collab/collab';
 import { AccountStore } from './stores/account.svelte';
+import { AiStore } from './stores/ai.svelte';
+import { AiChatStore } from './stores/aiChat.svelte';
 import { EditorStore } from './stores/editor.svelte';
 import { McpStore } from './stores/mcp.svelte';
 import { PresenceStore } from './stores/presence.svelte';
@@ -60,6 +62,10 @@ export interface Services {
   sync: SyncStore | null;
   /** The MCP server for agents: locally and for server administrators. */
   mcp: McpStore | null;
+  /** AI chat settings (everyone; only administrators change them on a server). */
+  ai: AiStore;
+  /** The AI chat panel. */
+  aiChat: AiChatStore;
   environments: EnvironmentStore;
   account: AccountStore;
   collab: CollabService;
@@ -114,6 +120,8 @@ export async function createServices(
   await sync?.load().catch((e: unknown) => console.warn('[sync] status failed', e));
   const mcp = !account.user || account.user.isAdmin ? new McpStore(transport) : null;
   await mcp?.load().catch((e: unknown) => console.warn('[mcp] status failed', e));
+  const ai = new AiStore(transport);
+  await ai.load().catch((e: unknown) => console.warn('[ai] status failed', e));
   try {
     await workspace.load();
     if (workspace.activeCollectionId) {
@@ -148,6 +156,8 @@ export async function createServices(
           : null,
     sync,
     mcp,
+    ai,
+    aiChat: new AiChatStore(transport),
     environments,
     account,
     collab,

@@ -40,10 +40,26 @@ function request(id: string, name: string) {
   };
 }
 
-async function setup({ compact = false } = {}) {
+async function setup({ compact = false, ai = false } = {}) {
   const transport = new FakeTransport();
   const saved = transport.withSettings();
   transport.withEmptyWorkspace();
+  if (ai) {
+    transport.handle('ai.config', () => ({
+      config: {
+        enabled: true,
+        providers: [],
+        defaultModel: null,
+        tools: {},
+        autoApprove: {},
+      },
+      providers: [],
+      tools: [],
+      presets: [],
+      canEdit: true,
+    }));
+    transport.handle('ai.chats', () => []);
+  }
   const nodes = [request('r1', 'First'), request('r2', 'Second')];
   transport.handle('node.get', ({ id }) => nodes.find((n) => n.id === id) as never);
   transport.handle('response.list', () => [] as never);
@@ -196,5 +212,30 @@ describe('AppShell', () => {
       await fireEvent.click(within(again).getAllByRole('button', { name: 'Close' })[1]!);
       expect(services.tabs.tabs.map((t) => t.id)).toEqual(['r1']);
     });
+  });
+
+  it('opens the AI chat from the status bar and with its shortcut', async () => {
+    const { services } = await setup({ ai: true });
+    expect(screen.queryByRole('region', { name: 'AI chat' })).toBeNull();
+    const button = screen.getByRole('button', { name: 'AI chat' });
+    await fireEvent.click(button);
+    await screen.findByRole('region', { name: 'AI chat' });
+    expect(services.prefs.value.aiPanelOpen).toBe(true);
+    await fireEvent.click(screen.getByRole('button', { name: 'Hide AI chat' }));
+    await tick();
+    expect(screen.queryByRole('region', { name: 'AI chat' })).toBeNull();
+    await fireEvent.keyDown(window, { key: 'L', code: 'KeyL', ctrlKey: true, shiftKey: true });
+    await screen.findByRole('region', { name: 'AI chat' });
+  });
+
+  it('has no AI button while the chat is off', async () => {
+    await setup();
+    expect(screen.queryByRole('button', { name: 'AI chat' })).toBeNull();
+  });
+
+  it('shows the AI chat as a pane in the compact layout', async () => {
+    await setup({ compact: true, ai: true });
+    await fireEvent.click(screen.getByRole('button', { name: 'AI' }));
+    await screen.findByRole('region', { name: 'AI chat' });
   });
 });

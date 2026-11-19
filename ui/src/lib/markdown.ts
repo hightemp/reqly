@@ -5,6 +5,13 @@
 export interface MarkdownOptions {
   /** Help pages: `help:topic#anchor` links and ids on headings. */
   help?: boolean;
+  /**
+   * Highlights a fenced code block: safe HTML, or `null` to show it as
+   * plain (escaped) text.
+   */
+  highlight?: (code: string, lang: string) => string | null;
+  /** Adds a copy button (`.md-copy`, without a handler) to code blocks. */
+  copyLabel?: string;
 }
 
 const escape = (s: string) =>
@@ -80,9 +87,21 @@ export function renderMarkdown(source: string, options: MarkdownOptions = {}): s
     if (line.startsWith('```')) {
       flushPara();
       flushList();
+      const lang = line.slice(3).trim().split(/\s+/)[0]!.toLowerCase();
       const code: string[] = [];
       for (i++; i < lines.length && !lines[i]!.startsWith('```'); i++) code.push(lines[i]!);
-      blocks.push(`<pre><code>${escape(code.join('\n'))}</code></pre>`);
+      const text = code.join('\n');
+      const body = (lang ? options.highlight?.(text, lang) : null) ?? escape(text);
+      const attr = lang ? ` data-lang="${escape(lang)}"` : '';
+      const pre = `<pre><code${attr}>${body}</code></pre>`;
+      if (options.copyLabel) {
+        const label = escape(options.copyLabel);
+        blocks.push(
+          `<div class="md-code"><button type="button" class="md-copy" aria-label="${label}" title="${label}"></button>${pre}</div>`,
+        );
+      } else {
+        blocks.push(pre);
+      }
       continue;
     }
     const rule = lines[i + 1] ?? '';

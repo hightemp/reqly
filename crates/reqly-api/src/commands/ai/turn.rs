@@ -94,7 +94,10 @@ pub(crate) async fn send(ctx: &AppContext, input: AiSendInput) -> CoreResult<AiS
     let chat = own_chat(ctx, input.chat_id).await?;
     let config = load_config(&ctx.storage).await?;
     let (Some(provider_id), Some(model)) = (chat.provider_id.clone(), chat.model.clone()) else {
-        return Err(CoreError::new("ai.model", "choose a model for this chat"));
+        return Err(CoreError::new(
+            "ai.no_model",
+            "choose a model for this chat",
+        ));
     };
     let provider = provider_client(ctx, &config, &provider_id).await?;
     let caller = access::current();
