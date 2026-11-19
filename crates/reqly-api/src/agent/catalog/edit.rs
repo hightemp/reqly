@@ -196,15 +196,27 @@ pub fn tools() -> Vec<Tool> {
 }
 
 /// Fields of the given request data, auth defaults filled in.
-fn request_fields(a: &Map<String, Value>) -> Map<String, Value> {
+/// Auth types, as models must name them in `auth.type`.
+const AUTH_TYPES: &str = "inherit, none, basic, bearer, apiKey, digest, ntlm, oAuth1, oAuth2, \
+                          awsSigV4, hawk, asap, netrc, edgeGrid, jwt";
+
+/// The request fields of the arguments. Models tend to send every field of
+/// the schema, so `null` and `{}` mean "leave the default".
+fn request_fields(a: &Map<String, Value>) -> CoreResult<Map<String, Value>> {
     let mut fields: Map<String, Value> = REQUEST_FIELDS
         .iter()
         .filter_map(|k| a.get(*k).map(|v| (k.to_string(), v.clone())))
+        .filter(|(_, v)| !v.is_null() && v.as_object().is_none_or(|o| !o.is_empty()))
         .collect();
     if let Some(auth) = fields.get_mut("auth") {
+        if auth.get("type").and_then(Value::as_str).is_none() {
+            return Err(invalid(&format!(
+                "auth.type is required, one of: {AUTH_TYPES}"
+            )));
+        }
         complete_auth(auth);
     }
-    fields
+    Ok(fields)
 }
 
 /// Defaults of the simple auth types, so agents may leave fields out.
@@ -246,7 +258,7 @@ fn placement(position: Option<&str>) -> Value {
 
 async fn create_request(cx: ToolContext<'_>, a: Value) -> CoreResult<Value> {
     let a = object(a)?;
-    let mut data = request_fields(&a);
+    let mut data = request_fields(&a)?;
     data.insert("kind".into(), json!("request"));
     data.entry("method").or_insert_with(|| json!("GET"));
     data.entry("url").or_insert_with(|| json!(""));
@@ -269,7 +281,7 @@ async fn update_request(cx: ToolContext<'_>, a: Value) -> CoreResult<Value> {
     let a = object(a)?;
     let id = string(&a, "id")?;
     let current = cx.call("node.get", json!({ "id": id })).await?;
-    let mut fields = request_fields(&a);
+    let mut fields = request_fields(&a)?;
     for (k, v) in fields.iter_mut() {
         restore_hidden(v, &current["data"][k.as_str()]);
     }

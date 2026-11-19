@@ -5,6 +5,26 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- AI chat in a collapsible panel on the right (status bar button,
+  `Mod+Shift+L`, an **AI** pane on phones), on desktop, server and Android;
+  off by default (ADR-015, [docs/ai-chat.md](docs/ai-chat.md)).
+  - Providers with an OpenAI-compatible API, with presets for OpenAI,
+    OpenRouter, Ollama Cloud and a local Ollama; calls go through the core
+    and the proxy and certificate settings; keys are write-only.
+  - Streamed answers with Markdown and highlighted code, stop, chats per
+    workspace (per user on a multi-user server), the current request and
+    its response as attachments.
+  - The MCP tools, with their own settings: reading runs at once, changes
+    wait for **Allow** / **Deny** / **Always in this chat**, or run without
+    asking per group.
+
+### Fixed
+
+- Agent tools accept `{}` for request fields a model fills by default, and
+  an `auth` without `type` names what is missing.
+
 ## [1.2.0] — 2026-11-18
 
 MCP server for AI agents, and tab bar fixes.

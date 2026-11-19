@@ -61,6 +61,10 @@ Android and a self-hosted web version served by a single Rust binary.
 - MCP server for AI agents (Claude Code, Cursor, VS Code): browse, edit,
   send and run requests, with per-tool permissions, masked secrets and a
   call log; off by default ([docs/mcp.md](docs/mcp.md))
+- AI chat in a side panel with OpenAI-compatible providers (OpenAI,
+  OpenRouter, Ollama, Ollama Cloud or any compatible API): it answers
+  questions about your requests and uses the same tools as MCP, asking
+  before it changes anything; off by default ([docs/ai-chat.md](docs/ai-chat.md))
 - 10 built-in themes plus a theme editor (JSON import/export), density,
   fonts, zoom; custom window frame; remappable shortcuts; English and Russian
 - Variables and environments like Insomnia: global, base and switchable

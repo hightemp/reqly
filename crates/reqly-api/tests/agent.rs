@@ -61,3 +61,68 @@ async fn tool_errors_carry_codes() {
         .unwrap_err();
     assert_eq!(err.code, "mcp.invalid_arguments");
 }
+
+async fn collection(ctx: &AppContext) -> String {
+    let ws = reqly_api::commands::dispatch_as(
+        registry(),
+        ctx,
+        Caller::Local,
+        "workspace.create",
+        json!({ "name": "W" }),
+    )
+    .await
+    .unwrap();
+    reqly_api::commands::dispatch_as(
+        registry(),
+        ctx,
+        Caller::Local,
+        "collection.create",
+        json!({ "workspaceId": ws["id"], "name": "C" }),
+    )
+    .await
+    .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string()
+}
+
+/// Models fill every field they see in the schema, often with `{}`.
+#[tokio::test]
+async fn empty_objects_from_a_model_mean_defaults() {
+    let ctx = AppContext::for_tests_on(Platform::Desktop).await;
+    let col = collection(&ctx).await;
+    let tools = catalog_tools();
+    let out = tools
+        .get("create_request")
+        .unwrap()
+        .run(
+            ToolContext::new(&ctx, Caller::Local),
+            json!({
+                "collectionId": col, "name": "Ping", "method": "GET", "url": "https://example.com/ping",
+                "auth": {}, "body": {}, "settings": {}, "scripts": {}, "variables": {},
+                "headers": [], "params": [], "description": ""
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(out["name"], "Ping");
+    assert_eq!(out["data"]["url"], "https://example.com/ping");
+}
+
+#[tokio::test]
+async fn auth_without_a_type_says_what_is_missing() {
+    let ctx = AppContext::for_tests_on(Platform::Desktop).await;
+    let col = collection(&ctx).await;
+    let err = catalog_tools()
+        .get("create_request")
+        .unwrap()
+        .run(
+            ToolContext::new(&ctx, Caller::Local),
+            json!({ "collectionId": col, "name": "X", "auth": { "token": "t" } }),
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(err.code, "mcp.invalid_arguments");
+    assert!(err.message.contains("auth.type"), "{}", err.message);
+    assert!(err.message.contains("bearer"), "{}", err.message);
+}
