@@ -41,7 +41,7 @@
   {#if waiting}
     <div class="ask">
       <span class="title">{t('ai.confirmTitle', { tool: name })}</span>
-      <pre class="mono">{pretty(call?.arguments)}</pre>
+      <pre class="mono selectable">{pretty(call?.arguments)}</pre>
       <div class="actions">
         <Button size="sm" variant="primary" onclick={() => onconfirm('allow')}
           >{t('ai.allow')}</Button
@@ -59,13 +59,13 @@
       </summary>
       <div class="body">
         <span class="label">{t('ai.arguments')}</span>
-        <pre class="mono">{pretty(call?.arguments)}</pre>
+        <pre class="mono selectable">{pretty(call?.arguments)}</pre>
         {#if message.error}
           <span class="label">{t('ai.result')}</span>
-          <p class="error">{errorMessage(message.error)}</p>
+          <p class="error selectable">{errorMessage(message.error)}</p>
         {:else if message.content && state !== 'denied' && state !== 'cancelled'}
           <span class="label">{t('ai.result')}</span>
-          <pre class="mono">{pretty(message.content)}</pre>
+          <pre class="mono selectable">{pretty(message.content)}</pre>
         {/if}
       </div>
     </details>

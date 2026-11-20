@@ -158,8 +158,9 @@ test('many open tabs scroll with the wheel and the arrows', async ({ page }) => 
   }
   const strip = page.getByRole('tablist', { name: 'Open requests' });
   await expect(strip.getByRole('tab')).toHaveCount(12);
-  const left = page.getByRole('button', { name: 'Scroll tabs left' });
-  const right = page.getByRole('button', { name: 'Scroll tabs right' });
+  const bar = strip.locator('..');
+  const left = bar.getByRole('button', { name: 'Scroll tabs left' });
+  const right = bar.getByRole('button', { name: 'Scroll tabs right' });
   const scrollLeft = () => strip.evaluate((el) => el.scrollLeft);
 
   // The newest tab is active and scrolled into view: hidden tabs are on the left.
@@ -189,5 +190,70 @@ test('many open tabs scroll with the wheel and the arrows', async ({ page }) => 
   await page.getByRole('menuitem', { name: 'New request' }).click();
   await expect(strip.getByRole('tab')).toHaveCount(1);
   await expect(left).toBeHidden();
+  await closeAllTabs(page);
+});
+
+test('text has a context menu and the selection shows over the current line', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await page.getByRole('tab', { name: 'Body' }).click();
+  await page.getByRole('combobox', { name: 'Body type' }).click();
+  await page.getByRole('option', { name: 'Plain text' }).click();
+  const editor = page.getByRole('textbox', { name: 'Request body' });
+  await editor.click();
+  await page.keyboard.type('hello world');
+
+  // Select all from the menu: the current line stops covering the selection.
+  await editor.click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Cut' })).toBeDisabled();
+  await page.getByRole('menuitem', { name: 'Select all' }).click();
+  const line = editor.locator('.cm-activeLine');
+  await expect(line).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+
+  // Copy, then paste at the end.
+  await editor.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Copy' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('hello world');
+  // A right click in Chrome moves the selection: open the menu at the caret.
+  await page.keyboard.press('ControlOrMeta+End');
+  await editor.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    el.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: r.x + 20,
+        clientY: r.y + 10,
+      }),
+    );
+  });
+  await page.getByRole('menuitem', { name: 'Paste' }).click();
+  await expect(editor).toHaveText('hello worldhello world');
+
+  await closeAllTabs(page);
+});
+
+test('section tabs scroll in a narrow panel', async ({ page }) => {
+  await page.goto('/');
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await page.setViewportSize({ width: 800, height: 700 });
+  const sections = page.getByRole('tablist', { name: 'Request sections' });
+  const bar = sections.locator('..');
+  const right = bar.getByRole('button', { name: 'Scroll tabs right' });
+  await expect(right).toBeEnabled();
+  const scrollLeft = () => sections.evaluate((el) => el.scrollLeft);
+  await sections.hover();
+  await page.mouse.wheel(0, 200);
+  await expect.poll(scrollLeft).toBeGreaterThan(0);
+  await expect(bar.getByRole('button', { name: 'Scroll tabs left' })).toBeEnabled();
+  await page.setViewportSize({ width: 1280, height: 720 });
   await closeAllTabs(page);
 });

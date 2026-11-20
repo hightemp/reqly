@@ -2,7 +2,7 @@
 // restyles editors without reconfiguring them.
 
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { EditorView, tooltips } from '@codemirror/view';
+import { EditorView, highlightActiveLine, tooltips } from '@codemirror/view';
 import { tags as t } from '@lezer/highlight';
 
 const v = (token: string) => `var(--c-${token})`;
@@ -16,6 +16,23 @@ export function bodyTooltips() {
   return [
     tooltips({ parent: document.body }),
     EditorView.theme({ '.cm-tooltip': { zIndex: '1000' } }),
+  ];
+}
+
+/**
+ * The current line highlight, off while text is selected: the selection is
+ * drawn under the lines, so the line background would hide it.
+ */
+export function activeLine() {
+  return [
+    highlightActiveLine(),
+    EditorView.editorAttributes.compute(
+      ['selection'],
+      (state) =>
+        (state.selection.ranges.some((r) => !r.empty)
+          ? { class: 'cm-hasSelection' }
+          : {}) as Record<string, string>,
+    ),
   ];
 }
 
@@ -35,6 +52,8 @@ export const reqlyTheme = EditorView.theme({
   },
   '.cm-activeLine': { backgroundColor: 'transparent' },
   '&.cm-focused .cm-activeLine': { backgroundColor: v('bg-hover') },
+  // The line background would cover the selection drawn beneath the text.
+  '&.cm-focused.cm-hasSelection .cm-activeLine': { backgroundColor: 'transparent' },
   '.cm-gutters': { backgroundColor: 'transparent', color: v('fg-subtle'), border: 'none' },
   '.cm-activeLineGutter': { backgroundColor: 'transparent', color: v('fg-muted') },
   '.cm-foldPlaceholder': { backgroundColor: v('bg-active'), color: v('fg-muted'), border: 'none' },

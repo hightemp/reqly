@@ -42,20 +42,20 @@
         {/each}
       </div>
     {/if}
-    <p class="text">{message.content}</p>
+    <p class="text selectable">{message.content}</p>
   </div>
 {:else if message.role === 'assistant'}
   <div class="message assistant" class:failed={message.status === 'error'}>
     {#if message.reasoning}
       <details class="reasoning">
         <summary>{t('ai.thinking')}</summary>
-        <p>{message.reasoning}</p>
+        <p class="selectable">{message.reasoning}</p>
       </details>
     {/if}
     {#if html}
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <!-- eslint-disable-next-line svelte/no-at-html-tags -- escaped by renderMarkdown -->
-      <div class="md" onclick={(e) => void onclick(e)}>{@html html}</div>
+      <div class="md selectable" onclick={(e) => void onclick(e)}>{@html html}</div>
     {/if}
     {#if pending}
       <span class="status">
@@ -65,7 +65,7 @@
     {:else if message.status === 'cancelled'}
       <span class="status">{t('ai.stopped')}</span>
     {:else if message.error}
-      <p class="error" role="alert">{errorMessage(message.error)}</p>
+      <p class="error selectable" role="alert">{errorMessage(message.error)}</p>
     {/if}
     {#if message.usage && !pending}
       <span class="usage"

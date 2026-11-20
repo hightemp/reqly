@@ -5,6 +5,19 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A context menu for text (Cut, Copy, Paste, Select all) in text fields and
+  code editors, and Copy / Select all over read-only text: the desktop app
+  showed no menu there. Phones keep the system's text toolbar.
+- Section tabs (request, response, settings and others) scroll with the mouse
+  wheel and get scroll arrows when the panel is too narrow for them.
+
+### Fixed
+
+- The text of AI chat messages and tool results could not be selected.
+- The current line highlight in code editors hid the selection.
+
 ## [1.3.0] — 2026-11-19
 
 AI chat with OpenAI-compatible providers.

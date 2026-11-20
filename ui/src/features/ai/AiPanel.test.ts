@@ -126,7 +126,9 @@ describe('AI panel', () => {
     });
     const code = await screen.findByText('"a"');
     expect(code.className).toBe('hl-property');
-    expect(screen.getByText('Make a request')).toBeTruthy();
+    // The text can be selected and copied.
+    expect(screen.getByText('Make a request').classList).toContain('selectable');
+    expect(code.closest('.md')!.classList).toContain('selectable');
 
     emit('ai.message', {
       chatId: 'c1',

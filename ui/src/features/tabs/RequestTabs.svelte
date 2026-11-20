@@ -11,7 +11,7 @@
   import { contextMenu, menus, type MenuEntry } from '$lib/ui/overlay/menus.svelte';
   import Spinner from '$lib/ui/Spinner.svelte';
   import { closeTab, tabInfo, trackTabs } from './info.svelte';
-  import { overflow, wheelDelta } from './scroll';
+  import { scrollPage, scrollStrip } from '$lib/ui/scroll';
 
   let { services }: { services: Services } = $props();
   const tabs = $derived(services.tabs);
@@ -20,40 +20,10 @@
   let dragOver = $state<number | null>(null);
   let hidden = $state({ start: false, end: false });
 
-  function measure() {
-    if (!strip) return;
-    const next = overflow(strip);
-    if (next.start !== hidden.start || next.end !== hidden.end) hidden = next;
-  }
-
-  function scrollPage(direction: -1 | 1) {
-    strip?.scrollBy({ left: direction * strip.clientWidth * 0.8, behavior: 'smooth' });
-  }
-
-  // A mouse wheel over the strip scrolls it sideways.
-  function onWheel(e: WheelEvent) {
-    if (!strip || e.ctrlKey) return;
-    const { start, end } = overflow(strip);
-    const delta = wheelDelta(e, strip.clientWidth);
-    if ((delta < 0 && !start) || (delta > 0 && !end) || delta === 0) return;
-    e.preventDefault();
-    strip.scrollLeft += delta;
-  }
-
-  // Re-measure when the strip or any tab changes size.
+  // Wheel scrolling and the arrows when the tabs do not fit.
   $effect(() => {
-    const el = strip;
-    void tabs.tabs.length;
-    if (!el) return;
-    el.addEventListener('wheel', onWheel, { passive: false });
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    for (const child of el.children) observer.observe(child);
-    measure();
-    return () => {
-      el.removeEventListener('wheel', onWheel);
-      observer.disconnect();
-    };
+    if (!strip) return;
+    return scrollStrip(strip, (h) => (hidden = h));
   });
 
   // svelte-ignore state_referenced_locally
@@ -167,16 +137,10 @@
         size={14}
         class="scroll"
         label={t('tabs.scrollLeft')}
-        onclick={() => scrollPage(-1)}
+        onclick={() => strip && scrollPage(strip, -1)}
       />
     {/if}
-    <div
-      bind:this={strip}
-      class="strip"
-      role="tablist"
-      aria-label={t('tabs.label')}
-      onscroll={measure}
-    >
+    <div bind:this={strip} class="strip" role="tablist" aria-label={t('tabs.label')}>
       {#each tabs.tabs as tab, i (tab.id)}
         {@const meta = info(tab)}
         <div
@@ -238,7 +202,7 @@
         size={14}
         class="scroll"
         label={t('tabs.scrollRight')}
-        onclick={() => scrollPage(1)}
+        onclick={() => strip && scrollPage(strip, 1)}
       />
     {/if}
     <IconButton

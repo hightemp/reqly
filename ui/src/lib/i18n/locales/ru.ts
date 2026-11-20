@@ -82,6 +82,7 @@ export const ru: Translation<Messages> = {
     cut: 'Вырезать',
     copy: 'Копировать',
     paste: 'Вставить',
+    selectAll: 'Выделить всё',
     copyCurl: 'Копировать как cURL',
     reveal: 'Показать в дереве',
     folderSettings: 'Настройки папки…',

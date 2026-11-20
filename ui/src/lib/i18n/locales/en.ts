@@ -65,6 +65,7 @@ export const en = {
     cut: 'Cut',
     copy: 'Copy',
     paste: 'Paste',
+    selectAll: 'Select all',
     copyCurl: 'Copy as cURL',
     reveal: 'Reveal in tree',
     folderSettings: 'Folder settings…',

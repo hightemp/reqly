@@ -25,7 +25,6 @@
   import {
     EditorView,
     drawSelection,
-    highlightActiveLine,
     highlightActiveLineGutter,
     keymap,
     lineNumbers,
@@ -37,7 +36,7 @@
   import { templateCompletions, templateExtension } from '$lib/template/codemirror';
   import { templateHostFactory } from '$lib/template/host';
   import { formatJson, formatXml } from './format';
-  import { bodyTooltips, reqlyHighlight, reqlyTheme } from './theme';
+  import { activeLine, bodyTooltips, reqlyHighlight, reqlyTheme } from './theme';
 
   interface Props {
     value?: string;
@@ -153,7 +152,7 @@
             : completions.length
               ? autocompletion({ override: completions })
               : autocompletion(),
-          highlightActiveLine(),
+          activeLine(),
           highlightSelectionMatches(),
           search({ top: true }),
           keymap.of([

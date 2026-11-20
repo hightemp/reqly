@@ -11,6 +11,10 @@
 </script>
 
 <script lang="ts" generics="K extends string">
+  import { t } from '$lib/i18n';
+  import IconButton from './IconButton.svelte';
+  import { scrollPage, scrollStrip, type Hidden } from './scroll';
+
   interface Props {
     tabs: TabSpec<K>[];
     value: K;
@@ -21,6 +25,20 @@
 
   let { tabs, value = $bindable(), label, idPrefix = 'tabs', onchange }: Props = $props();
   let list: HTMLDivElement | null = $state(null);
+  let hidden = $state<Hidden>({ start: false, end: false });
+
+  // A narrow panel: the wheel scrolls the tabs, arrows show what is hidden.
+  $effect(() => {
+    if (!list) return;
+    return scrollStrip(list, (h) => (hidden = h));
+  });
+
+  // Keep the chosen tab in view.
+  $effect(() => {
+    list
+      ?.querySelector<HTMLElement>(`#${idPrefix}-tab-${value}`)
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  });
 
   function select(id: K) {
     value = id;
@@ -42,35 +60,67 @@
   }
 </script>
 
-<div
-  bind:this={list}
-  class="tabs"
-  role="tablist"
-  aria-label={label}
-  tabindex="-1"
-  onkeydown={onKeyDown}
->
-  {#each tabs as tab (tab.id)}
-    <button
-      type="button"
-      role="tab"
-      id="{idPrefix}-tab-{tab.id}"
-      aria-controls="{idPrefix}-panel-{tab.id}"
-      aria-selected={tab.id === value}
-      tabindex={tab.id === value ? 0 : -1}
-      disabled={tab.disabled}
-      class="tab"
-      onclick={() => select(tab.id)}
-    >
-      {tab.label}
-      {#if tab.count}<span class="count">{tab.count}</span>{/if}
-      {#if tab.dot}<span class="dot" aria-hidden="true"></span>{/if}
-    </button>
-  {/each}
+<div class="tabs-bar">
+  {#if hidden.start || hidden.end}
+    <IconButton
+      icon="chevron-left"
+      size={14}
+      class="tabs-scroll"
+      disabled={!hidden.start}
+      label={t('tabs.scrollLeft')}
+      onclick={() => list && scrollPage(list, -1)}
+    />
+  {/if}
+  <div
+    bind:this={list}
+    class="tabs"
+    role="tablist"
+    aria-label={label}
+    tabindex="-1"
+    onkeydown={onKeyDown}
+  >
+    {#each tabs as tab (tab.id)}
+      <button
+        type="button"
+        role="tab"
+        id="{idPrefix}-tab-{tab.id}"
+        aria-controls="{idPrefix}-panel-{tab.id}"
+        aria-selected={tab.id === value}
+        tabindex={tab.id === value ? 0 : -1}
+        disabled={tab.disabled}
+        class="tab"
+        onclick={() => select(tab.id)}
+      >
+        {tab.label}
+        {#if tab.count}<span class="count">{tab.count}</span>{/if}
+        {#if tab.dot}<span class="dot" aria-hidden="true"></span>{/if}
+      </button>
+    {/each}
+  </div>
+  {#if hidden.start || hidden.end}
+    <IconButton
+      icon="chevron-right"
+      size={14}
+      class="tabs-scroll"
+      disabled={!hidden.end}
+      label={t('tabs.scrollRight')}
+      onclick={() => list && scrollPage(list, 1)}
+    />
+  {/if}
 </div>
 
 <style>
+  .tabs-bar {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  .tabs-bar :global(.tabs-scroll) {
+    flex: none;
+  }
   .tabs {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: stretch;
     gap: 2px;

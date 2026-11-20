@@ -116,6 +116,12 @@ test('the AI chat creates a request after the user allows it', async ({ page }) 
     await panel.getByRole('button', { name: 'Allow', exact: true }).click();
     await expect(panel.locator('strong', { hasText: 'Made by AI' })).toBeVisible();
     await expect(page.getByRole('treeitem', { name: /Made by AI/ })).toBeVisible();
+    // The answer can be selected and copied from the context menu.
+    const answer = panel.locator('strong', { hasText: 'Made by AI' });
+    await expect(answer).toHaveCSS('user-select', 'text');
+    await answer.click({ button: 'right' });
+    await expect(page.getByRole('menuitem', { name: 'Select all' })).toBeVisible();
+    await page.keyboard.press('Escape');
     // The chat got its title from the question.
     await expect(panel.getByRole('button', { name: 'Chats' })).toContainText(
       'Add a request for the AI endpoint',
