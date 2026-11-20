@@ -42,6 +42,10 @@ model. Provider traffic and its cost go through the server's keys.
   and are not exported.
 - The first message titles the chat; chats can be renamed and deleted.
 - Each chat has its model; new chats start with the default model.
+- A chat branches off at an answer (`ai.forkChat`): a new chat with copies
+  of the messages up to it, plus the results of the tool calls it made (a
+  model rejects calls without results); unfinished messages are cancelled
+  in the copy. Messages can be copied as Markdown.
 - The current request and its last response can be attached: the model
   gets them as JSON (masked, bodies cut to 16 KB).
 
@@ -70,13 +74,13 @@ All `ai.*` events except `ai.configChanged` go only to the chat's owner.
 
 ## Commands
 
-| Command                                                                                     | Who                      |                                                |
-| ------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------------------------- |
-| `ai.config`                                                                                 | everyone                 | providers (no keys), tools, presets, `canEdit` |
-| `ai.setConfig`, `ai.setKey`                                                                 | administrators           | settings, keys                                 |
-| `ai.models`                                                                                 | everyone                 | models of a provider                           |
-| `ai.chats`, `ai.chat`, `ai.createChat`, `ai.renameChat`, `ai.deleteChat`, `ai.setChatModel` | viewers of the workspace | own chats                                      |
-| `ai.send`, `ai.cancel`, `ai.confirm`                                                        | viewers of the workspace | turns                                          |
+| Command                                                                                                    | Who                      |                                                |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------------------------- |
+| `ai.config`                                                                                                | everyone                 | providers (no keys), tools, presets, `canEdit` |
+| `ai.setConfig`, `ai.setKey`                                                                                | administrators           | settings, keys                                 |
+| `ai.models`                                                                                                | everyone                 | models of a provider                           |
+| `ai.chats`, `ai.chat`, `ai.createChat`, `ai.renameChat`, `ai.forkChat`, `ai.deleteChat`, `ai.setChatModel` | viewers of the workspace | own chats                                      |
+| `ai.send`, `ai.cancel`, `ai.confirm`                                                                       | viewers of the workspace | turns                                          |
 
 Errors: `ai.auth` (401/403), `ai.rate_limit` (429), `ai.model` (404),
 `ai.provider` (other statuses), `ai.network`, `ai.cancelled`,

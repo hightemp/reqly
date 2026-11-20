@@ -58,7 +58,7 @@ async function setup(withProvider = true) {
   const chat: AiChat = {
     id: 'c1',
     workspaceId: 'w1',
-    title: '',
+    title: 'Ideas',
     providerId: 'p1',
     model: 'llama3.2',
     autoApprove: false,
@@ -79,6 +79,7 @@ async function setup(withProvider = true) {
   );
   t.handle('ai.confirm', () => ({}));
   t.handle('ai.cancel', () => ({}));
+  t.handle('ai.forkChat', () => ({ ...chat, id: 'c2', title: 'Branch: Ideas' }));
   const services = await createServices(t, {
     platform: 'linux',
     media,
@@ -204,6 +205,50 @@ describe('AI panel', () => {
     });
     expect((await screen.findByRole('alert')).textContent).toBe(
       'The provider refused the key: Incorrect API key',
+    );
+  });
+
+  it('copies a message and branches off from an answer', async () => {
+    const { t, emit, finish } = await setup();
+    const writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const input = await screen.findByRole('textbox', { name: /Ask about your requests/ });
+    await fireEvent.input(input, { target: { value: 'Name it' } });
+    await fireEvent.keyDown(input, { key: 'Enter' });
+    await screen.findByRole('button', { name: 'Stop' });
+    emit('ai.message', { chatId: 'c1', message: msg('m1', 1, 'user', { content: 'Name it' }) });
+    emit('ai.message', {
+      chatId: 'c1',
+      message: msg('m2', 2, 'assistant', { status: 'pending' }),
+    });
+    emit('ai.delta', { chatId: 'c1', messageId: 'm2', kind: 'text', text: 'Call it **Atlas**' });
+    await screen.findByText('Atlas');
+    // Not while the answer is still coming.
+    expect(screen.queryByRole('button', { name: 'Branch off from here' })).toBeNull();
+    emit('ai.message', {
+      chatId: 'c1',
+      message: msg('m2', 2, 'assistant', { content: 'Call it **Atlas**' }),
+    });
+    emit('ai.done', { chatId: 'c1', status: 'done' });
+    finish();
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: 'Copy message' })).toHaveLength(2),
+    );
+    const copies = screen.getAllByRole('button', { name: 'Copy message' });
+    await fireEvent.click(copies[1]!);
+    expect(writeText).toHaveBeenCalledWith('Call it **Atlas**');
+
+    // Only answers branch off: the new chat keeps everything up to them.
+    const branch = screen.getAllByRole('button', { name: 'Branch off from here' });
+    expect(branch).toHaveLength(1);
+    await fireEvent.click(branch[0]!);
+    await waitFor(() =>
+      expect(t.calls.find((c) => c.name === 'ai.forkChat')!.input).toEqual({
+        chatId: 'c1',
+        messageId: 'm2',
+        title: 'Branch: Ideas',
+      }),
     );
   });
 });

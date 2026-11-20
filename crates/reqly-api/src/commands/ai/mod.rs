@@ -17,8 +17,8 @@ use ts_rs::TS;
 use super::{AppContext, Empty};
 use crate::registry::{Command, Registry};
 use chats::{
-    AiChatInput, AiChatView, AiCreateChatInput, AiRenameChatInput, AiSetChatModelInput,
-    AiWorkspaceInput,
+    AiChatInput, AiChatView, AiCreateChatInput, AiForkChatInput, AiRenameChatInput,
+    AiSetChatModelInput, AiWorkspaceInput,
 };
 use config::{AiConfig, AiStatus};
 use reqly_storage::ai::AiChat;
@@ -133,6 +133,15 @@ command!(
 );
 
 command!(
+    /// A new chat with the messages up to one of them (branching off).
+    AiForkChat,
+    "ai.forkChat",
+    AiForkChatInput,
+    AiChat,
+    |ctx, input| { chats::fork(ctx, input).await }
+);
+
+command!(
     /// Deletes a chat and stops its turn.
     AiDeleteChat,
     "ai.deleteChat",
@@ -195,6 +204,7 @@ pub fn register(r: &mut Registry<AppContext>) {
         .register::<AiChatGet>()
         .register::<AiCreateChat>()
         .register::<AiRenameChat>()
+        .register::<AiForkChat>()
         .register::<AiDeleteChat>()
         .register::<AiSetChatModel>()
         .register::<AiSend>()

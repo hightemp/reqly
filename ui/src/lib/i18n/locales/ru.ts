@@ -1137,6 +1137,9 @@ export const ru: Translation<Messages> = {
     openSettings: 'Открыть настройки',
     copied: 'Скопировано',
     copyCode: 'Копировать код',
+    copyMessage: 'Копировать сообщение',
+    branch: 'Ответвиться отсюда',
+    branchTitle: 'Ветка: {title}',
     tokens: 'Токены: {prompt} + {completion}',
   },
   settings: {

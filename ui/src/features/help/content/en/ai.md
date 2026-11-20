@@ -39,6 +39,9 @@ phone it is the **AI** tab at the top.
   delete them from the list. On a multi-user server each user sees only
   their own chats.
 - The **model** of the chat is chosen above the input.
+- Under a message: **Copy message** (its Markdown text) and, under an
+  answer, **Branch off from here** — a new chat with the messages up to
+  that answer, to try another direction without losing this one.
 - **Enter** sends, **Shift+Enter** adds a line. **Stop** ends the answer
   and keeps what arrived.
 - **Attach the current request** (and its last response) to ask about it

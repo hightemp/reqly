@@ -127,6 +127,15 @@ test('the AI chat creates a request after the user allows it', async ({ page }) 
       'Add a request for the AI endpoint',
     );
 
+    // Branch off from the answer: a new chat with the same messages.
+    await answer.hover();
+    await panel.getByRole('button', { name: 'Branch off from here' }).click();
+    await expect(panel.getByRole('button', { name: 'Chats' })).toContainText(
+      'Branch: Add a request for the AI endpoint',
+    );
+    await expect(panel.locator('strong', { hasText: 'Made by AI' })).toBeVisible();
+    await expect(panel.getByRole('group', { name: 'create_request' })).toBeVisible();
+
     // Turn the chat off again for the other tests.
     await page.getByRole('contentinfo').getByRole('button', { name: 'Settings' }).click();
     await dialog.getByRole('button', { name: 'AI', exact: true }).click();

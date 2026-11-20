@@ -28,6 +28,8 @@
     play: 'M7 5l12 7-12 7z',
     stop: 'M7 7h10v10H7z',
     copy: 'M9 9h10v10H9z M5 15V5h10',
+    branch:
+      'M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9',
     download: 'M12 4v12 M7 11l5 5 5-5 M5 20h14',
     trash: 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13',
     history: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 7v5l3 3',

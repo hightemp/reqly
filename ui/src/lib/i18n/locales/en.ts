@@ -1074,6 +1074,9 @@ export const en = {
     openSettings: 'Open settings',
     copied: 'Copied',
     copyCode: 'Copy code',
+    copyMessage: 'Copy message',
+    branch: 'Branch off from here',
+    branchTitle: 'Branch: {title}',
     tokens: '{prompt} + {completion} tokens',
   },
   settings: {

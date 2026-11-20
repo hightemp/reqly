@@ -192,6 +192,18 @@ export class AiChatStore {
     this.waiting = this.waiting.filter((w) => w.callId !== callId);
   }
 
+  /** A new chat with the messages up to `messageId` of the open one; opens it. */
+  async fork(messageId: string, title?: string) {
+    if (!this.activeId) return;
+    const chat = await this.transport.call('ai.forkChat', {
+      chatId: this.activeId,
+      messageId,
+      ...(title ? { title } : {}),
+    });
+    this.chats = [chat, ...this.chats.filter((c) => c.id !== chat.id)];
+    await this.open(chat.id);
+  }
+
   async rename(chatId: string, title: string) {
     const chat = await this.transport.call('ai.renameChat', { chatId, title });
     this.chats = this.chats.map((c) => (c.id === chatId ? chat : c));

@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- AI chat messages have **Copy message** and, on answers, **Branch off from
+  here**: a new chat with the messages up to that answer (`ai.forkChat`).
 - A context menu for text (Cut, Copy, Paste, Select all) in text fields and
   code editors, and Copy / Select all over read-only text: the desktop app
   showed no menu there. Phones keep the system's text toolbar.

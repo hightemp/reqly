@@ -69,6 +69,14 @@ function setup() {
   );
   t.handle('ai.cancel', () => ({}));
   t.handle('ai.confirm', () => ({}));
+  t.handle('ai.forkChat', ({ chatId, messageId, title }) => {
+    const c = { ...chat('c9'), title: title ?? '' };
+    chats = [c, ...chats];
+    stored.c9 = stored[chatId]!.filter(
+      (m) => m.seq <= stored[chatId]!.find((x) => x.id === messageId)!.seq,
+    );
+    return c;
+  });
   t.handle('ai.renameChat', ({ chatId, title }) => ({ ...chat(chatId), title }));
   t.handle('ai.setChatModel', ({ chatId, providerId, model }) => ({
     ...chat(chatId),
@@ -218,5 +226,25 @@ describe('AiChatStore', () => {
     expect(t.calls.filter((c) => c.name === 'ai.chats')).toHaveLength(2);
     emit(t, 'ai.chatsChanged', { workspaceId: 'other' });
     expect(t.calls.filter((c) => c.name === 'ai.chats')).toHaveLength(2);
+  });
+
+  it('branches off into a new chat and opens it', async () => {
+    const { store, t, stored } = setup();
+    stored.c1 = [
+      msg('m1', 1, 'user', { content: 'hi' }),
+      msg('m2', 2, 'assistant', { content: 'hello' }),
+      msg('m3', 3, 'user', { content: 'more' }),
+    ];
+    await store.setWorkspace('w1');
+    await store.open('c1');
+    await store.fork('m2', 'Branch: Older');
+    expect(t.calls.find((c) => c.name === 'ai.forkChat')!.input).toEqual({
+      chatId: 'c1',
+      messageId: 'm2',
+      title: 'Branch: Older',
+    });
+    expect(store.activeId).toBe('c9');
+    expect(store.chats[0]!.id).toBe('c9');
+    expect(store.messages.map((m) => m.content)).toEqual(['hi', 'hello']);
   });
 });

@@ -1,11 +1,13 @@
 <!-- One chat message: the user's text with attachments, or the model's
-     answer (Markdown, reasoning, state, errors). Tool results are cards. -->
+     answer (Markdown, reasoning, state, errors), with Copy and (answers)
+     Branch off buttons. Tool results are cards. -->
 <script lang="ts">
   import type { AiChatMessage } from '$lib/api/generated/AiChatMessage';
   import { errorMessage } from '$lib/errors';
   import { t } from '$lib/i18n';
   import { renderMarkdown } from '$lib/markdown';
   import { highlightToHtml } from '$lib/ui/code/highlight';
+  import IconButton from '$lib/ui/IconButton.svelte';
   import Spinner from '$lib/ui/Spinner.svelte';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
 
@@ -13,9 +15,11 @@
     message: AiChatMessage;
     /** The tool the model is starting to call (while streaming). */
     calling?: string;
+    /** Starts a new chat that ends with this answer. */
+    onfork?: () => void;
   }
 
-  let { message, calling }: Props = $props();
+  let { message, calling, onfork }: Props = $props();
 
   const html = $derived(
     message.content
@@ -23,6 +27,11 @@
       : '',
   );
   const pending = $derived(message.status === 'pending');
+
+  async function copyMessage() {
+    await navigator.clipboard?.writeText(message.content);
+    toasts.show({ message: t('ai.copied'), kind: 'success' });
+  }
 
   async function onclick(e: MouseEvent) {
     const button = (e.target as HTMLElement).closest('.md-copy');
@@ -43,6 +52,16 @@
       </div>
     {/if}
     <p class="text selectable">{message.content}</p>
+    {#if message.content}
+      <div class="actions">
+        <IconButton
+          icon="copy"
+          size={13}
+          label={t('ai.copyMessage')}
+          onclick={() => void copyMessage()}
+        />
+      </div>
+    {/if}
   </div>
 {:else if message.role === 'assistant'}
   <div class="message assistant" class:failed={message.status === 'error'}>
@@ -75,6 +94,21 @@
         })}</span
       >
     {/if}
+    {#if !pending && (message.content || onfork)}
+      <div class="actions">
+        {#if message.content}
+          <IconButton
+            icon="copy"
+            size={13}
+            label={t('ai.copyMessage')}
+            onclick={() => void copyMessage()}
+          />
+        {/if}
+        {#if onfork}
+          <IconButton icon="branch" size={13} label={t('ai.branch')} onclick={onfork} />
+        {/if}
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -84,6 +118,13 @@
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+  }
+  .actions {
+    display: flex;
+    gap: 2px;
+  }
+  .user .actions {
+    align-self: flex-end;
   }
   .user {
     align-self: flex-end;

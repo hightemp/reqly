@@ -101,6 +101,7 @@ pub const RULES: &[(&str, Need)] = {
         ("ai.chat", Read),
         ("ai.createChat", Read),
         ("ai.renameChat", Read),
+        ("ai.forkChat", Read),
         ("ai.deleteChat", Read),
         ("ai.setChatModel", Read),
         ("ai.send", Read),
@@ -261,9 +262,11 @@ const NOT_ENTITIES: &[&str] = &[
     "docId",
     "clientId",
     "runId",
-    // AI: provider names and the model's tool call ids.
+    // AI: provider names, the model's tool call ids and messages (checked
+    // against their chat).
     "providerId",
     "callId",
+    "messageId",
 ];
 
 fn is_id_field(key: &str) -> bool {

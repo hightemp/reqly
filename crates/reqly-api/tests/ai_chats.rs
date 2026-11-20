@@ -200,6 +200,10 @@ async fn each_user_sees_only_their_own_chats() {
         ("ai.renameChat", json!({ "chatId": id, "title": "mine" })),
         ("ai.deleteChat", json!({ "chatId": id })),
         (
+            "ai.forkChat",
+            json!({ "chatId": id, "messageId": reqly_core::Id::new().to_string() }),
+        ),
+        (
             "ai.setChatModel",
             json!({ "chatId": id, "providerId": "p1", "model": "m" }),
         ),
@@ -230,4 +234,109 @@ async fn each_user_sees_only_their_own_chats() {
         call_err(&ctx, carl_c, "ai.createChat", json!({ "workspaceId": ws })).await,
         "not_found"
     );
+}
+
+#[tokio::test]
+async fn a_chat_branches_off_at_a_message() {
+    let ctx = AppContext::for_tests_on(Platform::Desktop).await;
+    enable(&ctx, Caller::Local).await;
+    let ws = workspace(&ctx, Caller::Local).await;
+    let chat = call(&ctx, "ai.createChat", json!({ "workspaceId": ws })).await;
+    let id: reqly_core::Id = chat["id"].as_str().unwrap().parse().unwrap();
+    call(
+        &ctx,
+        "ai.renameChat",
+        json!({ "chatId": id.to_string(), "title": "Origin" }),
+    )
+    .await;
+
+    let repo = AiRepo::new(&ctx.storage, ctx.clock.as_ref());
+    let add = |m: NewAiMessage| repo.add_message(id, m);
+    add(NewAiMessage {
+        context: "attached request".into(),
+        ..NewAiMessage::new(AiRole::User, "q1")
+    })
+    .await
+    .unwrap();
+    let a1 = add(NewAiMessage {
+        tool_calls: vec![reqly_storage::ai::AiToolCall {
+            id: "call_1".into(),
+            name: "list_collections".into(),
+            arguments: "{}".into(),
+        }],
+        ..NewAiMessage::new(AiRole::Assistant, "a1")
+    })
+    .await
+    .unwrap();
+    add(NewAiMessage {
+        tool_call_id: Some("call_1".into()),
+        tool_name: Some("list_collections".into()),
+        ..NewAiMessage::new(AiRole::Tool, "{}")
+    })
+    .await
+    .unwrap();
+    let a2 = add(NewAiMessage::new(AiRole::Assistant, "a2"))
+        .await
+        .unwrap();
+    add(NewAiMessage::new(AiRole::User, "q2")).await.unwrap();
+    let pending = add(NewAiMessage {
+        status: AiMessageStatus::Pending,
+        ..NewAiMessage::new(AiRole::Assistant, "a3")
+    })
+    .await
+    .unwrap();
+
+    let mut events = ctx.events.subscribe();
+    // At a message with tool calls: their results come along.
+    let branch = call(
+        &ctx,
+        "ai.forkChat",
+        json!({ "chatId": id.to_string(), "messageId": a1.id.to_string() }),
+    )
+    .await;
+    assert_eq!(events.recv().await.unwrap().topic, "ai.chatsChanged");
+    assert_ne!(branch["id"], json!(id.to_string()));
+    assert_eq!(branch["title"], "Origin");
+    assert_eq!(branch["model"], "llama3.2");
+    let branch_id: reqly_core::Id = branch["id"].as_str().unwrap().parse().unwrap();
+    let copied = repo.messages(branch_id).await.unwrap();
+    let texts: Vec<_> = copied.iter().map(|m| m.content.as_str()).collect();
+    assert_eq!(texts, ["q1", "a1", "{}"]);
+    assert_eq!(copied[0].context, "attached request");
+    assert_eq!(copied[1].tool_calls[0].id, "call_1");
+    assert_eq!(copied[2].tool_call_id.as_deref(), Some("call_1"));
+    assert!(copied.iter().all(|m| m.chat_id == branch_id));
+    assert_ne!(copied[1].id, a1.id);
+
+    // A title of its own; the source chat stays as it was.
+    let named = call(
+        &ctx,
+        "ai.forkChat",
+        json!({ "chatId": id.to_string(), "messageId": a2.id.to_string(), "title": "Branch" }),
+    )
+    .await;
+    assert_eq!(named["title"], "Branch");
+    let named_id: reqly_core::Id = named["id"].as_str().unwrap().parse().unwrap();
+    assert_eq!(repo.messages(named_id).await.unwrap().len(), 4);
+    assert_eq!(repo.messages(id).await.unwrap().len(), 6);
+    let list = call(&ctx, "ai.chats", json!({ "workspaceId": ws })).await;
+    assert_eq!(list.as_array().unwrap().len(), 3);
+
+    // Not at an unfinished answer, nor at a message of another chat.
+    let code = call_err(
+        &ctx,
+        Caller::Local,
+        "ai.forkChat",
+        json!({ "chatId": id.to_string(), "messageId": pending.id.to_string() }),
+    )
+    .await;
+    assert_eq!(code, "ai.busy");
+    let code = call_err(
+        &ctx,
+        Caller::Local,
+        "ai.forkChat",
+        json!({ "chatId": branch_id.to_string(), "messageId": a2.id.to_string() }),
+    )
+    .await;
+    assert_eq!(code, "not_found");
 }

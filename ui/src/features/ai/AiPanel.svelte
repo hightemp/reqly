@@ -211,6 +211,12 @@
     void run(() => chat.confirm(callId, decision));
   }
 
+  /** A new chat that ends with this answer (its title marks it a branch). */
+  function fork(messageId: string) {
+    const title = chat.active?.title;
+    void run(() => chat.fork(messageId, title ? t('ai.branchTitle', { title }) : undefined));
+  }
+
   const callOf = (callId: string | undefined) =>
     chat.messages.flatMap((m) => m.toolCalls).find((c) => c.id === callId);
 </script>
@@ -255,7 +261,13 @@
             onconfirm={(d) => confirm(m.toolCallId!, d)}
           />
         {:else if m.role === 'user' || m.content || m.reasoning || m.status !== 'done' || m.error}
-          <AiMessage message={m} calling={chat.calling[m.id]} />
+          <AiMessage
+            message={m}
+            calling={chat.calling[m.id]}
+            onfork={m.role === 'assistant' && m.status !== 'error'
+              ? () => void fork(m.id)
+              : undefined}
+          />
         {/if}
       {/each}
     {/if}

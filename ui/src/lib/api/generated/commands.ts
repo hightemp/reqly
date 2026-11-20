@@ -13,6 +13,7 @@ import type { AiChatView } from "./AiChatView";
 import type { AiConfig } from "./AiConfig";
 import type { AiConfirmInput } from "./AiConfirmInput";
 import type { AiCreateChatInput } from "./AiCreateChatInput";
+import type { AiForkChatInput } from "./AiForkChatInput";
 import type { AiModelsInput } from "./AiModelsInput";
 import type { AiRenameChatInput } from "./AiRenameChatInput";
 import type { AiSendInput } from "./AiSendInput";
@@ -304,6 +305,7 @@ export type Commands = {
   "ai.chat": { input: AiChatInput; output: AiChatView };
   "ai.createChat": { input: AiCreateChatInput; output: AiChat };
   "ai.renameChat": { input: AiRenameChatInput; output: AiChat };
+  "ai.forkChat": { input: AiForkChatInput; output: AiChat };
   "ai.deleteChat": { input: AiChatInput; output: Empty };
   "ai.setChatModel": { input: AiSetChatModelInput; output: AiChat };
   "ai.send": { input: AiSendInput; output: AiSendResult };

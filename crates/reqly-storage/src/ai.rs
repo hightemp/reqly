@@ -368,6 +368,65 @@ impl<'a> AiRepo<'a> {
         Ok(())
     }
 
+    /// A new chat (same workspace, owner and model) with copies of the
+    /// messages of `source` up to `last_seq`; unfinished ones are cancelled.
+    pub async fn fork_chat(
+        &self,
+        source: &AiChat,
+        last_seq: i64,
+        title: &str,
+    ) -> CoreResult<AiChat> {
+        let now = self.clock.now();
+        let chat = AiChat {
+            id: Id::new(),
+            title: title.to_string(),
+            auto_approve: false,
+            created_at: now,
+            updated_at: now,
+            ..source.clone()
+        };
+        let mut tx = self.storage.begin_write().await?;
+        sqlx::query(
+            "INSERT INTO ai_chats (id, workspace_id, owner, title, provider_id, model, auto_approve, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)",
+        )
+        .bind(chat.id.to_string())
+        .bind(chat.workspace_id.to_string())
+        .bind(chat.owner.map(|o| o.to_string()))
+        .bind(&chat.title)
+        .bind(&chat.provider_id)
+        .bind(&chat.model)
+        .bind(now.millis())
+        .bind(now.millis())
+        .execute(&mut *tx)
+        .await
+        .map_err(db_err)?;
+        let ids: Vec<String> = sqlx::query_scalar(
+            "SELECT id FROM ai_messages WHERE chat_id = ? AND seq <= ? ORDER BY seq",
+        )
+        .bind(source.id.to_string())
+        .bind(last_seq)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(db_err)?;
+        for old in ids {
+            sqlx::query(
+                "INSERT INTO ai_messages (id, chat_id, seq, role, content, context, reasoning, tool_calls, tool_call_id, tool_name, attachments, status, error, usage, created_at)
+                 SELECT ?, ?, seq, role, content, context, reasoning, tool_calls, tool_call_id, tool_name, attachments,
+                        CASE status WHEN 'pending' THEN 'cancelled' ELSE status END, error, usage, created_at
+                 FROM ai_messages WHERE id = ?",
+            )
+            .bind(Id::new().to_string())
+            .bind(chat.id.to_string())
+            .bind(old)
+            .execute(&mut *tx)
+            .await
+            .map_err(db_err)?;
+        }
+        tx.commit().await.map_err(db_err)?;
+        Ok(chat)
+    }
+
     pub async fn add_message(&self, chat_id: Id, m: NewAiMessage) -> CoreResult<AiChatMessage> {
         let now = self.clock.now();
         let id = Id::new();

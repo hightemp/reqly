@@ -1,7 +1,8 @@
-//! Chat commands: list, open, create, rename, delete, pick a model.
+//! Chat commands: list, open, create, rename, delete, branch off, pick a
+//! model.
 
 use reqly_core::{CoreError, CoreResult, Id};
-use reqly_storage::ai::{AiChat, AiChatMessage, AiMessageStatus, AiRepo};
+use reqly_storage::ai::{AiChat, AiChatMessage, AiMessageStatus, AiRepo, AiRole};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use ts_rs::TS;
@@ -179,6 +180,47 @@ pub(crate) async fn set_model(ctx: &AppContext, input: AiSetChatModelInput) -> C
     let chat = AiRepo::new(&ctx.storage, ctx.clock.as_ref())
         .set_chat_model(input.chat_id, &input.provider_id, model)
         .await?;
+    chats_changed(ctx, chat.workspace_id);
+    Ok(chat)
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AiForkChatInput {
+    pub chat_id: Id,
+    /// The last message the new chat keeps.
+    pub message_id: Id,
+    /// The source chat's title when left out.
+    #[ts(optional)]
+    pub title: Option<String>,
+}
+
+/// A new chat with the messages up to `message_id`, and the results of the
+/// tool calls it made (a model rejects calls without results).
+pub(crate) async fn fork(ctx: &AppContext, input: AiForkChatInput) -> CoreResult<AiChat> {
+    let source = own_chat(ctx, input.chat_id).await?;
+    let repo = AiRepo::new(&ctx.storage, ctx.clock.as_ref());
+    let messages = repo.messages(source.id).await?;
+    let at = messages
+        .iter()
+        .position(|m| m.id == input.message_id)
+        .ok_or_else(|| CoreError::new("not_found", "message not found"))?;
+    if messages[at].status == AiMessageStatus::Pending {
+        return Err(CoreError::new("ai.busy", "the answer is not finished yet"));
+    }
+    let last = messages[at + 1..]
+        .iter()
+        .take_while(|m| m.role == AiRole::Tool)
+        .last()
+        .unwrap_or(&messages[at]);
+    let title = input
+        .title
+        .as_deref()
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+        .unwrap_or(&source.title);
+    let chat = repo.fork_chat(&source, last.seq, title).await?;
     chats_changed(ctx, chat.workspace_id);
     Ok(chat)
 }
