@@ -137,4 +137,22 @@ describe('text context menu', () => {
     expect(touch.defaultPrevented).toBe(false);
     expect(menus.current).toBeNull();
   });
+
+  it('puts back a read-only selection that the menu focus dropped (WebKit)', () => {
+    document.body.innerHTML = '<p class="selectable" id="text">some answer</p>';
+    const p = document.getElementById('text')!;
+    const range = document.createRange();
+    range.selectNodeContents(p);
+    window.getSelection()!.removeAllRanges();
+    window.getSelection()!.addRange(range);
+
+    onTextContextMenu(rightClick(p), false);
+    // WebKit clears the selection when a menu item takes the focus.
+    window.getSelection()!.removeAllRanges();
+    const button = document.createElement('button');
+    document.body.append(button);
+    button.focus();
+    button.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(window.getSelection()!.toString()).toBe('some answer');
+  });
 });

@@ -11,6 +11,8 @@ import { isItem, menus, type MenuEntry } from './overlay/menus.svelte';
 /** Text the menu works on: a field, an editor or plain selectable text. */
 interface Surface {
   editable: boolean;
+  /** Fields and editors keep their selection while the menu has the focus. */
+  keepsSelection: boolean;
   selected(): string;
   /** Replaces the selection (editable surfaces only). */
   replace(text: string): void;
@@ -35,6 +37,7 @@ function fieldSurface(el: Field): Surface {
   };
   return {
     editable: !el.readOnly && !el.disabled,
+    keepsSelection: true,
     selected() {
       const { start, end } = range();
       return start === null || end === null ? '' : el.value.slice(start, end);
@@ -54,6 +57,7 @@ function fieldSurface(el: Field): Surface {
 function editorSurface(view: EditorView): Surface {
   return {
     editable: !view.state.readOnly,
+    keepsSelection: true,
     selected: () =>
       view.state.selection.ranges
         .filter((r) => !r.empty)
@@ -70,6 +74,7 @@ function editorSurface(view: EditorView): Surface {
 function textSurface(root: Element): Surface {
   return {
     editable: false,
+    keepsSelection: false,
     selected: () => window.getSelection()?.toString() ?? '',
     replace: () => {},
     selectAll: () => {
@@ -187,5 +192,32 @@ export function onTextContextMenu(e: MouseEvent, touch: boolean) {
   const surface = surfaceAt(e.target);
   if (touch && surface) return;
   e.preventDefault();
-  if (surface) menus.openAt({ x: e.clientX, y: e.clientY }, textMenuItems(surface));
+  if (!surface) return;
+  if (!surface.keepsSelection) keepSelection();
+  menus.openAt({ x: e.clientX, y: e.clientY }, textMenuItems(surface));
+}
+
+/**
+ * WebKit (the Linux and macOS apps) drops the selection of read-only text
+ * when the menu takes the focus: put it back once the menu has it.
+ */
+function keepSelection() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+  const ranges = Array.from({ length: selection.rangeCount }, (_, i) =>
+    selection.getRangeAt(i).cloneRange(),
+  );
+  const restore = () => {
+    if (!selection.isCollapsed) return;
+    selection.removeAllRanges();
+    for (const r of ranges) selection.addRange(r);
+  };
+  const onFocus = () => {
+    document.removeEventListener('focusin', onFocus);
+    restore();
+    requestAnimationFrame(restore);
+  };
+  document.addEventListener('focusin', onFocus);
+  // Nothing took the focus: stop listening.
+  setTimeout(() => document.removeEventListener('focusin', onFocus), 500);
 }
