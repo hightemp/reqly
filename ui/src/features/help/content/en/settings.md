@@ -20,6 +20,15 @@ Open **Settings** with `Ctrl+,` or the gear in the status bar.
 The status bar switches the theme, the language and the response position
 (right or below) with one click.
 
+## Certificate check
+
+Requests check the server certificate. For a test server with a self-signed
+certificate, turn **Verify TLS certificates** off in Settings → Requests &
+proxy (all requests) or on the **Settings** tab of one request, or add the
+server's CA in **Certificates**. When a response fails with a certificate
+error, **Send without checking the certificate** turns the check off for that
+request and sends it again.
+
 ## Updates
 
 Reqly checks for a new version at start and once a day. **Check for updates**

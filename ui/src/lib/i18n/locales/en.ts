@@ -919,6 +919,10 @@ export const en = {
     phaseTtfb: 'First byte',
     phaseTotal: 'Total',
     showTimeline: 'Show timeline',
+    tlsHint:
+      'The server certificate could not be verified (self-signed, expired or issued for another name). For a test server you can send without the check, or add its CA in Settings → Certificates.',
+    sendInsecure: 'Send without checking the certificate',
+    tlsSettings: 'Certificate settings',
     noCookies: 'The response sets no cookies',
     noBody: 'Empty body',
     bodyModes: 'Body view',

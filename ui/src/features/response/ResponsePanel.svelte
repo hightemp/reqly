@@ -24,7 +24,14 @@
   import StreamLog from '../stream/StreamLog.svelte';
   import BodyView from './BodyView.svelte';
 
-  let { services }: { services: Services } = $props();
+  let {
+    services,
+    onsettings,
+  }: {
+    services: Services;
+    /** Opens a section of the app settings (e.g. `http` for the certificate check). */
+    onsettings?: (section: string) => void;
+  } = $props();
 
   type Section = 'body' | 'headers' | 'cookies' | 'timeline' | 'console' | 'tests';
   let section = $state<Section>('body');
@@ -53,6 +60,25 @@
   $effect(() => {
     if (requestId) void services.responses.load(requestId);
   });
+
+  // A certificate error while the request still checks certificates: offer
+  // to send it once more without the check.
+  const verifyOn = $derived.by(() => {
+    const data = requestId ? services.editor.get(requestId)?.node?.data : undefined;
+    if (data?.kind !== 'request') return false;
+    return data.settings.verifyTls !== false;
+  });
+  const tlsError = $derived(record?.error?.code === 'http.tls');
+
+  function sendInsecure() {
+    if (!requestId) return;
+    const id = requestId;
+    services.editor.editRequest(id, (r) => ({
+      ...r,
+      settings: { ...r.settings, verifyTls: false },
+    }));
+    void services.responses.send(id);
+  }
 
   // Console and Tests exist only for responses that have them.
   $effect(() => {
@@ -225,9 +251,24 @@
             <div class="error selectable" role="alert">
               <h3>{errorMessage(record.error)}</h3>
               {#if record.error.params.detail}<pre>{String(record.error.params.detail)}</pre>{/if}
-              <Button size="sm" onclick={() => (section = 'timeline')}
-                >{t('response.showTimeline')}</Button
-              >
+              {#if tlsError}
+                <p class="hint">{t('response.tlsHint')}</p>
+              {/if}
+              <div class="error-actions">
+                {#if tlsError && verifyOn}
+                  <Button size="sm" variant="primary" onclick={sendInsecure}
+                    >{t('response.sendInsecure')}</Button
+                  >
+                {/if}
+                {#if tlsError && onsettings}
+                  <Button size="sm" onclick={() => onsettings('http')}
+                    >{t('response.tlsSettings')}</Button
+                  >
+                {/if}
+                <Button size="sm" onclick={() => (section = 'timeline')}
+                  >{t('response.showTimeline')}</Button
+                >
+              </div>
             </div>
           {:else}
             <BodyView {services} {record} />
@@ -359,6 +400,15 @@
   .error h3 {
     color: var(--c-danger);
     font-weight: 600;
+  }
+  .error .hint {
+    color: var(--c-fg-muted);
+    max-width: 60ch;
+  }
+  .error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
   .error pre {
     white-space: pre-wrap;

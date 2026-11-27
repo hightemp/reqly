@@ -30,6 +30,9 @@ and this project follows [Semantic Versioning](https://semver.org/).
   an AI agent with the path, ID, method, URL and the MCP `get_request` call.
 - The MCP settings show a Codex config (`~/.codex/config.toml`,
   `codex mcp add`); the docs and help explain it.
+- A response that failed on the server certificate explains why and offers
+  **Send without checking the certificate** (turns the check off for that
+  request and sends it again) and a way to the certificate settings.
 
 ### Fixed
 

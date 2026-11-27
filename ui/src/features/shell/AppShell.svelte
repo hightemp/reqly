@@ -79,7 +79,7 @@
   let offline = $state(false);
   let folderSettings = $state<string | null>(null);
   let settingsOpen = $state(false);
-  let settingsInitial = $state<'general' | 'sync' | 'mcp' | 'ai'>('general');
+  let settingsInitial = $state<'general' | 'sync' | 'mcp' | 'ai' | 'http'>('general');
   let modal = $state<
     | 'palette'
     | 'cookies'
@@ -158,6 +158,10 @@
     if (!services.ai.enabled) return;
     if (compact) pane = pane === 'ai' ? 'request' : 'ai';
     else void prefs.update({ aiPanelOpen: !prefs.value.aiPanelOpen });
+  }
+  function openSettings(section: string) {
+    settingsInitial = section as typeof settingsInitial;
+    settingsOpen = true;
   }
   function openAiSettings() {
     settingsInitial = 'ai';
@@ -422,7 +426,7 @@
         {:else if pane === 'ai'}
           <AiPanel {services} onsettings={openAiSettings} />
         {:else}
-          <ResponsePanel {services} />
+          <ResponsePanel {services} onsettings={openSettings} />
         {/if}
       </section>
     </main>
@@ -482,7 +486,9 @@
                       <section class="pane"><RequestPanel {services} /></section>
                     {/snippet}
                     {#snippet second()}
-                      <section class="pane"><ResponsePanel {services} /></section>
+                      <section class="pane">
+                        <ResponsePanel {services} onsettings={openSettings} />
+                      </section>
                     {/snippet}
                   </SplitPane>
                 </div>
