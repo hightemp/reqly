@@ -21,6 +21,8 @@ COPY crates crates
 COPY apps apps
 COPY spikes spikes
 COPY --from=ui /src/ui/dist ui/dist
+# The MCP tool get_docs embeds the built-in help pages.
+COPY ui/src/features/help/content ui/src/features/help/content
 RUN cargo build --release -p reqly-server --locked \
  && strip target/release/reqly-server
 

@@ -33,6 +33,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - A response that failed on the server certificate explains why and offers
   **Send without checking the certificate** (turns the check off for that
   request and sends it again) and a way to the certificate settings.
+- MCP and the AI chat: the `get_docs` tool returns Reqly's documentation (the
+  built-in help) by topic, and the MCP `initialize` instructions explain the
+  template syntax, how to find a request and that Reqly's source code is not
+  needed. Agents stopped looking for the project on GitHub.
 
 ### Fixed
 

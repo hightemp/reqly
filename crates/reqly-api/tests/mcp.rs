@@ -28,7 +28,7 @@ fn catalog_names_are_unique_and_grouped() {
     names.sort();
     names.dedup();
     assert_eq!(names.len(), count);
-    assert_eq!(count, 24);
+    assert_eq!(count, 25);
     for group in [
         McpGroup::Read,
         McpGroup::Edit,

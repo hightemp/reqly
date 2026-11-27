@@ -19,10 +19,17 @@ pub const INVALID_REQUEST: i64 = -32600;
 pub const METHOD_NOT_FOUND: i64 = -32601;
 pub const INVALID_PARAMS: i64 = -32602;
 
-const INSTRUCTIONS: &str = "Reqly is an API client. Collections hold folders and requests \
-(HTTP, GraphQL, WebSocket, gRPC…), organized in workspaces; environments hold variables used \
-as {{name}} in requests. Find ids with the list and search tools before changing or sending \
-anything. Deleted items go to the trash and can be restored in the app.";
+const INSTRUCTIONS: &str = "Reqly is an API client (like Insomnia or Postman); this server \
+works on the user's own requests. You do not need Reqly's source code: everything is available \
+through these tools, and get_docs returns Reqly's documentation by topic (call it without \
+arguments for the list; `variables` covers templates, `scripts` and `script-api` cover scripts). \
+Workspaces hold collections; collections hold folders and requests (HTTP, GraphQL, WebSocket, \
+gRPC). Find ids with list_collections, get_tree and search_requests, then read a request with \
+get_request {\"id\": ...}; users may paste a block with a request's path and ID. Templates: \
+{{name}} inserts a variable (environments hold them), {{ $uuid }} or {{ $timestamp }} call a \
+function, {% tag args %} runs a tag, e.g. {% response 'body', '<request id>', '$.token' %} \
+takes a value from the latest response of another request. Credentials are masked as ••••. \
+Deleted items go to the trash and can be restored in the app.";
 
 /// What to answer to one message.
 pub enum Reply {

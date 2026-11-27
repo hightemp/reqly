@@ -1,5 +1,6 @@
 //! The tools of the catalog (`crate::commands::mcp::CATALOG`).
 
+mod docs;
 mod edit;
 mod env;
 mod interop;
@@ -22,6 +23,7 @@ pub fn catalog_tools() -> Tools {
     let mut tools = Tools::new();
     for tool in read::tools()
         .into_iter()
+        .chain(docs::tools())
         .chain(edit::tools())
         .chain(run::tools())
         .chain(env::tools())

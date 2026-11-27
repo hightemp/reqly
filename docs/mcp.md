@@ -102,6 +102,7 @@ missing id, a refused role, a network error) returns a result with
 | | `list_environments` | environments of a collection and the global ones, variable names, the active ones |
 | | `get_history` | recent responses of a request or a workspace |
 | | `get_response` | a stored response: status, headers, timing, body (text or base64, cut to `maxBodyBytes`), tests |
+| | `get_docs` | Reqly's documentation: the list of topics, or one page of the built-in help as Markdown |
 | Edit requests | `create_request` | a new HTTP request; only `collectionId` and `name` are required |
 | | `update_request` | changes only the given fields, merged like an edit in the app |
 | | `create_folder`, `rename_item`, `move_item`, `duplicate_item` | |

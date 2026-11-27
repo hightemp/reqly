@@ -64,13 +64,16 @@ Tools are grouped; tick a group or open it to choose single tools.
 **Read only** and **Everything** set all of them at once. When MCP is
 first turned on, **Read** and **Send and run** are allowed.
 
-| Group             | What an agent can do                                                          |
-| ----------------- | ----------------------------------------------------------------------------- |
-| Read              | list workspaces and collections, see the tree, read requests, search, history |
-| Edit requests     | create requests and folders, change, rename, move, duplicate, delete          |
-| Send and run      | send a request, see it rendered, run a collection or folder                   |
-| Environments      | read and set variables, create environments, choose the active one            |
-| Import and export | import cURL, `.http`, OpenAPI and other text, export a collection             |
+| Group             | What an agent can do                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| Read              | list workspaces and collections, see the tree, read requests, search, history, Reqly's docs |
+| Edit requests     | create requests and folders, change, rename, move, duplicate, delete                        |
+| Send and run      | send a request, see it rendered, run a collection or folder                                 |
+| Environments      | read and set variables, create environments, choose the active one                          |
+| Import and export | import cURL, `.http`, OpenAPI and other text, export a collection                           |
+
+Agents get a short guide to Reqly when they connect, and the `get_docs` tool
+returns any page of this help, so they do not need to look for Reqly's code.
 
 - Changes show up in open windows right away, like changes of a
   teammate; open editors merge them.

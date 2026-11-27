@@ -292,3 +292,28 @@ async fn implemented_tools_follow_the_catalog() {
         assert!(tool.description.len() > 20, "{}", tool.name);
     }
 }
+
+#[tokio::test]
+async fn docs_list_topics_and_return_pages() {
+    let fx = Fx::new().await;
+    let topics = fx.tool("get_docs", json!({})).await;
+    let list = topics["topics"].as_array().unwrap();
+    let ids: Vec<&str> = list.iter().map(|t| t["id"].as_str().unwrap()).collect();
+    for id in ["variables", "scripts", "script-api", "auth", "mcp"] {
+        assert!(ids.contains(&id), "{id} in {ids:?}");
+    }
+    assert!(
+        list.iter()
+            .all(|t| !t["title"].as_str().unwrap().is_empty())
+    );
+
+    // Template tags and response chaining live on the variables page.
+    let page = fx.tool("get_docs", json!({ "topic": "variables" })).await;
+    assert_eq!(page["topic"], "variables");
+    assert_eq!(page["title"], "Variables and environments");
+    let text = page["markdown"].as_str().unwrap();
+    assert!(text.contains("{% response"), "{text}");
+
+    let err = fx.tool_err("get_docs", json!({ "topic": "nope" })).await;
+    assert!(err.contains("variables"), "{err}");
+}

@@ -148,7 +148,18 @@ async fn initialize_negotiates_the_protocol_version() {
     assert!(result["capabilities"]["tools"].is_object());
     assert_eq!(result["serverInfo"]["name"], "reqly");
     assert_eq!(result["serverInfo"]["version"], env!("CARGO_PKG_VERSION"));
-    assert!(result["instructions"].as_str().unwrap().contains("Reqly"));
+    let instructions = result["instructions"].as_str().unwrap();
+    assert!(instructions.contains("Reqly"));
+    // Enough to work without the source code: syntax and where to read more.
+    for part in [
+        "{{",
+        "{% response",
+        "get_docs",
+        "get_request",
+        "source code",
+    ] {
+        assert!(instructions.contains(part), "{part}: {instructions}");
+    }
 
     // An older supported revision is kept; an unknown one gets the latest.
     let (_, body) = rpc(

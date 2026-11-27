@@ -47,6 +47,7 @@ pub const CATALOG: &[(&str, McpGroup)] = {
         ("list_environments", Read),
         ("get_history", Read),
         ("get_response", Read),
+        ("get_docs", Read),
         ("create_request", Edit),
         ("update_request", Edit),
         ("create_folder", Edit),
