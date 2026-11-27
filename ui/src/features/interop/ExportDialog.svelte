@@ -16,6 +16,7 @@
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
   import { toasts } from '$lib/ui/overlay/toasts.svelte';
+  import { stampFileName } from './fileName';
 
   interface Props {
     services: Services;
@@ -31,6 +32,7 @@
   let secrets = $state(false);
   let cookies = $state(false);
   let history = $state(false);
+  const stamp = $derived(services.prefs.value.exportTimestamp);
   let busy = $state(false);
   let error = $state<string | null>(null);
 
@@ -70,7 +72,11 @@
           history: reqly && history,
         },
       });
-      if (await saveExportFiles(services.transport, out.files)) {
+      const now = new Date();
+      const files = stamp
+        ? out.files.map((f) => ({ ...f, name: stampFileName(f.name, now) }))
+        : out.files;
+      if (await saveExportFiles(services.transport, files)) {
         toasts.show({ message: t('export.saved', { count: out.files.length }), kind: 'success' });
         onclose();
       }
@@ -100,6 +106,12 @@
       {:else}
         <p class="hint">{t('export.foreignHint')}</p>
       {/if}
+      <Checkbox
+        checked={stamp}
+        onchange={(v) => void services.prefs.update({ exportTimestamp: v })}
+        showLabel
+        label={t('export.timestamp')}
+      />
     </div>
     {#if error}
       <p class="error" role="alert">{error}</p>

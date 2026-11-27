@@ -71,9 +71,27 @@ test('paste a Postman collection, export it and import it again', async ({ page 
   const download = page.waitForEvent('download');
   await exportDialog.getByRole('button', { name: 'Export', exact: true }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe('shop-api.reqly.json');
+  // The date and time go into the name (on by default).
+  expect(file.suggestedFilename()).toMatch(/^shop-api-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.reqly\.json$/);
   const content = readFileSync(await file.path(), 'utf8');
   expect(JSON.parse(content).format).toBe('reqly');
+
+  // Without the date: the option is remembered, so turn it back on.
+  await page.getByRole('button', { name: 'Collection actions' }).click();
+  await page.getByRole('menuitem', { name: 'Export collection…' }).click();
+  const stamp = exportDialog.getByRole('checkbox', {
+    name: 'Add the date and time to the file name',
+  });
+  await expect(stamp).toBeChecked();
+  await stamp.click();
+  const plain = page.waitForEvent('download');
+  await exportDialog.getByRole('button', { name: 'Export', exact: true }).click();
+  expect((await plain).suggestedFilename()).toBe('shop-api.reqly.json');
+  await page.getByRole('button', { name: 'Collection actions' }).click();
+  await page.getByRole('menuitem', { name: 'Export collection…' }).click();
+  await expect(stamp).not.toBeChecked();
+  await stamp.click();
+  await exportDialog.getByRole('button', { name: 'Cancel' }).click();
 
   // …and import it back into the same collection with "merge": nothing is duplicated.
   const again = await openImport(page);

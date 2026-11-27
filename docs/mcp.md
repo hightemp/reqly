@@ -64,6 +64,23 @@ VS Code (`.vscode/mcp.json`):
 { "servers": { "reqly": { "type": "http", "url": "http://127.0.0.1:7655/mcp", "headers": { "Authorization": "Bearer <token>" } } } }
 ```
 
+Codex (`~/.codex/config.toml`; the token comes from the environment):
+
+```toml
+[mcp_servers.reqly]
+url = "http://127.0.0.1:7655/mcp"
+bearer_token_env_var = "REQLY_MCP_TOKEN"
+```
+
+```sh
+codex mcp add reqly --url http://127.0.0.1:7655/mcp --bearer-token-env-var REQLY_MCP_TOKEN
+export REQLY_MCP_TOKEN=<token>
+```
+
+**Copy path / ID → Copy for AI** in the context menu of a request (tree or
+tab) copies a block to paste into the agent's chat: path, ID, method, URL
+and the `get_request` call.
+
 The settings show these snippets with the real address and token.
 
 ## Tools

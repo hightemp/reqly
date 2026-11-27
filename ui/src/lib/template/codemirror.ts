@@ -174,7 +174,29 @@ export function templateCompletions(host: TemplateHost) {
         detail: `${t(`template.source.${v.source}`)} · ${v.sourceName}`,
         info: v.secret ? SECRET_MASK : valueText(v.value),
         apply: closed('\\}\\}') ? v.name : `${v.name} }}`,
+        boost: 1,
       }));
+      // Functions too, so `{{` shows everything that can go there.
+      if (!at.prefix.startsWith('_.')) {
+        const call = (name: string) => (closed('\\}\\}') ? `$${name}` : `$${name} }}`);
+        options.push(
+          ...data.functions.map((f) => ({
+            label: `$${f.name}`,
+            type: 'function',
+            detail: f.args.join(', '),
+            info: f.example,
+            apply: call(f.name),
+          })),
+          { label: '$faker.', type: 'namespace', detail: 'faker' },
+          ...data.dynamicVariables.map((name) => ({
+            label: `$${name}`,
+            type: 'constant',
+            detail: 'Postman',
+            boost: -1,
+            apply: call(name),
+          })),
+        );
+      }
     } else if (at.kind === 'function') {
       options = [
         ...data.functions.map((f) => ({

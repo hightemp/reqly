@@ -12,6 +12,7 @@
   import Spinner from '$lib/ui/Spinner.svelte';
   import { closeTab, tabInfo, trackTabs } from './info.svelte';
   import { scrollPage, scrollStrip } from '$lib/ui/scroll';
+  import { referenceMenu } from '../sidebar/reference';
 
   let { services }: { services: Services } = $props();
   const tabs = $derived(services.tabs);
@@ -54,6 +55,7 @@
         label: tab.pinned ? t('tabs.unpin') : t('tabs.pin'),
         onSelect: () => tabs.togglePin(tab.id),
       },
+      referenceMenu(services, tab.id),
       {
         id: 'duplicate',
         label: t('actions.duplicate'),

@@ -68,6 +68,10 @@ describe('MCP settings', () => {
     expect(screen.getByText(/claude mcp add --transport http reqly/).textContent).toContain(
       'Bearer tok-123',
     );
+    await fireEvent.click(screen.getByRole('button', { name: 'Codex' }));
+    expect(screen.getByText(/\[mcp_servers\.reqly\]/).textContent).toContain(
+      'url = "http://127.0.0.1:7655/mcp"',
+    );
     await fireEvent.click(screen.getByRole('button', { name: 'Cursor' }));
     expect(screen.getByText(/mcpServers/)).toBeTruthy();
 

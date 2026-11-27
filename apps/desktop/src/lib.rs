@@ -138,6 +138,11 @@ fn forward_events<R: Runtime>(app: AppHandle<R>, core: &Core) {
     });
 }
 
+/// The window title: the app name and version.
+pub fn window_title() -> String {
+    format!("Reqly {}", env!("CARGO_PKG_VERSION"))
+}
+
 /// Builder shared by the real app and tests. Without `core`, it is opened
 /// during setup (it needs the app data dir); tests pass an in-memory one.
 pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tauri::Builder<R> {
@@ -167,6 +172,11 @@ pub fn configure<R: Runtime>(base: tauri::Builder<R>, core: Option<Core>) -> tau
         }
         #[cfg(desktop)]
         updater::init(app)?;
+        // The native frame shows the version too (the custom one draws it itself).
+        #[cfg(desktop)]
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.set_title(&window_title());
+        }
         Ok(())
     })
     .invoke_handler(handlers())
@@ -210,4 +220,15 @@ pub fn run() {
     )
     .run(tauri::generate_context!())
     .expect("error while running Reqly");
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn window_title_carries_the_version() {
+        assert_eq!(
+            super::window_title(),
+            format!("Reqly {}", env!("CARGO_PKG_VERSION"))
+        );
+    }
 }

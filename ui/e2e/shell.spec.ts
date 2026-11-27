@@ -7,6 +7,8 @@ test('renders the app shell from the server', async ({ page }) => {
   await expect(page.getByRole('complementary', { name: 'Collections' })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Workspace' })).toHaveText(/My Workspace/);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  // The tab title carries the version.
+  await expect(page).toHaveTitle(/^Reqly \d+\.\d+\.\d+/);
 });
 
 test('preferences persist on the server across reloads', async ({ page }) => {

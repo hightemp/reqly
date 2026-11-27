@@ -8,6 +8,7 @@
   import type { Platform } from '$lib/hotkeys/hotkeys';
   import type { WindowController } from '$lib/platform/window';
   import IconButton from '$lib/ui/IconButton.svelte';
+  import { APP_VERSION } from '$lib/version';
 
   interface Props {
     controller: WindowController;
@@ -37,7 +38,9 @@
     role="presentation"
     ondblclick={() => controller.toggleMaximize()}
   >
-    <span class="name" data-tauri-drag-region>{t('app.name')}</span>
+    <span class="name" data-tauri-drag-region
+      >{t('app.name')} <span class="version" data-tauri-drag-region>{APP_VERSION}</span></span
+    >
     {@render children?.()}
   </div>
   {#if platform !== 'mac'}
@@ -87,6 +90,11 @@
     font-weight: 600;
     color: var(--c-fg-muted);
     letter-spacing: 0.02em;
+  }
+  .version {
+    font-weight: 400;
+    color: var(--c-fg-subtle);
+    font-size: var(--font-size-sm);
   }
   .controls {
     display: flex;

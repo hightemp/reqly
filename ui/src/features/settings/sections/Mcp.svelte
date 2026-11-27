@@ -32,7 +32,7 @@
   let port = $state(String(mcp.status?.config.port ?? 7655));
   let open = $state<McpGroup[]>([]);
   let client = $state<McpClient>('claude');
-  const CLIENTS: McpClient[] = ['claude', 'cursor', 'vscode'];
+  const CLIENTS: McpClient[] = ['claude', 'codex', 'cursor', 'vscode'];
 
   const desktop = $derived(capabilities.platform === 'desktop');
   const url = $derived(mcp.endpointUrl(origin));

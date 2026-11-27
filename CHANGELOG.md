@@ -16,6 +16,20 @@ and this project follows [Semantic Versioning](https://semver.org/).
   wheel and get scroll arrows when the panel is too narrow for them.
 - Rows of the response headers and cookies have **Copy name**, **Copy value**
   and **Copy row** in their context menu.
+- The app version is in the window title and the title bar (“Reqly 1.3.0”);
+  in a browser, in the tab title.
+- Completion right after `{{` lists functions (`$uuid`, `$timestamp`…),
+  `$faker.` and the Postman dynamic variables along with the variables:
+  before, they showed only after typing `$`.
+- Exported file names get the date and time
+  (`my-api-2026-11-27_14-05.reqly.json`), so exports do not overwrite each
+  other. On by default; the option is in the export window and in
+  Settings → General.
+- **Copy path / ID** in the context menu of a request or folder (tree) and of
+  a tab: the path (`Collection / Folder / Request`), the ID, or a block for
+  an AI agent with the path, ID, method, URL and the MCP `get_request` call.
+- The MCP settings show a Codex config (`~/.codex/config.toml`,
+  `codex mcp add`); the docs and help explain it.
 
 ### Fixed
 

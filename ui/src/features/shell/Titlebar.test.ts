@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 import type { WindowController } from '$lib/platform/window';
+import { APP_VERSION } from '$lib/version';
 import Titlebar from './Titlebar.svelte';
 
 function controller(maximized = false) {
@@ -51,5 +52,12 @@ describe('Titlebar', () => {
   it('leaves window buttons to macOS', () => {
     render(Titlebar, { controller: controller(), platform: 'mac' });
     expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Titlebar version', () => {
+  it('shows the app version next to the name', () => {
+    render(Titlebar, { controller: controller(), platform: 'linux' });
+    expect(screen.getByTestId('titlebar-drag')).toHaveTextContent(`Reqly ${APP_VERSION}`);
   });
 });

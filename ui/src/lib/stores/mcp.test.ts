@@ -141,4 +141,18 @@ describe('clientConfig', () => {
       servers: { reqly: { type: 'http', url, headers: { Authorization: 'Bearer abc' } } },
     });
   });
+  it('builds the Codex config: the token comes from an environment variable', () => {
+    expect(clientConfig('codex', url, 'abc')).toBe(
+      [
+        '# ~/.codex/config.toml',
+        '[mcp_servers.reqly]',
+        `url = "${url}"`,
+        'bearer_token_env_var = "REQLY_MCP_TOKEN"',
+        '',
+        '# Or: codex mcp add reqly --url ' + url + ' --bearer-token-env-var REQLY_MCP_TOKEN',
+        '# Then start Codex with the token:',
+        'export REQLY_MCP_TOKEN="abc"',
+      ].join('\n'),
+    );
+  });
 });

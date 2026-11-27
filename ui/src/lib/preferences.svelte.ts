@@ -40,6 +40,8 @@ export interface Preferences {
   /** Desktop: use the OS window frame instead of the custom title bar (restart). */
   nativeFrame: boolean;
   editorWrap: boolean;
+  /** Add the date and time to the names of exported files. */
+  exportTimestamp: boolean;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -65,6 +67,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   zoom: 100,
   nativeFrame: false,
   editorWrap: false,
+  exportTimestamp: true,
 };
 
 const validators: { [K in keyof Preferences]: (v: unknown) => boolean } = {
@@ -90,6 +93,7 @@ const validators: { [K in keyof Preferences]: (v: unknown) => boolean } = {
   zoom: (v) => typeof v === 'number' && v >= 50 && v <= 200,
   nativeFrame: (v) => typeof v === 'boolean',
   editorWrap: (v) => typeof v === 'boolean',
+  exportTimestamp: (v) => typeof v === 'boolean',
 };
 
 /** Keeps known, valid fields of untrusted stored data on top of defaults. */

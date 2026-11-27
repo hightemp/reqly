@@ -145,6 +145,13 @@ test('template completion and hover tooltips are not clipped by the input', asyn
   expect(box.y).toBeGreaterThan(input.y + input.height / 2);
   expect(box.y + box.height).toBeGreaterThan(input.y + input.height + 8);
   await page.keyboard.press('Escape');
+
+  // Right after `{{` the list has the functions too.
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.type('https://x.test/{{ uu');
+  await expect(completion.getByText('$uuid')).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(url).toHaveText('https://x.test/{{ $uuid }}');
   await closeAllTabs(page);
 });
 
@@ -358,5 +365,53 @@ test('the description has a text menu when editing and in the preview', async ({
   await expect(page.getByRole('menuitem', { name: 'Select all' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Paste' })).toHaveCount(0);
   await page.keyboard.press('Escape');
+  await closeAllTabs(page);
+});
+
+test('copy the path, the ID and a block for AI of a request', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  const url = page.getByRole('textbox', { name: 'URL' });
+  await url.fill('https://ref.test/items');
+  const clipboard = () => page.evaluate(() => navigator.clipboard.readText());
+  const collection = (await page.getByRole('combobox', { name: 'Collection' }).innerText()).trim();
+
+  const tab = page.getByRole('tablist', { name: 'Open requests' }).getByRole('tab').first();
+  const copyRef = async (item: string) => {
+    await tab.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Copy path / ID' }).hover();
+    await page.getByRole('menuitem', { name: item, exact: true }).click();
+  };
+  await copyRef('Copy path');
+  await expect.poll(clipboard).toBe(`${collection} / New Request`);
+  await copyRef('Copy ID');
+  await expect.poll(clipboard).toMatch(/^[0-9a-f-]{36}$/);
+  const id = await clipboard();
+
+  // The tree rows have the same submenu.
+  await page.getByRole('treeitem').first().click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Copy path / ID' }).hover();
+  await expect(page.getByRole('menuitem', { name: 'Copy for AI' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+
+  // The unsaved URL is in the block too.
+  await tab.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Copy path / ID' }).hover();
+  await page.getByRole('menuitem', { name: 'Copy for AI' }).click();
+  await expect
+    .poll(clipboard)
+    .toBe(
+      [
+        'Reqly request "New Request"',
+        `Path: ${collection} / New Request`,
+        `ID: ${id}`,
+        'GET https://ref.test/items',
+        `Read it with the Reqly MCP tool get_request {"id": "${id}"}.`,
+      ].join('\n'),
+    );
   await closeAllTabs(page);
 });

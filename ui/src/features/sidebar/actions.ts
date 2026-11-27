@@ -10,6 +10,7 @@ import type { MenuEntry } from '$lib/ui/overlay/menus.svelte';
 import { toasts } from '$lib/ui/overlay/toasts.svelte';
 import { formatCombo } from '$lib/hotkeys/hotkeys';
 import { interopDialogs } from '../interop/dialogs.svelte';
+import { referenceMenu } from './reference';
 
 export interface TreeActionHooks {
   /** Opens folder settings (headers, auth, settings). */
@@ -199,6 +200,7 @@ export function treeMenu(s: Services, ids: string[], hooks: TreeActionHooks): Me
       onSelect: () => void s.tree.copyAsCurl(ids),
     });
   }
+  if (single) entries.push(referenceMenu(s, single.id));
   if (single && !single.isFolder && hooks.reveal) {
     entries.push({
       id: 'reveal',

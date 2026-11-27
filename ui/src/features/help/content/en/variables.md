@@ -3,7 +3,8 @@
 ## Using variables
 
 Write `{{ name }}` in the URL, parameters, headers, body, auth fields or in
-other variables. Variables are highlighted, undefined ones in red. Hover one to see its value; the editor completes names as you type.
+other variables. Variables are highlighted, undefined ones in red. Hover one to see its value; the editor completes names as you type,
+and right after `{{` it also lists functions such as `$uuid` and `$timestamp`.
 
 Paths into JSON values work too: `{{ api.version }}`, `{{ hosts[0] }}`.
 

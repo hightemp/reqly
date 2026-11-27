@@ -76,6 +76,10 @@ rewritten to the new requests.
 **Workspace → Export workspace…**, **Collection → Export collection…** or
 **Export…** in the context menu of selected folders and requests.
 
+The app adds the local date and time to file names
+(`my-api-2026-11-27_14-05.reqly.json`); the option is in the export window
+and in Settings → General (`exportTimestamp`, on by default).
+
 | Format | What is saved |
 | --- | --- |
 | Reqly (JSON / YAML) | everything; optionally secret values (with a warning), cookies and response history |

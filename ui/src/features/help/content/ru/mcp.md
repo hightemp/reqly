@@ -47,6 +47,21 @@ claude mcp add --transport http reqly http://127.0.0.1:7655/mcp --header "Author
 Cursor (`~/.cursor/mcp.json`) и VS Code (`.vscode/mcp.json`) принимают тот
 же адрес и заголовок в виде JSON.
 
+Codex (`~/.codex/config.toml`) берёт токен из переменной окружения:
+
+```toml
+[mcp_servers.reqly]
+url = "http://127.0.0.1:7655/mcp"
+bearer_token_env_var = "REQLY_MCP_TOKEN"
+```
+
+или `codex mcp add reqly --url http://127.0.0.1:7655/mcp --bearer-token-env-var REQLY_MCP_TOKEN`.
+Запускайте Codex с `REQLY_MCP_TOKEN=<токен>` в окружении.
+
+Чтобы указать агенту на запрос, выберите **Копировать путь / ID →
+Копировать для ИИ** в контекстном меню запроса (в дереве или на вкладке):
+копируются путь, ID, метод и URL и вызов `get_request`, который его читает.
+
 ## Инструменты
 
 Инструменты разбиты на группы: отметьте группу целиком или раскройте её и

@@ -10,7 +10,7 @@ import type { Transport } from '$lib/api/transport';
 
 const LOG_SIZE = 200;
 export const GROUPS: McpGroup[] = ['read', 'edit', 'run', 'environments', 'interop'];
-export type McpClient = 'claude' | 'cursor' | 'vscode';
+export type McpClient = 'claude' | 'codex' | 'cursor' | 'vscode';
 
 export interface GroupState {
   group: McpGroup;
@@ -25,6 +25,18 @@ export function clientConfig(client: McpClient, url: string, token: string): str
   switch (client) {
     case 'claude':
       return `claude mcp add --transport http reqly ${url} --header "Authorization: Bearer ${token}"`;
+    case 'codex':
+      // Codex reads the bearer token from the environment, not from the file.
+      return [
+        '# ~/.codex/config.toml',
+        '[mcp_servers.reqly]',
+        `url = "${url}"`,
+        'bearer_token_env_var = "REQLY_MCP_TOKEN"',
+        '',
+        `# Or: codex mcp add reqly --url ${url} --bearer-token-env-var REQLY_MCP_TOKEN`,
+        '# Then start Codex with the token:',
+        `export REQLY_MCP_TOKEN="${token}"`,
+      ].join('\n');
     case 'cursor':
       return JSON.stringify({ mcpServers: { reqly: { url, headers } } }, null, 2);
     case 'vscode':

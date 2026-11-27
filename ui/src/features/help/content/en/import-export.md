@@ -50,3 +50,7 @@ Content-Type: application/json
 menu of selected items. Formats: Reqly (JSON or YAML), Insomnia v4 and v5,
 Postman v2.1, HAR and cURL. Secret values are left empty unless you include
 them.
+
+File names get the date and time, e.g. `my-api-2026-11-27_14-05.reqly.json`,
+so exports do not overwrite each other. Turn it off in the export window or in
+**Settings → General**.

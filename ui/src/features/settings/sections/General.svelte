@@ -34,6 +34,13 @@
     onchange={(v) => void prefs.update({ autosave: v })}
   />
 </Field>
+<Field label={t('settings.exportTimestamp')} hint={t('settings.exportTimestampHint')}>
+  <Switch
+    label={t('settings.exportTimestamp')}
+    checked={prefs.value.exportTimestamp}
+    onchange={(v) => void prefs.update({ exportTimestamp: v })}
+  />
+</Field>
 <Field label={t('settings.sidebarMode')}>
   <Select
     label={t('settings.sidebarMode')}
