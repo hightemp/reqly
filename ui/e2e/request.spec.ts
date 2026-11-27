@@ -415,3 +415,55 @@ test('copy the path, the ID and a block for AI of a request', async ({ page, con
     );
   await closeAllTabs(page);
 });
+
+test('the tag editor builds a response tag from another request', async ({ page, baseURL }) => {
+  await page.goto('/');
+  await closeAllTabs(page);
+  const suffix = Date.now().toString(36);
+  // A fresh collection: the request list of the picker stays short.
+  await page.getByRole('button', { name: 'Collection actions' }).click();
+  await page.getByRole('menuitem', { name: 'New collection' }).click();
+  const created = page.getByRole('dialog', { name: 'New collection' });
+  await created.getByRole('textbox', { name: 'Name' }).fill(`Tags ${suffix}`);
+  await created.getByRole('button', { name: 'OK' }).click();
+
+  // The login request, sent once.
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await page.getByRole('treeitem', { name: /New Request/ }).click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Rename' }).click();
+  const rename = page.getByRole('tree', { name: 'Collections' }).getByRole('textbox');
+  await rename.fill('Login');
+  await rename.press('Enter');
+  await page.getByRole('textbox', { name: 'URL' }).fill(`${baseURL}/healthz`);
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByText('200 OK')).toBeVisible();
+
+  // Another request takes a value from its response.
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await page
+    .getByRole('tablist', { name: 'Request sections' })
+    .getByRole('tab', { name: 'Body' })
+    .click();
+  await page.getByRole('combobox', { name: 'Body type' }).click();
+  await page.getByRole('option', { name: 'Plain text' }).click();
+  const editor = page.getByRole('textbox', { name: 'Request body' });
+  await editor.click();
+  await editor.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Insert template tag…' }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Edit tag' });
+  await expect(dialog.getByRole('combobox', { name: 'Function' })).toContainText('Response');
+  await expect(dialog.getByRole('combobox', { name: 'Attribute' })).toContainText('Body');
+  const picker = dialog.getByRole('combobox', { name: 'Request' });
+  await picker.fill('Log');
+  await page.getByRole('option', { name: 'Login' }).click();
+  await dialog.getByRole('textbox', { name: 'Filter (JSONPath or XPath)' }).fill('$.status');
+  await expect(dialog.locator('output')).toHaveText('ok');
+  // The header name replaces the filter for headers; the age shows only when it matters.
+  await expect(dialog.getByRole('spinbutton', { name: 'Max age (seconds)' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Apply' }).click();
+  await expect(editor).toHaveText(/^\{% response 'body', '[0-9a-f-]{36}', '\$\.status' %\}$/);
+  await closeAllTabs(page);
+});

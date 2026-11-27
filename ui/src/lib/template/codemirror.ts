@@ -2,7 +2,7 @@
 // a hover preview of the rendered value and completion after `{{` / `{%`.
 
 import type { Completion, CompletionContext, CompletionResult } from '@codemirror/autocomplete';
-import { RangeSetBuilder, type Extension } from '@codemirror/state';
+import { Facet, RangeSetBuilder, type Extension } from '@codemirror/state';
 import {
   Decoration,
   EditorView,
@@ -53,6 +53,11 @@ function rangeAt(view: EditorView, pos: number): TemplateRange | null {
 }
 
 const valueText = (v: unknown) => (typeof v === 'string' ? v : JSON.stringify(v));
+
+/** The template host of an editor (the text menu inserts tags through it). */
+export const templateHostFacet = Facet.define<TemplateHost, TemplateHost | null>({
+  combine: (hosts) => hosts[0] ?? null,
+});
 
 export function templateExtension(host: TemplateHost): Extension {
   let data: TemplateData | null = null;
@@ -152,7 +157,7 @@ export function templateExtension(host: TemplateHost): Extension {
     },
   });
 
-  return [plugin, hover, clickToEdit, templateTheme];
+  return [plugin, hover, clickToEdit, templateTheme, templateHostFacet.of(host)];
 }
 
 /** Completion source for `{{ var }}`, `{{ $fn }}`, `{{ $faker.x }}` and `{% tag %}`. */

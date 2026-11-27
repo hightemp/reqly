@@ -1,17 +1,20 @@
 <!--
-  Edits the arguments of a template tag with a live preview of its value.
+  Edits a template tag: pick a function, then each argument with its own
+  control (a list, a number, a request of the tree…), with a live preview.
 -->
 <script lang="ts">
+  import type { ArgInfo } from '$lib/api/generated/ArgInfo';
   import type { FunctionInfo } from '$lib/api/generated/FunctionInfo';
   import { t } from '$lib/i18n';
   import type { Services } from '$lib/services.svelte';
-  import { parseTag, serializeTag, type ArgKind, type ParsedTag } from '$lib/template/scan';
+  import { serializeTag, type ArgKind, type ParsedTag } from '$lib/template/scan';
   import Button from '$lib/ui/Button.svelte';
   import IconButton from '$lib/ui/IconButton.svelte';
   import Input from '$lib/ui/Input.svelte';
   import Combobox from '$lib/ui/overlay/Combobox.svelte';
   import Modal from '$lib/ui/overlay/Modal.svelte';
   import Select from '$lib/ui/overlay/Select.svelte';
+  import { finishTag, openTag, requestOptions, startTag, visibleParams } from './tagModel';
   import type { TagEditRequest } from './tagEditorState.svelte';
 
   let {
@@ -21,31 +24,29 @@
   }: { services: Services; request: TagEditRequest; onclose: () => void } = $props();
   const envs = $derived(services.environments);
 
-  // svelte-ignore state_referenced_locally
-  let tag = $state<ParsedTag>(parseTag(request.text) ?? { name: 'uuid', args: [] });
   let functions = $state<FunctionInfo[]>([]);
   let faker = $state<string[]>([]);
+  let tag = $state<ParsedTag | null>(null);
   let preview = $state<{ ok: boolean; text: string } | null>(null);
+  let refreshes = $state(0);
 
   $effect(() => {
     void envs.loadCatalog().then((c) => {
       functions = c.functions;
       faker = c.faker.map((f) => f.name);
+      tag ??= openTag(request.text, c.functions);
     });
   });
 
-  const info = $derived(functions.find((f) => f.name === tag.name));
-  const text = $derived(serializeTag(tag));
-  const kinds: { value: ArgKind; label: string }[] = $derived([
-    { value: 'string', label: t('tagEditor.kindString') },
-    { value: 'number', label: t('tagEditor.kindNumber') },
-    { value: 'boolean', label: t('tagEditor.kindBoolean') },
-    { value: 'variable', label: t('tagEditor.kindVariable') },
-  ]);
+  const info = $derived(tag ? functions.find((f) => f.name === tag!.name) : undefined);
+  const text = $derived(tag ? serializeTag(finishTag(tag, info)) : '');
+  const requests = $derived(requestOptions(services.tree.items));
 
-  // Live preview, debounced.
+  // Live preview, debounced; "Refresh" asks again (e.g. after sending).
   $effect(() => {
     const current = text;
+    void refreshes;
+    if (!current) return;
     const timer = setTimeout(() => {
       envs.preview(current, request.nodeId).then(
         (v) => (preview = { ok: true, text: v }),
@@ -55,114 +56,209 @@
     return () => clearTimeout(timer);
   });
 
+  const fnLabel = (name: string) => {
+    // i18n-dynamic: tagEditor.fn.
+    const key = `tagEditor.fn.${name}` as Parameters<typeof t>[0];
+    const label = t(key);
+    return label === key ? name : label;
+  };
+
+  function argLabel(p: ArgInfo): string {
+    if (tag?.name === 'response' && p.name === 'path') {
+      return valueAt(0) === 'header' ? t('tagEditor.arg.headerName') : t('tagEditor.arg.filter');
+    }
+    // i18n-dynamic: tagEditor.arg.
+    const key = `tagEditor.arg.${p.name}` as Parameters<typeof t>[0];
+    const label = t(key);
+    return label === key ? p.name : label;
+  }
+
+  function choiceLabel(p: ArgInfo, value: string): string {
+    if (tag?.name !== 'response') return value;
+    // i18n-dynamic: tagEditor.responseField.
+    // i18n-dynamic: tagEditor.trigger.
+    if (p.name === 'field') return t(`tagEditor.responseField.${value}` as Parameters<typeof t>[0]);
+    if (p.name === 'trigger') return t(`tagEditor.trigger.${value}` as Parameters<typeof t>[0]);
+    return value;
+  }
+
+  const indexOf = (p: ArgInfo) => info?.params.indexOf(p) ?? -1;
+  const valueAt = (i: number) => tag?.args[i]?.value ?? '';
+
   function setArg(i: number, patch: Partial<{ kind: ArgKind; value: string }>) {
+    if (!tag) return;
     const args = [...tag.args];
     while (args.length <= i) args.push({ kind: 'string', value: '' });
     args[i] = { ...args[i]!, ...patch };
     tag = { ...tag, args };
   }
 
-  function argName(i: number) {
-    return info?.args[i]?.replace(/\?$/, '') ?? t('tagEditor.argument', { n: i + 1 });
+  function setFunction(name: string) {
+    const next = functions.find((f) => f.name === name);
+    tag = next ? startTag(next) : { name, args: [] };
   }
 
-  const argCount = $derived(Math.max(tag.args.length, info?.args.length ?? 0));
-
-  function choicesFor(i: number): string[] | null {
-    if (i !== 0) return null;
-    if (tag.name === 'faker') return faker;
-    return info?.choices.length ? info.choices : null;
+  function choices(p: ArgInfo) {
+    const options = p.choices.map((value) => ({ value, label: choiceLabel(p, value) }));
+    return p.optional ? [{ value: '', label: t('tagEditor.default') }, ...options] : options;
   }
+
+  // The request picker shows paths; ids not in this collection stay as they are.
+  function requestLabel(id: string) {
+    if (!id) return '';
+    return requests.find((r) => r.value === id)?.label ?? t('tagEditor.unknownRequest', { id });
+  }
+  function pickRequest(i: number, label: string) {
+    const match = requests.find((r) => r.label === label);
+    setArg(i, { kind: 'string', value: match ? match.value : label.trim() });
+  }
+
+  // Unknown functions and extra arguments: edit them as plain text.
+  const extra = $derived(tag && info ? tag.args.slice(info.params.length) : []);
 
   function apply() {
-    // Drop trailing empty optional arguments.
-    const args = [...tag.args];
-    while (args.length && args.at(-1)!.kind === 'string' && args.at(-1)!.value === '') args.pop();
-    request.apply(serializeTag({ ...tag, args }));
+    if (!tag) return;
+    request.apply(serializeTag(finishTag(tag, info)));
     onclose();
   }
 </script>
 
 <Modal
   title={t('tagEditor.title')}
-  width="560px"
+  width="600px"
   {onclose}
   initialFocus={() => document.querySelector<HTMLElement>('[data-tag-apply]')}
 >
-  <div class="form">
-    <div class="field">
-      <span class="label">{t('tagEditor.function')}</span>
-      <Combobox
-        label={t('tagEditor.function')}
-        value={tag.name}
-        options={functions.map((f) => f.name)}
-        allowCustom
-        mono
-        onchange={(name) => (tag = { name, args: [] })}
-      />
-    </div>
-    {#each { length: argCount } as _, i (i)}
-      {@const arg = tag.args[i] ?? { kind: 'string', value: '' }}
-      {@const choices = choicesFor(i)}
+  {#if tag}
+    <div class="form">
       <div class="field">
-        <span class="label">{argName(i)}</span>
-        <div class="arg">
-          {#if choices && arg.kind === 'string'}
-            <Combobox
-              label={argName(i)}
-              value={arg.value}
-              options={choices}
-              allowCustom
-              mono
-              onchange={(value) => setArg(i, { value })}
-            />
-          {:else}
-            <Input
-              mono
-              value={arg.value}
-              aria-label={argName(i)}
-              oninput={(e) => setArg(i, { value: e.currentTarget.value })}
-            />
-          {/if}
-          <div class="kind">
-            <Select
-              compact
-              label={t('tagEditor.kind')}
-              value={arg.kind}
-              options={kinds}
-              onchange={(kind) => setArg(i, { kind })}
-            />
+        <span class="label">{t('tagEditor.function')}</span>
+        <Select
+          label={t('tagEditor.function')}
+          value={tag.name}
+          options={functions.map((f) => ({ value: f.name, label: fnLabel(f.name) }))}
+          onchange={setFunction}
+        />
+      </div>
+
+      {#if info}
+        {#each visibleParams(info, tag) as p (p.name)}
+          {@const i = indexOf(p)}
+          {@const arg = tag.args[i] ?? { kind: 'string', value: '' }}
+          <div class="field">
+            <span class="label">{argLabel(p)}</span>
+            {#if p.kind === 'choice'}
+              <Select
+                label={argLabel(p)}
+                value={arg.value}
+                options={choices(p)}
+                onchange={(value) => setArg(i, { kind: 'string', value })}
+              />
+            {:else if p.kind === 'request'}
+              <Combobox
+                label={argLabel(p)}
+                value={requestLabel(arg.value)}
+                options={requests.map((r) => r.label)}
+                placeholder={t('tagEditor.pickRequest')}
+                allowCustom
+                onchange={(label) => pickRequest(i, label)}
+              />
+            {:else if p.kind === 'faker'}
+              <Combobox
+                label={argLabel(p)}
+                value={arg.value}
+                options={faker}
+                allowCustom
+                mono
+                onchange={(value) => setArg(i, { kind: 'string', value })}
+              />
+            {:else}
+              <div class="arg">
+                <Input
+                  mono
+                  type={p.kind === 'number' ? 'number' : 'text'}
+                  value={arg.value}
+                  aria-label={argLabel(p)}
+                  oninput={(e) => setArg(i, { value: e.currentTarget.value })}
+                />
+                {#if p.kind === 'text'}
+                  <div class="kind">
+                    <Select
+                      compact
+                      label={t('tagEditor.kind')}
+                      value={arg.kind === 'variable' ? 'variable' : 'string'}
+                      options={[
+                        { value: 'string', label: t('tagEditor.kindString') },
+                        { value: 'variable', label: t('tagEditor.kindVariable') },
+                      ]}
+                      onchange={(kind) => setArg(i, { kind })}
+                    />
+                  </div>
+                {/if}
+              </div>
+            {/if}
+            {#if tag.name === 'response' && p.name === 'path' && valueAt(0) === 'body'}
+              <span class="hint">{t('tagEditor.filterHint')}</span>
+            {/if}
           </div>
+        {/each}
+      {/if}
+
+      {#if !info || extra.length}
+        <details class="advanced" open={!info}>
+          <summary>{t('tagEditor.advanced')}</summary>
+          {#each tag.args as arg, i (i)}
+            {#if !info || i >= info.params.length}
+              <div class="arg">
+                <Input
+                  mono
+                  value={arg.value}
+                  aria-label={t('tagEditor.argument', { n: i + 1 })}
+                  oninput={(e) => setArg(i, { value: e.currentTarget.value })}
+                />
+                <IconButton
+                  icon="trash"
+                  label={t('tagEditor.removeArgument')}
+                  onclick={() => (tag = { ...tag!, args: tag!.args.filter((_, j) => j !== i) })}
+                />
+              </div>
+            {/if}
+          {/each}
+          <Button size="sm" onclick={() => setArg(tag!.args.length, { value: '' })}>
+            {t('tagEditor.addArgument')}
+          </Button>
+        </details>
+      {/if}
+
+      <div class="field">
+        <span class="label">{t('tagEditor.template')}</span>
+        <code class="code selectable">{text}</code>
+      </div>
+      <div class="field">
+        <div class="row">
+          <span class="label">{t('tagEditor.preview')}</span>
           <IconButton
-            icon="trash"
-            label={t('tagEditor.removeArgument')}
-            onclick={() => (tag = { ...tag, args: tag.args.filter((_, j) => j !== i) })}
+            icon="refresh"
+            size={14}
+            label={t('tagEditor.refresh')}
+            onclick={() => refreshes++}
           />
         </div>
+        <output
+          class="code preview selectable"
+          class:error={preview && !preview.ok}
+          aria-live="polite"
+        >
+          {preview ? preview.text || t('template.empty') : '…'}
+        </output>
       </div>
-    {/each}
-    <div>
-      <Button onclick={() => setArg(tag.args.length, { kind: 'string', value: '' })}>
-        {t('tagEditor.addArgument')}
-      </Button>
     </div>
-    {#if info?.example}
-      <p class="example"><span>{t('tagEditor.example')}</span> <code>{info.example}</code></p>
-    {/if}
-    <div class="field">
-      <span class="label">{t('tagEditor.template')}</span>
-      <code class="code">{text}</code>
-    </div>
-    <div class="field">
-      <span class="label">{t('tagEditor.preview')}</span>
-      <output class="code" class:error={preview && !preview.ok} aria-live="polite">
-        {preview ? preview.text || t('template.empty') : '…'}
-      </output>
-    </div>
-  </div>
+  {/if}
   {#snippet footer()}
     <Button onclick={onclose}>{t('common.cancel')}</Button>
-    <Button variant="primary" data-tag-apply onclick={apply}>{t('tagEditor.apply')}</Button>
+    <Button variant="primary" data-tag-apply disabled={!tag} onclick={apply}
+      >{t('tagEditor.apply')}</Button
+    >
   {/snippet}
 </Modal>
 
@@ -170,7 +266,7 @@
   .form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
   .field {
     display: flex;
@@ -179,7 +275,17 @@
   }
   .label {
     font-size: var(--font-size-xs);
+    font-weight: 600;
     color: var(--c-fg-muted);
+  }
+  .hint {
+    font-size: var(--font-size-xs);
+    color: var(--c-fg-subtle);
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   .arg {
     display: flex;
@@ -194,10 +300,16 @@
     width: 120px;
     flex: none;
   }
-  .example {
-    margin: 0;
+  .advanced {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
     font-size: var(--font-size-sm);
+  }
+  .advanced summary {
+    cursor: pointer;
     color: var(--c-fg-muted);
+    margin-bottom: var(--space-2);
   }
   .code {
     display: block;
@@ -208,6 +320,11 @@
     font-size: var(--font-size-sm);
     white-space: pre-wrap;
     word-break: break-all;
+  }
+  .preview {
+    min-height: 3.5em;
+    max-height: 12em;
+    overflow: auto;
   }
   .code.error {
     color: var(--c-danger);

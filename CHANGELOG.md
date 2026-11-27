@@ -37,6 +37,14 @@ and this project follows [Semantic Versioning](https://semver.org/).
   built-in help) by topic, and the MCP `initialize` instructions explain the
   template syntax, how to find a request and that Reqly's source code is not
   needed. Agents stopped looking for the project on GitHub.
+- The tag editor works like Insomnia's: pick a function, then each argument
+  has its own control: lists with descriptions, numbers, a request picked
+  from the tree (no need to know its ID), a JSONPath filter as plain text
+  (Insomnia's `b64::` filters are decoded), the trigger behavior; a live
+  preview with **Refresh**. **Insert template tag…** in the context menu of
+  fields and editors adds a new tag. The core describes every function
+  argument (`FunctionInfo.params`). The help has a step-by-step example: a
+  Bearer token from the login response.
 
 ### Fixed
 

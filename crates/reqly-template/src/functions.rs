@@ -495,100 +495,211 @@ pub struct FunctionInfo {
     /// Fixed choices for the first argument, if any.
     pub choices: Vec<String>,
     pub example: String,
+    /// Each argument, for the tag editor.
+    pub params: Vec<ArgInfo>,
 }
 
-pub fn catalog() -> Vec<FunctionInfo> {
-    let f = |name: &str, args: &[&str], choices: &[&str], example: &str| FunctionInfo {
+/// One argument of a function.
+#[derive(Debug, Clone, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ArgInfo {
+    pub name: String,
+    pub kind: ArgKind,
+    pub optional: bool,
+    /// The values of a `choice` argument.
+    pub choices: Vec<String>,
+}
+
+/// What the tag editor shows for an argument.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum ArgKind {
+    /// One of `choices`.
+    Choice,
+    Text,
+    Number,
+    /// The id of a request in the workspace.
+    Request,
+    /// A faker function such as `person.firstName`.
+    Faker,
+}
+
+fn text(name: &str) -> ArgInfo {
+    arg(name, ArgKind::Text, &[])
+}
+
+fn choice(name: &str, choices: &[&str]) -> ArgInfo {
+    arg(name, ArgKind::Choice, choices)
+}
+
+fn arg(name: &str, kind: ArgKind, choices: &[&str]) -> ArgInfo {
+    ArgInfo {
         name: name.into(),
-        args: args.iter().map(|s| s.to_string()).collect(),
+        kind,
+        optional: false,
         choices: choices.iter().map(|s| s.to_string()).collect(),
+    }
+}
+
+impl ArgInfo {
+    fn optional(mut self) -> Self {
+        self.optional = true;
+        self
+    }
+}
+
+const ALGORITHMS: &[&str] = &["md5", "sha1", "sha256", "sha384", "sha512"];
+const ENCODINGS: &[&str] = &["hex", "base64"];
+const ACTIONS: &[&str] = &["encode", "decode"];
+
+pub fn catalog() -> Vec<FunctionInfo> {
+    let f = |name: &str, params: Vec<ArgInfo>, example: &str| FunctionInfo {
+        name: name.into(),
+        args: params
+            .iter()
+            .map(|p| format!("{}{}", p.name, if p.optional { "?" } else { "" }))
+            .collect(),
+        choices: params
+            .first()
+            .map(|p| p.choices.clone())
+            .unwrap_or_default(),
         example: example.into(),
+        params,
     };
     vec![
-        f("uuid", &["version?"], &["v4", "v7"], "{% uuid 'v4' %}"),
+        f(
+            "uuid",
+            vec![choice("version", &["v4", "v7"]).optional()],
+            "{% uuid 'v4' %}",
+        ),
         f(
             "now",
-            &["format?", "pattern?"],
-            &["iso-8601", "unix", "millis", "rfc-2822", "custom"],
+            vec![
+                choice(
+                    "format",
+                    &["iso-8601", "unix", "millis", "rfc-2822", "custom"],
+                )
+                .optional(),
+                text("pattern").optional(),
+            ],
             "{% now 'iso-8601' %}",
         ),
         f(
             "random",
-            &["kind", "a?", "b?"],
-            &["int", "float", "string", "regex"],
+            vec![
+                choice("kind", &["int", "float", "string", "regex"]),
+                text("a").optional(),
+                text("b").optional(),
+            ],
             "{% random 'int', 1, 100 %}",
         ),
         f(
             "base64",
-            &["action", "kind", "value"],
-            &["encode", "decode"],
+            vec![
+                choice("action", ACTIONS),
+                choice("kind", &["normal", "url"]),
+                text("value"),
+            ],
             "{% base64 'encode', 'normal', 'text' %}",
         ),
         f(
             "urlencode",
-            &["action", "value"],
-            &["encode", "decode"],
+            vec![choice("action", ACTIONS), text("value")],
             "{% urlencode 'encode', 'a b' %}",
         ),
         f(
             "hash",
-            &["algorithm", "encoding", "value"],
-            &["md5", "sha1", "sha256", "sha384", "sha512"],
+            vec![
+                choice("algorithm", ALGORITHMS),
+                choice("encoding", ENCODINGS),
+                text("value"),
+            ],
             "{% hash 'sha256', 'hex', 'text' %}",
         ),
         f(
             "hmac",
-            &["algorithm", "encoding", "key", "value"],
-            &["md5", "sha1", "sha256", "sha384", "sha512"],
+            vec![
+                choice("algorithm", ALGORITHMS),
+                choice("encoding", ENCODINGS),
+                text("key"),
+                text("value"),
+            ],
             "{% hmac 'sha256', 'hex', 'key', 'text' %}",
         ),
         f(
             "jsonpath",
-            &["json", "path"],
-            &[],
+            vec![text("json"), text("path")],
             "{% jsonpath data, '$.id' %}",
         ),
         f(
             "jwt",
-            &["action", "payload", "secret?", "algorithm?"],
-            &["encode", "decode"],
+            vec![
+                choice("action", ACTIONS),
+                text("payload"),
+                text("secret").optional(),
+                choice(
+                    "algorithm",
+                    &["HS256", "HS384", "HS512", "RS256", "RS384", "RS512"],
+                )
+                .optional(),
+            ],
             "{% jwt 'encode', '{\"sub\":\"1\"}', 'secret', 'HS256' %}",
         ),
         f(
             "faker",
-            &["function", "args?"],
-            &[],
+            vec![
+                arg("function", ArgKind::Faker, &[]),
+                text("args").optional(),
+            ],
             "{{ $faker.person.firstName }}",
         ),
         f(
             "response",
-            &["field", "requestId", "path?", "trigger?", "maxAgeSeconds?"],
-            &["body", "header", "raw", "url", "status"],
+            vec![
+                choice("field", &["body", "header", "raw", "url", "status"]),
+                arg("requestId", ArgKind::Request, &[]),
+                text("path").optional(),
+                choice(
+                    "trigger",
+                    &["never", "no-history", "when-expired", "always"],
+                )
+                .optional(),
+                arg("maxAgeSeconds", ArgKind::Number, &[]).optional(),
+            ],
             "{% response 'body', 'request-id', '$.token' %}",
         ),
         f(
             "cookie",
-            &["url", "name"],
-            &[],
+            vec![text("url"), text("name")],
             "{% cookie 'https://example.com', 'sid' %}",
         ),
         f(
             "request",
-            &["field", "name?"],
-            &["url", "method", "name", "header", "folder"],
+            vec![
+                choice("field", &["url", "method", "name", "header", "folder"]),
+                text("name").optional(),
+            ],
             "{% request 'url' %}",
         ),
         f(
             "prompt",
-            &["title", "label?", "default?", "key?"],
-            &[],
+            vec![
+                text("title"),
+                text("label").optional(),
+                text("default").optional(),
+                text("key").optional(),
+            ],
             "{% prompt 'Token', 'Enter a token' %}",
         ),
-        f("file", &["path"], &[], "{% file '/path/to/file.txt' %}"),
+        f("file", vec![text("path")], "{% file '/path/to/file.txt' %}"),
         f(
             "os",
-            &["field"],
-            &["hostname", "platform", "username", "env"],
+            vec![
+                choice("field", &["hostname", "platform", "username", "env"]),
+                text("name").optional(),
+            ],
             "{% os 'hostname' %}",
         ),
     ]

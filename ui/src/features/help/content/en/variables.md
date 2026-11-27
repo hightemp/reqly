@@ -44,7 +44,9 @@ Functions generate values when a request is sent:
 | `{% response 'body', '<request>', '$.token' %}` | a value from another request's response |
 
 Hover a tag and click **Edit…** (or `Ctrl`+click) to change its arguments
-with a live preview.
+with a live preview. To add a new tag, right-click in a field or editor and
+choose **Insert template tag…**: pick the function, then fill in each
+argument (lists, numbers, a request from the tree).
 
 ## Response chaining
 
@@ -52,6 +54,24 @@ with a live preview.
 the body (JSONPath `$.token` or XPath), a header, the status or the URL. It
 can send that request first: when there is no response yet, when the
 response is too old, or every time.
+
+### Example: a token from the login response
+
+1. Send the login request once, so it has a response with the token, e.g.
+   `{"token": "eyJ…"}`.
+2. Open the request that needs the token, **Auth → Bearer token**.
+3. Right-click the **Token** field and choose **Insert template tag…**.
+4. **Function**: Response. **Attribute**: Body. **Request**: type a part of
+   the login request's name and pick it. **Filter**: `$.token`.
+5. **Trigger behavior**: Never uses the latest response; When expired sends
+   the login request again when its response is older than **Max age**.
+6. The preview shows the token. **Apply** inserts
+   `{% response 'body', '<request id>', '$.token' %}`.
+
+You do not need to know the request ID: the editor fills it in. **Copy path /
+ID → Copy ID** in the request's context menu copies it if you write the tag
+by hand. Filters imported from Insomnia (`b64::…::46b`) work as they are and
+show as plain text in the editor.
 
 ## Fake data
 

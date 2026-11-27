@@ -6,6 +6,7 @@ import { EditorView } from '@codemirror/view';
 import { detectPlatform, formatCombo, type Platform } from '$lib/hotkeys/hotkeys';
 import { t } from '$lib/i18n';
 import { readClipboardText } from '$lib/platform/clipboard';
+import { templateHostFacet } from '$lib/template/codemirror';
 import { isItem, menus, type MenuEntry } from './overlay/menus.svelte';
 
 /** Text the menu works on: a field, an editor or plain selectable text. */
@@ -21,6 +22,8 @@ interface Surface {
   focus(): void;
   /** Where a `paste` event goes, so the app's own paste handlers see it. */
   pasteTarget: HTMLElement;
+  /** Opens the tag editor for a new tag at the selection (template editors). */
+  insertTag?: () => void;
 }
 
 type Field = HTMLInputElement | HTMLTextAreaElement;
@@ -55,7 +58,20 @@ function fieldSurface(el: Field): Surface {
 }
 
 function editorSurface(view: EditorView): Surface {
+  const host = view.state.facet(templateHostFacet);
+  const editTag = !view.state.readOnly ? host?.editTag?.bind(host) : undefined;
   return {
+    insertTag: editTag
+      ? () => {
+          const { from, to } = view.state.selection.main;
+          editTag('', (next) =>
+            view.dispatch({
+              changes: { from, to, insert: next },
+              selection: { anchor: from + next.length },
+            }),
+          );
+        }
+      : undefined,
     editable: !view.state.readOnly,
     keepsSelection: true,
     selected: () =>
@@ -160,6 +176,13 @@ export function textMenuItems(s: Surface, platform: Platform = detectPlatform())
       shortcut: k('Mod+V'),
       onSelect: () => void paste(s),
     });
+  }
+  if (s.insertTag) {
+    const insert = s.insertTag;
+    entries.push(
+      { separator: true },
+      { id: 'text-insert-tag', label: t('tagEditor.insert'), onSelect: insert },
+    );
   }
   entries.push(
     { separator: true },

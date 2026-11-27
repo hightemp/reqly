@@ -15,8 +15,14 @@ const data: TemplateData = {
     },
   ],
   functions: [
-    { name: 'uuid', args: ['version?'], choices: ['v4', 'v7'], example: "{% uuid 'v4' %}" },
-    { name: 'timestamp', args: [], choices: [], example: '{% timestamp %}' },
+    {
+      name: 'uuid',
+      args: ['version?'],
+      choices: ['v4', 'v7'],
+      example: "{% uuid 'v4' %}",
+      params: [],
+    },
+    { name: 'timestamp', args: [], choices: [], example: '{% timestamp %}', params: [] },
   ],
   faker: [],
   dynamicVariables: ['randomFirstName'],

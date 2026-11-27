@@ -2,6 +2,8 @@ import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { menus, isItem, type MenuItem } from './overlay/menus.svelte';
+import { templateHostFacet } from '$lib/template/codemirror';
+import type { TemplateHost } from '$lib/template/host';
 import { onTextContextMenu, surfaceAt, textMenuItems } from './textMenu';
 
 vi.mock('$lib/platform/clipboard', () => ({
@@ -99,6 +101,40 @@ describe('text context menu', () => {
     item(textMenuItems(surfaceAt(view.contentDOM)!), 'text-paste').onSelect!();
     await vi.waitFor(() => expect(view.state.doc.toString()).toBe('apastedb'));
     view.destroy();
+  });
+
+  it('inserts a template tag through the tag editor', () => {
+    const editTag = vi.fn((_text: string, apply: (next: string) => void) =>
+      apply("{% uuid 'v4' %}"),
+    );
+    const host: TemplateHost = {
+      load: async () => ({ variables: [], functions: [], faker: [], dynamicVariables: [] }),
+      onChange: () => () => {},
+      preview: async (t) => t,
+      editTag,
+    };
+    const view = new EditorView({
+      state: EditorState.create({
+        doc: 'id=',
+        selection: { anchor: 3 },
+        extensions: [templateHostFacet.of(host)],
+      }),
+      parent: document.body,
+    });
+    const entries = textMenuItems(surfaceAt(view.contentDOM)!);
+    item(entries, 'text-insert-tag').onSelect!();
+    expect(editTag).toHaveBeenCalledWith('', expect.any(Function));
+    expect(view.state.doc.toString()).toBe("id={% uuid 'v4' %}");
+    view.destroy();
+
+    // Read-only editors and editors without templates have no such item.
+    const plain = new EditorView({ state: EditorState.create({ doc: '' }), parent: document.body });
+    expect(
+      textMenuItems(surfaceAt(plain.contentDOM)!).some(
+        (e) => 'id' in e && e.id === 'text-insert-tag',
+      ),
+    ).toBe(false);
+    plain.destroy();
   });
 
   it('selects all of a selectable block', () => {
