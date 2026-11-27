@@ -5,6 +5,11 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-11-27
+
+A tag editor like Insomnia's, text menus and copying everywhere, better
+help for AI agents.
+
 ### Added
 
 - AI chat messages have **Copy message** and, on answers, **Branch off from
@@ -512,7 +517,8 @@ The first version: a complete HTTP client (stage 1).
   shortcuts, split panes, a custom title bar, settings stored on the server
   and synced between tabs.
 
-[Unreleased]: https://github.com/hightemp/reqly/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/hightemp/reqly/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/hightemp/reqly/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hightemp/reqly/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hightemp/reqly/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hightemp/reqly/compare/v1.0.0...v1.1.0
