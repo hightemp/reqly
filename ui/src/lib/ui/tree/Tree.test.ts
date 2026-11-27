@@ -55,6 +55,22 @@ describe('Tree', () => {
     expect(onopen).toHaveBeenCalledWith('readme');
   });
 
+  it('leaves Ctrl+Enter to the app (send the request)', async () => {
+    const { onopen } = setup();
+    await fireEvent.click(row('readme'));
+    onopen.mockClear();
+    const tree = screen.getByRole('tree');
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    tree.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(onopen).not.toHaveBeenCalled();
+  });
+
   it('supports ctrl and shift selection', async () => {
     setup({ expanded: ['api'] });
     await fireEvent.click(row('api'));

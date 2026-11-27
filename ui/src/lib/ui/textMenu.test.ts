@@ -125,6 +125,24 @@ describe('text context menu', () => {
     ]);
   });
 
+  it('copies the parts of a table row', () => {
+    document.body.innerHTML =
+      '<table class="selectable"><tr data-copy-name="Content-Type" data-copy-value="text/plain" data-copy-row="Content-Type: text/plain"><td id="v">text/plain</td></tr></table>';
+    onTextContextMenu(rightClick(document.getElementById('v')!), false);
+    const items = menus.current!.items.filter(isItem);
+    expect(items.map((e) => e.label)).toEqual([
+      'Copy',
+      'Select all',
+      'Copy name',
+      'Copy value',
+      'Copy row',
+    ]);
+    items.find((e) => e.id === 'text-copy-row')!.onSelect!();
+    expect(writeText).toHaveBeenCalledWith('Content-Type: text/plain');
+    items.find((e) => e.id === 'text-copy-name')!.onSelect!();
+    expect(writeText).toHaveBeenLastCalledWith('Content-Type');
+  });
+
   it('leaves menus of rows and the touch text toolbar alone', () => {
     document.body.innerHTML = '<p class="selectable" id="text">y</p>';
     const handled = rightClick(document.getElementById('text')!);

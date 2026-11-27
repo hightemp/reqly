@@ -128,6 +128,66 @@ describe('HotkeyRegistry', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  it('leaves keys typed into text to the text, except global commands', () => {
+    const r = registry();
+    const remove = vi.fn();
+    const send = vi.fn();
+    r.on('tree.delete', remove);
+    r.on('request.send', send);
+    document.body.innerHTML =
+      '<div role="tree"><input id="rename" /><div class="cm-content" contenteditable="true"></div></div>';
+    for (const target of [
+      document.getElementById('rename')!,
+      document.querySelector('.cm-content')!,
+    ]) {
+      const del = key({ code: 'Delete', cancelable: true, bubbles: true });
+      target.dispatchEvent(del);
+      expect(r.handle(del, ['global', 'tree'])).toBe(false);
+      expect(del.defaultPrevented).toBe(false);
+
+      const enter = key({ code: 'Enter', ctrlKey: true, cancelable: true, bubbles: true });
+      target.dispatchEvent(enter);
+      expect(r.handle(enter, ['global', 'tree'])).toBe(true);
+    }
+    expect(remove).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledTimes(2);
+    document.body.innerHTML = '';
+  });
+
+  it('leaves Ctrl+C to text selected outside the focused tree', () => {
+    const r = registry();
+    r.define({ id: 'tree.copy', combos: ['Mod+C'], scope: 'tree' });
+    const copy = vi.fn();
+    r.on('tree.copy', copy);
+    document.body.innerHTML =
+      '<div role="tree" tabindex="0" id="tree"><p id="row">row</p></div><p id="text">response text</p>';
+    const tree = document.getElementById('tree')!;
+    tree.focus();
+    const press = () => {
+      const e = key({ code: 'KeyC', ctrlKey: true, cancelable: true, bubbles: true });
+      tree.dispatchEvent(e);
+      return r.handle(e, ['global', 'tree']);
+    };
+    const select = (id: string) => {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById(id)!);
+      window.getSelection()!.removeAllRanges();
+      window.getSelection()!.addRange(range);
+    };
+
+    select('text');
+    expect(press()).toBe(false);
+    expect(copy).not.toHaveBeenCalled();
+
+    // A selection inside the tree, or none, keeps the tree's command.
+    select('row');
+    expect(press()).toBe(true);
+    window.getSelection()!.removeAllRanges();
+    expect(press()).toBe(true);
+    expect(copy).toHaveBeenCalledTimes(2);
+    document.body.innerHTML = '';
+  });
+
   it('does not swallow keys without a handler', () => {
     const r = registry();
     const event = key({ code: 'KeyW', ctrlKey: true, cancelable: true });

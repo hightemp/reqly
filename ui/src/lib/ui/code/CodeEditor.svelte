@@ -36,7 +36,7 @@
   import { templateCompletions, templateExtension } from '$lib/template/codemirror';
   import { templateHostFactory } from '$lib/template/host';
   import { formatJson, formatXml } from './format';
-  import { activeLine, bodyTooltips, reqlyHighlight, reqlyTheme } from './theme';
+  import { activeLine, bodyTooltips, editability, reqlyHighlight, reqlyTheme } from './theme';
 
   interface Props {
     value?: string;
@@ -168,7 +168,7 @@
           reqlyHighlight,
           placeholder ? placeholderExt(placeholder) : [],
           lang.of(languageExtension(language)),
-          editable.of([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
+          editable.of(editability(readonly)),
           wrapping.of(wrap ? EditorView.lineWrapping : []),
           EditorView.contentAttributes.of({ 'aria-label': label }),
           EditorView.updateListener.of((u) => {
@@ -238,10 +238,7 @@
 
   $effect(() => {
     view?.dispatch({
-      effects: editable.reconfigure([
-        EditorState.readOnly.of(readonly),
-        EditorView.editable.of(!readonly),
-      ]),
+      effects: editable.reconfigure(editability(readonly)),
     });
   });
 

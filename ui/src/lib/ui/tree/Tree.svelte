@@ -167,6 +167,8 @@
           focusRow(current.item.parentId);
         break;
       case 'Enter':
+        // Ctrl+Enter and the like are app commands (send the request).
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return onkey?.(e);
         if (!current) return;
         if (current.item.isFolder) setExpanded(current.id, !current.expanded);
         onopen?.(current.id);

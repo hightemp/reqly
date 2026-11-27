@@ -194,7 +194,38 @@ export function onTextContextMenu(e: MouseEvent, touch: boolean) {
   e.preventDefault();
   if (!surface) return;
   if (!surface.keepsSelection) keepSelection();
-  menus.openAt({ x: e.clientX, y: e.clientY }, textMenuItems(surface));
+  const target = e.target as Element;
+  menus.openAt({ x: e.clientX, y: e.clientY }, [
+    ...textMenuItems(surface),
+    ...rowMenuItems(target),
+  ]);
+}
+
+const ROW_PARTS = [
+  ['name', 'actions.copyName'],
+  ['value', 'actions.copyValue'],
+  ['row', 'actions.copyRow'],
+] as const;
+
+/**
+ * "Copy name / value / row" for a table row that offers them through
+ * `data-copy-name`, `data-copy-value` and `data-copy-row`.
+ */
+function rowMenuItems(target: Element): MenuEntry[] {
+  const row = target.closest<HTMLElement>('[data-copy-row], [data-copy-name], [data-copy-value]');
+  if (!row) return [];
+  const items: MenuEntry[] = ROW_PARTS.flatMap(([part, label]) => {
+    const text = row.dataset[`copy${part[0]!.toUpperCase()}${part.slice(1)}`];
+    if (text === undefined) return [];
+    return [
+      {
+        id: `text-copy-${part}`,
+        label: t(label),
+        onSelect: () => void navigator.clipboard?.writeText(text),
+      },
+    ];
+  });
+  return items.length ? [{ separator: true }, ...items] : [];
 }
 
 /**

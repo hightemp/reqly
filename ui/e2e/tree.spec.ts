@@ -140,3 +140,21 @@ test('deleting a request or its folder closes its open tab', async ({ page }) =>
   await remove(folder);
   await expect(tabs.getByRole('tab', { name: new RegExp(inner) })).toHaveCount(0);
 });
+
+test('Delete while renaming edits the name instead of deleting the request', async ({ page }) => {
+  await page.goto('/');
+  const name = `Delkey ${Date.now().toString(36)}`;
+  await create(page, 'New request', `X${name}`);
+  const row = page.getByRole('treeitem', { name: new RegExp(`X${name}`) });
+  await row.click();
+  await page.keyboard.press('F2');
+  const input = page.getByRole('tree', { name: 'Collections' }).getByRole('textbox');
+  await expect(input).toHaveValue(`X${name}`);
+  await input.press('Home');
+  await input.press('Delete');
+  await expect(input).toHaveValue(name);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await input.press('Enter');
+  await expect(page.getByRole('treeitem', { name: new RegExp(`^.*${name}`) })).toBeVisible();
+  await expect(page.getByRole('treeitem', { name: new RegExp(`X${name}`) })).toHaveCount(0);
+});

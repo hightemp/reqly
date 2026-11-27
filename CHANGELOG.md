@@ -14,11 +14,20 @@ and this project follows [Semantic Versioning](https://semver.org/).
   showed no menu there. Phones keep the system's text toolbar.
 - Section tabs (request, response, settings and others) scroll with the mouse
   wheel and get scroll arrows when the panel is too narrow for them.
+- Rows of the response headers and cookies have **Copy name**, **Copy value**
+  and **Copy row** in their context menu.
 
 ### Fixed
 
 - The text of AI chat messages and tool results could not be selected.
 - The current line highlight in code editors hid the selection.
+- Delete while renaming a request in the tree deleted the request instead of
+  a character. Keys typed into text no longer reach the tree's shortcuts.
+- Ctrl+C did not copy text selected in the response (body, headers, cookies,
+  timeline) after the tree had the focus: the tree copied its request
+  instead. Read-only editors now take the focus, so Ctrl+A / Ctrl+C work in
+  the response body.
+- Ctrl+Enter did not send the request while the tree had the focus.
 
 ## [1.3.0] — 2026-11-19
 

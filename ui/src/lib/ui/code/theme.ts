@@ -1,3 +1,4 @@
+import { EditorState } from '@codemirror/state';
 // CodeMirror theme built from Reqly CSS tokens; switching the app theme
 // restyles editors without reconfiguring them.
 
@@ -109,3 +110,16 @@ export const reqlyHighlight = syntaxHighlighting(
     { tag: t.invalid, color: v('syntax-error') },
   ]),
 );
+
+/**
+ * Read-only or editable. A read-only editor still takes the focus (its text
+ * is not `contenteditable`), so Ctrl+A / Ctrl+C reach it instead of whatever
+ * had the focus before, e.g. the tree.
+ */
+export function editability(readonly: boolean) {
+  return [
+    EditorState.readOnly.of(readonly),
+    EditorView.editable.of(!readonly),
+    readonly ? EditorView.contentAttributes.of({ tabindex: '0' }) : [],
+  ];
+}

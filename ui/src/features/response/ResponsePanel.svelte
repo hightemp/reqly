@@ -236,7 +236,9 @@
           <table class="table selectable">
             <tbody>
               {#each record.headers as [name, value], i (i)}
-                <tr><th>{name}</th><td>{value}</td></tr>
+                <tr data-copy-name={name} data-copy-value={value} data-copy-row="{name}: {value}">
+                  <th>{name}</th><td>{value}</td>
+                </tr>
               {/each}
             </tbody>
           </table>
@@ -257,7 +259,11 @@
               </thead>
               <tbody>
                 {#each setCookies as c, i (i)}
-                  <tr>
+                  <tr
+                    data-copy-name={c.name}
+                    data-copy-value={c.value}
+                    data-copy-row="{c.name}={c.value}"
+                  >
                     <th>{c.name}</th>
                     <td>{c.value}</td>
                     <td>{c.domain ?? ''}</td>

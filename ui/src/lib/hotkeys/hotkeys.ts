@@ -166,6 +166,26 @@ export interface Conflict {
   actions: string[];
 }
 
+/** Whether `target` takes typed text: a field, an editor or editable content. */
+export function isTextEntry(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLInputElement) {
+    return !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file'].includes(
+      target.type,
+    );
+  }
+  return target.closest('[contenteditable]:not([contenteditable="false"])') !== null;
+}
+
+/** Whether text is selected somewhere other than inside `target`. */
+function selectionElsewhere(target: EventTarget | null): boolean {
+  const selection = typeof window === 'undefined' ? null : window.getSelection();
+  if (!selection || selection.isCollapsed || !selection.toString()) return false;
+  const node = selection.anchorNode;
+  return !(target instanceof Node && node && target.contains(node));
+}
+
 export class HotkeyRegistry {
   private readonly actions = new Map<string, ActionDefinition>();
   private readonly overrides = new Map<string, string[]>();
@@ -235,7 +255,13 @@ export class HotkeyRegistry {
 
   /** Runs the handler for `event`, if any. Returns whether it was handled. */
   handle(event: KeyboardEvent, activeScopes: readonly string[]): boolean {
-    const id = this.resolve(event, activeScopes);
+    // Keys typed into text (e.g. Delete while renaming a tree row) belong to
+    // the text: only the app's global commands still apply there.
+    // So do keys while text is selected outside the focused element: reading
+    // text does not move the focus, and Ctrl+C there copies the text.
+    const scopes =
+      isTextEntry(event.target) || selectionElsewhere(event.target) ? ['global'] : activeScopes;
+    const id = this.resolve(event, scopes);
     const handlers = id ? this.handlers.get(id) : undefined;
     if (!handlers?.size) return false;
     event.preventDefault();

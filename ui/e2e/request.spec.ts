@@ -257,3 +257,106 @@ test('section tabs scroll in a narrow panel', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await closeAllTabs(page);
 });
+
+test('response tabs copy selected text with Ctrl+C and the context menu', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  const url = page.getByRole('textbox', { name: 'URL' });
+  await url.fill(`${baseURL}/healthz`);
+  await expect(url).toHaveText(`${baseURL}/healthz`);
+  // The tree had the focus last: its own Ctrl+C must not take over.
+  const tree = page.getByRole('tree', { name: 'Collections' });
+  await tree.getByRole('treeitem').first().focus();
+  await page.keyboard.press('ControlOrMeta+Enter');
+  await expect(page.getByText('200 OK')).toBeVisible();
+  const clipboard = () => page.evaluate(() => navigator.clipboard.readText());
+  const clear = () => page.evaluate(() => navigator.clipboard.writeText(''));
+
+  // Body (a read-only editor).
+  const body = page.locator('.response .cm-content');
+  await body.click();
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.press('ControlOrMeta+C');
+  expect(await clipboard()).toContain('"status": "ok"');
+
+  // Headers: a selection made with the mouse.
+  await clear();
+  await page
+    .getByRole('tab', { name: /Headers/ })
+    .last()
+    .click();
+  await tree.getByRole('treeitem').first().focus();
+  const cell = page.locator('.response table td').first();
+  const box = (await cell.boundingBox())!;
+  await page.mouse.move(box.x + 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 2, box.y + box.height / 2, { steps: 5 });
+  await page.mouse.up();
+  const word = await page.evaluate(() => window.getSelection()!.toString());
+  expect(word.trim()).not.toBe('');
+  await page.keyboard.press('ControlOrMeta+C');
+  expect(await clipboard()).toBe(word);
+
+  // The menu over a header row copies its parts.
+  await cell.click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: /^Copy Ctrl/ })).toBeEnabled();
+  await page.getByRole('menuitem', { name: 'Copy row' }).click();
+  expect(await clipboard()).toMatch(/^[\w-]+: .+/);
+
+  // Timeline.
+  await clear();
+  await page.getByRole('tab', { name: 'Timeline' }).click();
+  const line = (await page.locator('.response .timeline .line').first().boundingBox())!;
+  await page.mouse.move(line.x + 2, line.y + line.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(line.x + line.width - 2, line.y + line.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await page.keyboard.press('ControlOrMeta+C');
+  expect(await clipboard()).toContain('Trying 127.0.0.1');
+
+  await closeAllTabs(page);
+});
+
+test('the description has a text menu when editing and in the preview', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await closeAllTabs(page);
+  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('menuitem', { name: 'New request' }).click();
+  await page.getByRole('tab', { name: 'Docs' }).click();
+  const area = page.getByRole('textbox', { name: 'Description' });
+  await area.fill('Some **notes**');
+  await area.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Select all' }).click();
+  // A right click in Chrome moves the caret: open the menu over the selection.
+  await area.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    el.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: r.x + 20,
+        clientY: r.y + 10,
+      }),
+    );
+  });
+  await page.getByRole('menuitem', { name: /^Copy Ctrl/ }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Some **notes**');
+
+  await page.getByRole('tab', { name: 'Preview' }).click();
+  await page.locator('.docs .preview strong').click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Select all' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Paste' })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await closeAllTabs(page);
+});
